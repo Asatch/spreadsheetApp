@@ -1,0 +1,41 @@
+# CALCULATE_RMD - Required Minimum Distribution Divisor Lookup
+# Uses cascade pattern for table lookup
+
+new CALCULATE_RMD
+input AGE 77
+
+# Row 1: Display the input
+write A1 'Age
+write B1 =AGE
+write C1 'Input age for RMD calculation
+
+# Row 3: Table header
+write A3 'Age
+write B3 'Divisor
+write C3 'Match?
+write D3 'Result
+
+# Row 4+: Load the RMD table (Age, Divisor columns)
+csv A4 cli/data/rmd-table.csv
+
+# Column C: Check if this row's age >= input AGE
+# First row (age 72)
+write C5 =A5>=AGE
+# Fill down for all 49 ages (rows 5-53)
+fill C5:C53
+
+# Column D: Cascade pattern - first match wins
+# Row 5 (age 72): Simple check - if match, return divisor, else 0
+write D5 =IF(C5,B5,0)
+
+# Row 6+ (ages 73-120): If previous found result, pass through; else check this row
+write D6 =IF(D5>0,D5,IF(C6,B6,0))
+# Fill down for remaining rows
+fill D6:D53
+
+# Row 55: Output the result
+write A55 'RMD Divisor
+write B55 =D53
+
+output B55
+save output/CALCULATE_RMD.xml

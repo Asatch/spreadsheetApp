@@ -1,0 +1,237 @@
+# CR_CALCULATOR — D&D 5e Challenge Rating Estimator
+# Estimates CR for a homebrew monster using the DMG process (p. 274).
+# Compares defensive stats (HP/AC) and offensive stats (DMG/ATK) against
+# the Monster Statistics by CR table, then averages defensive and offensive CR.
+# Returns: CR, DEFENSIVE_CR, OFFENSIVE_CR, EXPECTED_AC, EXPECTED_ATTACK
+
+new CR_CALCULATOR
+
+use INT
+
+input HP 150
+input AC 16
+input DAMAGE_PER_ROUND 45
+input ATTACK_BONUS 7
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'CR CALCULATOR — D&D 5e
+write A2 'Estimates Challenge Rating for a homebrew monster using the DMG
+write A3 'process: look up HP and damage, adjust for AC and attack bonus.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-9: YOUR MONSTER
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR MONSTER ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'Hit Points
+write B6 =HP
+write C6 'Total HP of the monster
+write A7 'Armor Class
+write B7 =AC
+write C7 'Monster's AC
+write A8 'Damage Per Round
+write B8 =DAMAGE_PER_ROUND
+write C8 'Average damage dealt per round (over first 3 rounds)
+write A9 'Attack Bonus
+write B9 =ATTACK_BONUS
+write C9 'Highest attack modifier
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11-46: WORKING (CR TABLE)
+# ═══════════════════════════════════════════════════════════════════
+write A11 '─── WORKING (CR TABLE) ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+highlight H11 gray
+highlight I11 gray
+highlight J11 gray
+highlight K11 gray
+highlight L11 gray
+highlight M11 gray
+highlight N11 gray
+highlight O11 gray
+
+# Column headers for the table
+write E12 'CR
+write F12 'HP Min
+write G12 'Exp AC
+write H12 'Exp ATK
+write I12 'DMG Min
+write J12 'HP Match
+write K12 'HP→CR
+write L12 'HP→AC
+write M12 'DMG Match
+write N12 'DMG→CR
+write O12 'DMG→ATK
+
+# Load CR table data into columns E-I, starting at row 13
+csv E13 cli/data/cr-table.csv
+
+# Column J: HP match — does monster HP meet this row's threshold?
+write J13 =HP>=F13
+fill J13:J46
+
+# Column K: HP cascade CR — "last match wins" (overwrite on each new match)
+write K13 =IF(J13,E13,0)
+write K14 =IF(J14,E14,K13)
+fill K14:K46
+
+# Column L: HP cascade expected AC — parallel cascade
+write L13 =IF(J13,G13,0)
+write L14 =IF(J14,G14,L13)
+fill L14:L46
+
+# Column M: DMG match — does monster damage meet this row's threshold?
+write M13 =DAMAGE_PER_ROUND>=I13
+fill M13:M46
+
+# Column N: DMG cascade CR — "last match wins"
+write N13 =IF(M13,E13,0)
+write N14 =IF(M14,E14,N13)
+fill N14:N46
+
+# Column O: DMG cascade expected ATK — parallel cascade
+write O13 =IF(M13,H13,0)
+write O14 =IF(M14,H14,O13)
+fill O14:O46
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 48-57: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+write A48 '─── THE CALCULATION ───
+highlight A48 gray
+highlight B48 gray
+highlight C48 gray
+highlight D48 gray
+highlight E48 gray
+highlight F48 gray
+highlight G48 gray
+
+# Named ranges for cascade results (P10: distant references need names)
+name K46 HP_CR_LOOKUP
+name L46 HP_AC_LOOKUP
+name N46 DMG_CR_LOOKUP
+name O46 DMG_ATK_LOOKUP
+
+# Defensive CR (HP-based, adjusted for AC)
+write A49 'HP-Based CR
+write B49 =HP_CR_LOOKUP
+write C49 'CR from HP lookup
+write A50 'Expected AC
+write B50 =HP_AC_LOOKUP
+write C50 'Expected AC for that CR
+write A51 'AC Difference
+write B51 =AC-B50
+write C51 'Actual AC minus expected AC
+write A52 'AC Adjustment
+write B52 =IF(B51>=0,INT(B51/2),-INT(-B51/2))
+write C52 'Truncate toward zero: every 2 AC points = +/- 1 CR
+write A53 'Defensive CR
+write B53 =B49+B52
+write C53 'HP CR adjusted for AC
+
+# Offensive CR (DMG-based, adjusted for ATK)
+write A55 'DMG-Based CR
+write B55 =DMG_CR_LOOKUP
+write C55 'CR from damage lookup
+write A56 'Expected Attack
+write B56 =DMG_ATK_LOOKUP
+write C56 'Expected attack bonus for that CR
+write A57 'Attack Difference
+write B57 =ATTACK_BONUS-B56
+write C57 'Actual attack minus expected attack
+write A58 'Attack Adjustment
+write B58 =IF(B57>=0,INT(B57/2),-INT(-B57/2))
+write C58 'Truncate toward zero: every 2 ATK points = +/- 1 CR
+write A59 'Offensive CR
+write B59 =B55+B58
+write C59 'DMG CR adjusted for attack bonus
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 61-66: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A61 '─── RESULT ───
+highlight A61 gray
+highlight B61 gray
+highlight C61 gray
+highlight D61 gray
+highlight E61 gray
+highlight F61 gray
+highlight G61 gray
+write A62 'Challenge Rating
+write B62 =(B53+B59)/2
+write C62 '← OUTPUT  Average of defensive and offensive CR
+highlight B62 yellow
+write A63 'Defensive CR
+write B63 =B53
+write C63 '← OUTPUT  HP CR adjusted for AC
+write A64 'Offensive CR
+write B64 =B59
+write C64 '← OUTPUT  DMG CR adjusted for attack bonus
+write A65 'Expected AC
+write B65 =B50
+write C65 '← OUTPUT  Table AC for the HP-based CR
+write A66 'Expected Attack
+write B66 =B56
+write C66 '← OUTPUT  Table attack for the DMG-based CR
+
+# Named outputs
+name B62 CR
+name B63 DEFENSIVE_CR
+name B64 OFFENSIVE_CR
+name B65 EXPECTED_AC
+name B66 EXPECTED_ATTACK
+
+# Outputs
+output CR
+output DEFENSIVE_CR
+output OFFENSIVE_CR
+output EXPECTED_AC
+output EXPECTED_ATTACK
+
+# Formatting
+default-format number 0
+format B49 number 2
+format B53 number 2
+format B55 number 2
+format B59 number 2
+format B62 number 2
+format B63 number 2
+format B64 number 2
+format E13 number 3
+format E14 number 3
+format E15 number 3
+format E16 number 3
+
+# Test cases (5 outputs: CR, DEFENSIVE_CR, OFFENSIVE_CR, EXPECTED_AC, EXPECTED_ATTACK)
+# Standard CR 5 monster — exact match on both HP and damage, no adjustments
+test "135, 15, 35, 6" "5, 5, 5, 15, 6"
+# High AC monster — AC 4 above expected, +2 CR defensive adjustment
+test "135, 19, 35, 6" "6, 7, 5, 15, 6"
+# Glass cannon — low HP (CR 0.5), high damage (CR 10), AC 3 below expected (truncates to -1)
+test "50, 10, 63, 7" "4.75, -0.5, 10, 13, 7"
+# High everything — CR 20 range, attack 1 above expected (no adjustment)
+test "400, 19, 140, 11" "20, 20, 20, 19, 10"
+# Very weak — barely qualifies for CR 0, AC 1 below expected (truncates to 0)
+test "5, 12, 1, 3" "0, 0, 0, 13, 3"
+# AC +2 above expected — exactly 2 points gives +1 defensive CR
+test "135, 17, 35, 6" "5.5, 6, 5, 15, 6"
+# Low HP high damage — CR 1 from HP, CR 7 from damage, averaged
+test "75, 13, 50, 6" "4, 1, 7, 13, 6"
+
+save

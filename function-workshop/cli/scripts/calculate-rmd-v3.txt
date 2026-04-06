@@ -1,0 +1,291 @@
+# CALCULATE_RMD - Required Minimum Distribution
+# Python signature: calculate_rmd(balance, age) -> RMD amount
+# Returns 0 if age < 75, otherwise balance / divisor from IRS table
+
+new CALCULATE_RMD
+input BALANCE 100000
+input AGE 77
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'REQUIRED MINIMUM DISTRIBUTION
+style A1 bold
+style A1 fontsize 24
+write A2 'Calculates the minimum amount you must withdraw from retirement accounts each year.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: YOUR SITUATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Account Balance
+write B5 =BALANCE
+write C5 'Total in tax-deferred accounts
+
+write A6 'Your Age
+write B6 =AGE
+write C6 'As of end of year
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: IRS LIFE EXPECTANCY TABLE (columns E-G)
+# ═══════════════════════════════════════════════════════════════════
+
+write E4 '─── IRS TABLE ───
+
+write G6 'Match?
+write H6 'Result
+
+# Load the RMD table (ages 72-120, row 6 = CSV header, rows 7-55 = data)
+csv E6 cli/data/rmd-table.csv
+
+# Column G: Check if this row's age >= input AGE (first match wins)
+write G7 =E7>=AGE
+fill G7:G55
+
+# Column H: Cascade pattern - first match wins
+write H7 =IF(G7,F7,0)
+write H8 =IF(H7>0,H7,IF(G8,F8,0))
+fill H8:H55
+
+# Named range for the final cascade result (referenced 46 rows away)
+name H55 DIVISOR_LOOKUP
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-11: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── THE CALCULATION ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+
+write A9 'Your Divisor
+write B9 =DIVISOR_LOOKUP
+write C9 'From IRS table for your age
+
+write A10 'RMD Required?
+write B10 =AGE>=75
+write C10 'RMDs begin at age 75
+
+write A11 'RMD Amount
+write B11 =IF(B10,BALANCE/B9,0)
+write C11 'Balance ÷ Divisor (or 0 if under 75)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 '─── RESULT ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+
+write A14 'Your RMD
+write B14 =B11
+write C14 '← Amount you must withdraw this year
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B14 RMD
+output RMD
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format B6 number 0
+format B9 number 1
+
+# IRS table: ages are plain numbers, divisors need 1 decimal
+format E7 number 0
+format E8 number 0
+format E9 number 0
+format E10 number 0
+format E11 number 0
+format E12 number 0
+format E13 number 0
+format E14 number 0
+format E15 number 0
+format E16 number 0
+format E17 number 0
+format E18 number 0
+format E19 number 0
+format E20 number 0
+format E21 number 0
+format E22 number 0
+format E23 number 0
+format E24 number 0
+format E25 number 0
+format E26 number 0
+format E27 number 0
+format E28 number 0
+format E29 number 0
+format E30 number 0
+format E31 number 0
+format E32 number 0
+format E33 number 0
+format E34 number 0
+format E35 number 0
+format E36 number 0
+format E37 number 0
+format E38 number 0
+format E39 number 0
+format E40 number 0
+format E41 number 0
+format E42 number 0
+format E43 number 0
+format E44 number 0
+format E45 number 0
+format E46 number 0
+format E47 number 0
+format E48 number 0
+format E49 number 0
+format E50 number 0
+format E51 number 0
+format E52 number 0
+format E53 number 0
+format E54 number 0
+format E55 number 0
+format F7 number 1
+format F8 number 1
+format F9 number 1
+format F10 number 1
+format F11 number 1
+format F12 number 1
+format F13 number 1
+format F14 number 1
+format F15 number 1
+format F16 number 1
+format F17 number 1
+format F18 number 1
+format F19 number 1
+format F20 number 1
+format F21 number 1
+format F22 number 1
+format F23 number 1
+format F24 number 1
+format F25 number 1
+format F26 number 1
+format F27 number 1
+format F28 number 1
+format F29 number 1
+format F30 number 1
+format F31 number 1
+format F32 number 1
+format F33 number 1
+format F34 number 1
+format F35 number 1
+format F36 number 1
+format F37 number 1
+format F38 number 1
+format F39 number 1
+format F40 number 1
+format F41 number 1
+format F42 number 1
+format F43 number 1
+format F44 number 1
+format F45 number 1
+format F46 number 1
+format F47 number 1
+format F48 number 1
+format F49 number 1
+format F50 number 1
+format F51 number 1
+format F52 number 1
+format F53 number 1
+format F54 number 1
+format F55 number 1
+format H7 number 1
+format H8 number 1
+format H9 number 1
+format H10 number 1
+format H11 number 1
+format H12 number 1
+format H13 number 1
+format H14 number 1
+format H15 number 1
+format H16 number 1
+format H17 number 1
+format H18 number 1
+format H19 number 1
+format H20 number 1
+format H21 number 1
+format H22 number 1
+format H23 number 1
+format H24 number 1
+format H25 number 1
+format H26 number 1
+format H27 number 1
+format H28 number 1
+format H29 number 1
+format H30 number 1
+format H31 number 1
+format H32 number 1
+format H33 number 1
+format H34 number 1
+format H35 number 1
+format H36 number 1
+format H37 number 1
+format H38 number 1
+format H39 number 1
+format H40 number 1
+format H41 number 1
+format H42 number 1
+format H43 number 1
+format H44 number 1
+format H45 number 1
+format H46 number 1
+format H47 number 1
+format H48 number 1
+format H49 number 1
+format H50 number 1
+format H51 number 1
+format H52 number 1
+format H53 number 1
+format H54 number 1
+format H55 number 1
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Age 77: divisor 22.9
+test "100000, 77" "4366.812227074236"
+
+# Age 74: below RMD threshold, returns 0
+test "100000, 74" "0"
+
+# Age 75: first year of RMDs, divisor 24.6
+test "100000, 75" "4065.040650406504"
+
+# Age 80: divisor 20.2
+test "500000, 80" "24752.475247524753"
+
+# Age 90: divisor 12.2
+test "200000, 90" "16393.442622950818"
+
+# Age 72: in IRS table but below RMD threshold, returns 0
+test "100000, 72" "0"
+
+# Age 120: maximum table age, divisor 2.0
+test "100000, 120" "50000"
+
+# Zero balance: no RMD regardless of age
+test "0, 80" "0"
+
+save

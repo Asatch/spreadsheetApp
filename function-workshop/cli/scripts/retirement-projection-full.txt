@@ -1,0 +1,116 @@
+# RETIREMENT_PROJECTION - Multi-year retirement projection loop
+# Calls RETIREMENT_YEAR for each year. The loop is purely mechanical:
+# one function call per row, everything else is INDEX extraction.
+
+new RETIREMENT_PROJECTION loop
+
+use RETIREMENT_YEAR
+
+input STARTING_AGE 77
+input TAXABLE_BALANCE 100000
+input TAXABLE_BASIS 80000
+input TAX_DEFERRED_BALANCE 500000
+input TAX_FREE_BALANCE 50000
+input CUSTOM_BALANCE 0
+input SS_AGE 67
+input SS_INCOME 30000
+input SPENDING 60000
+input RETURN_RATE 0.05
+input INFLATION_RATE 0.025
+input YEARS 20
+input TERMINAL_TAX_RATE 0.25
+input STRATEGY 1
+
+# Row 0: Initial state
+# A = age, B = step result (dummy), C-G = account balances
+# H = year counter, I = total taxes, J = cum taxes, K = cum shortfall, L = terminal value, M = broke age
+write A0 =STARTING_AGE-1
+write B0 0
+write C0 =TAXABLE_BALANCE
+write D0 =TAXABLE_BASIS
+write E0 =TAX_DEFERRED_BALANCE
+write F0 =TAX_FREE_BALANCE
+write G0 =CUSTOM_BALANCE
+write H0 1
+write I0 0
+write J0 0
+write K0 0
+write L0 0
+write M0 0
+
+# Row 1: One RETIREMENT_YEAR call, then INDEX everything out
+write A1 =A0+1
+write B1 =RETIREMENT_YEAR(A1, C0, D0, E0, F0, G0, H0, J0, K0, SS_AGE, SS_INCOME, SPENDING, RETURN_RATE, INFLATION_RATE, TERMINAL_TAX_RATE, STRATEGY)
+write C1 =INDEX(B1, "ENDING_TAXABLE")
+write D1 =INDEX(B1, "ENDING_BASIS")
+write E1 =INDEX(B1, "ENDING_TAX_DEFERRED")
+write F1 =INDEX(B1, "ENDING_TAX_FREE")
+write G1 =INDEX(B1, "ENDING_CUSTOM")
+write H1 =H0+1
+write I1 =INDEX(B1, "TOTAL_TAXES")
+write J1 =INDEX(B1, "CUM_TAXES_END")
+write K1 =INDEX(B1, "CUM_SHORTFALL_END")
+write L1 =INDEX(B1, "TERMINAL_VALUE")
+write M1 =IF(AND(K0=0, K1>0), A1, M0)
+
+# Stop conditions
+write _STOP0 =YEARS<=0
+write _STOP1 =H1>YEARS
+
+# Column headers (UPPERCASE — all columns, not just outputs)
+header A AGE
+header B ANNUAL_MODEL_OUTPUT
+header C TAXABLE_BALANCE_ENDING
+header D TAXABLE_BASIS_ENDING
+header E TAX_DEFERRED_BALANCE_ENDING
+header F TAX_FREE_BALANCE_ENDING
+header G CUSTOM_BALANCE_ENDING
+header H YEAR_COUNT
+header I TOTAL_TAXES
+header J CUM_TAXES_ENDING
+header K CUM_SHORTFALL_ENDING
+header L TERMINAL_VALUE
+header M BROKE_AGE
+
+default-format currency 0
+format A0 number 0
+format A1 number 0
+format H0 number 0
+format H1 number 0
+format M0 number 0
+format M1 number 0
+
+# Outputs (last row values — column order)
+output C last
+output D last
+output E last
+output F last
+output G last
+output I last
+output K last
+output L last
+output M last
+
+# Test cases (ground truth from Python run_retirement_projection)
+# Input order: age, taxable, basis, tax_def, tax_free, custom, ss_age, ss_income,
+#              spending, return_rate, inflation_rate, years, terminal_tax_rate, strategy
+
+# Baseline with custom account ($200K), strategy 1
+test "77, 100000, 80000, 500000, 50000, 200000, 67, 30000, 60000, 0.05, 0.025, 20, 0.25, 1" "497154.9383348943, 132926.99493025296, 291711.59503407235, 132664.88525722103, 0, 242637.6428028483, 0, 848603.5198676696, 0"
+
+# No custom account (backward compat), strategy 1
+test "77, 100000, 80000, 500000, 50000, 0, 67, 30000, 60000, 0.05, 0.025, 20, 0.25, 1" "16696.82328591332, 3277.0197498549346, 291711.59503407235, 132664.88525722103, 0, 218245.86058627453, 0, 368145.40481868864, 0"
+
+# Short projection with custom account, strategy 1
+test "80, 100000, 80000, 300000, 50000, 60000, 67, 30000, 60000, 0.04, 0.02, 3, 0.30, 1" "66013.46289746181, 43683.88327230639, 287775.31745664, 56243.2, 47244.288000000015, 105125.76919671101, 0, 370943.6731171098, 0"
+
+# Custom only (no other accounts), strategy 1
+test "77, 0, 0, 0, 0, 500000, 67, 30000, 60000, 0.05, 0.025, 15, 0.25, 1" "167477.64737508015, 82142.5134951594, 0, 0, 0, 136890.33708019133, 0, 167477.64737508015, 0"
+
+# Zero inflation with custom, strategy 1
+test "77, 100000, 80000, 500000, 50000, 100000, 67, 30000, 60000, 0.05, 0, 10, 0.25, 1" "175045.05308965017, 98267.27346852004, 469376.3096973154, 81444.73133887208, 0, 196327.3186640218, 0, 608522.0167015088, 0"
+
+# Underfunded: small balances, high spending → goes broke at age 67
+test "65, 50000, 40000, 100000, 20000, 0, 67, 20000, 80000, 0.05, 0.025, 20, 0.25, 1" "0, 0, 0, 0, 0, 49409.12504370629, 1110543.0985868298, 0, 67"
+
+save

@@ -1,0 +1,112 @@
+# SLN - Straight-Line Depreciation
+# Returns the same depreciation amount for each period
+# Formula: (Cost - Salvage) / Life
+
+new SLN
+input COST 10000
+input SALVAGE 2000
+input LIFE 5
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'STRAIGHT-LINE DEPRECIATION
+style A1 bold
+style A1 fontsize 24
+write A2 'Calculates straight-line depreciation for one period.
+write A3 'Spreads the cost evenly over the asset's useful life.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-8: THE ASSET
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── THE ASSET ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Cost
+write B6 =COST
+write C6 'Original purchase price
+
+write A7 'Salvage Value
+write B7 =SALVAGE
+write C7 'Value at end of useful life
+
+write A8 'Useful Life
+write B8 =LIFE
+write C8 'Number of periods
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 10-11: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A10 '─── THE CALCULATION ───
+highlight A10 gray
+highlight B10 gray
+highlight C10 gray
+highlight D10 gray
+highlight E10 gray
+highlight F10 gray
+highlight G10 gray
+
+write A11 'Depreciable Amount
+write B11 =B6-B7
+write C11 'Cost minus Salvage
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-14: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 '─── RESULT ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+
+write A14 'Annual Depreciation
+write B14 =B11/B8
+write C14 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B14 SLN
+output SLN
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format B8 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Standard case: $10k asset, $2k salvage, 5 years
+test "10000, 2000, 5" "1600"
+
+# Higher value, longer life
+test "30000, 5000, 10" "2500"
+
+# No salvage value
+test "50000, 0, 7" "7142.857142857143"
+
+# Large asset, long depreciation
+test "100000, 10000, 10" "9000"
+
+# Small asset
+test "5000, 1000, 4" "1000"
+
+save

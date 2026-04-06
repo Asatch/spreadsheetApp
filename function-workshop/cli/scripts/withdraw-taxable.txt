@@ -1,0 +1,65 @@
+# WITHDRAW_TAXABLE - Withdraw from taxable account
+# Python signature: withdraw_from_taxable(balance, shortfall, basis)
+# Returns: withdrawal_amount, new_tax, remaining_shortfall, basis_reduction
+
+new WITHDRAW_TAXABLE
+input BALANCE 100000
+input SHORTFALL 10000
+input BASIS 80000
+
+# Constants
+write A1 'Capital Gains Rate
+write B1 0.15
+
+# Row 3: Display inputs
+write A3 'Account Balance
+write B3 =BALANCE
+
+write A4 'Amount Needed
+write B4 =SHORTFALL
+
+write A5 'Cost Basis
+write B5 =BASIS
+
+# Row 7: Calculate gains proportion
+write A7 'Gains Proportion
+write B7 =IF(BALANCE=0,0,(BALANCE-BASIS)/BALANCE)
+write C7 '(balance - basis) / balance
+
+# Row 8: Effective tax rate
+write A8 'Effective Tax Rate
+write B8 =B1*B7
+write C8 'capital_gains_rate * gains_proportion
+
+# Row 9: Maximum withdrawal possible
+write A9 'Max Needed (gross)
+write B9 =IF(B8=1,SHORTFALL,SHORTFALL/(1-B8))
+write C9 'shortfall / (1 - eff_tax_rate)
+
+# Row 10: Actual withdrawal (capped at balance)
+write A10 'Withdrawal Amount
+write B10 =IF(BALANCE=0,0,MIN(B9,BALANCE))
+
+# Row 11: Tax on withdrawal
+write A11 'Tax on Withdrawal
+write B11 =B10*B8
+
+# Row 12: Net after tax
+write A12 'Net After Tax
+write B12 =B10-B11
+
+# Row 13: Remaining shortfall
+write A13 'Remaining Shortfall
+write B13 =MAX(0,SHORTFALL-B12)
+
+# Row 14: Basis reduction (proportional or full if draining account)
+write A14 'Basis Reduction
+write B14 =IF(BALANCE=0,0,IF(B10=BALANCE,BASIS,B10*(BASIS/BALANCE)))
+
+# Outputs
+output B10
+output B11
+output B13
+output B14
+
+save output/WITHDRAW_TAXABLE.xml

@@ -1,0 +1,82 @@
+# SIGN - Returns the sign of a number (-1, 0, or 1)
+
+new SIGN
+input NUMBER -5
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'SIGN
+style A1 bold
+style A1 fontsize 24
+write A2 'Returns -1, 0, or 1 based on the sign of a number.
+write A3 'Negative → -1, zero → 0, positive → 1.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-6: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUT ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Number
+write B6 =NUMBER
+write C6 'The value to check
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-9: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── RESULT ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+highlight E8 gray
+highlight F8 gray
+highlight G8 gray
+
+write A9 'Sign
+write B9 =IF(B6>0,1,IF(B6<0,-1,0))
+write C9 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B9 SIGN
+output SIGN
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Negative
+test "-5" "-1"
+
+# Positive
+test "5" "1"
+
+# Zero
+test "0" "0"
+
+# Negative decimal
+test "-0.001" "-1"
+
+# Large positive
+test "1000000" "1"
+
+save

@@ -1,0 +1,136 @@
+# AC_CALCULATOR — D&D 5e Armor Class
+# Computes final AC from armor type, base AC, Dexterity modifier, and bonuses.
+# Returns: FINAL_AC, BASE_AC, DEX_CONTRIBUTION, SHIELD_BONUS
+# Armor type determines how much DEX applies: full (none/light), max +2 (medium), none (heavy).
+
+new AC_CALCULATOR
+
+input ARMOR_TYPE 2
+input ARMOR_BASE 14
+input DEX_MOD 3
+input SHIELD 1
+input MAGIC_BONUS 0
+input OTHER_BONUS 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'AC CALCULATOR — D&D 5e
+write A2 'Computes Armor Class from armor type, Dexterity, shield, and bonuses.
+write A3 'Armor type determines how much of your DEX modifier applies (if at all).
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-11: YOUR EQUIPMENT
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR EQUIPMENT ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'Armor Type
+write B6 =ARMOR_TYPE
+write C6 '0=None  1=Light  2=Medium  3=Heavy
+write A7 'Armor Base AC
+write B7 =ARMOR_BASE
+write C7 'Base AC of the armor (10 if unarmored)
+write A8 'Dexterity Modifier
+write B8 =DEX_MOD
+write C8 'Your DEX modifier (-1 to +5 typically)
+write A9 'Shield
+write B9 =SHIELD
+write C9 '0=No  1=Yes (adds +2 AC)
+write A10 'Magic Bonus
+write B10 =MAGIC_BONUS
+write C10 '+1, +2, or +3 armor enchantment
+write A11 'Other Bonus
+write B11 =OTHER_BONUS
+write C11 'Defense fighting style, Ring of Protection, etc.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-17: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+write A13 '─── THE CALCULATION ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+write A14 'DEX Contribution
+write B14 =IF(ARMOR_TYPE=3,0,IF(ARMOR_TYPE=2,MIN(DEX_MOD,2),DEX_MOD))
+write C14 'None/Light=full DEX  Medium=max +2  Heavy=none
+write A15 'Base AC
+write B15 =B7+B14
+write C15 'Armor base + DEX contribution
+write A16 'Shield Bonus
+write B16 =SHIELD*2
+write C16 '+2 if using a shield, 0 otherwise
+write A17 'Total Bonuses
+write B17 =B16+MAGIC_BONUS+OTHER_BONUS
+write C17 'Shield + magic + other bonuses
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 19-23: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A19 '─── RESULT ───
+highlight A19 gray
+highlight B19 gray
+highlight C19 gray
+highlight D19 gray
+highlight E19 gray
+highlight F19 gray
+highlight G19 gray
+write A20 'Final AC
+write B20 =B15+B17
+write C20 '← OUTPUT  Base AC + all bonuses
+highlight B20 yellow
+write A21 'Base AC
+write B21 =B15
+write C21 '← OUTPUT  Armor + DEX before bonuses
+write A22 'DEX Contribution
+write B22 =B14
+write C22 '← OUTPUT  How much DEX was applied
+write A23 'Shield Bonus
+write B23 =B16
+write C23 '← OUTPUT  0 or 2
+
+# Named outputs
+name B20 FINAL_AC
+name B21 BASE_AC
+name B22 DEX_CONTRIBUTION
+name B23 SHIELD_BONUS
+
+# Outputs
+output FINAL_AC
+output BASE_AC
+output DEX_CONTRIBUTION
+output SHIELD_BONUS
+
+# Formatting
+default-format number 0
+
+# Test cases
+# Scale mail (medium 14), DEX +3, shield, no magic: 14+2+2 = 18
+test "2, 14, 3, 1, 0, 0" "18, 16, 2, 2"
+# Plate (heavy 18), DEX +2, shield, +1 magic: 18+0+2+1 = 21
+test "3, 18, 2, 1, 1, 0" "21, 18, 0, 2"
+# Studded leather (light 12), DEX +4, no shield: 12+4 = 16
+test "1, 12, 4, 0, 0, 0" "16, 16, 4, 0"
+# Unarmored (base 10), DEX +2, no shield: 10+2 = 12
+test "0, 10, 2, 0, 0, 0" "12, 12, 2, 0"
+# Half plate (medium 15), DEX +1, +2 magic: 15+1+2 = 18
+test "2, 15, 1, 0, 2, 0" "18, 16, 1, 0"
+# Unarmored, DEX +5, +1 other bonus: 10+5+1 = 16
+test "0, 10, 5, 0, 0, 1" "16, 15, 5, 0"
+# Medium armor, DEX -1, shield: 14+(-1)+2 = 15
+test "2, 14, -1, 1, 0, 0" "15, 13, -1, 2"
+# Padded (light 11), DEX +0, +3 magic: 11+0+3 = 14
+test "1, 11, 0, 0, 3, 0" "14, 11, 0, 0"
+
+save

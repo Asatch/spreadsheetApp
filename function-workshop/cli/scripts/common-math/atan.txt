@@ -1,0 +1,69 @@
+# ATAN - Inverse tangent via Newton's method
+# Finds x where TAN(x) = TARGET
+# Uses identity: atan(x) = sign(x) * pi/2 - atan(1/|x|) for |x| > 1
+# This reduces large inputs to the [-1, 1] range where Newton converges reliably
+# Newton step: x_next = x - (TAN(x) - target) / (1 + TAN(x)^2)
+
+new ATAN loop
+input TARGET 1
+
+use COS
+use TAN
+use ABS
+
+# Row 0: reduce to small case and set initial guess
+# A = current Newton estimate
+# B = iteration counter
+# C = reduced target (TARGET if |x|<=1, 1/TARGET if |x|>1)
+# D = was_reduced flag (1 if |TARGET|>1)
+# E = corrected result (applies identity when needed)
+write A0 =IF(ABS(TARGET)>1,1/TARGET,TARGET)
+write B0 0
+write C0 =IF(ABS(TARGET)>1,1/TARGET,TARGET)
+write D0 =IF(ABS(TARGET)>1,1,0)
+write E0 =A0
+
+# Row 1: Newton iteration on the reduced target
+write A1 =A0-(TAN(A0)-C0)/(1+TAN(A0)^2)
+write B1 =B0+1
+write C1 =C0
+write D1 =D0
+# Apply identity: if reduced, atan(x) = sign(TARGET)*pi/2 - atan(1/|x|)
+write E1 =IF(D1=1,IF(TARGET<0,-1.5707963267948966-A1,1.5707963267948966-A1),A1)
+
+# Stop condition: converged or max 20 iterations
+write _STOP1 =OR(AND(B1>=2,(A1-A0)*(A1-A0)<0.000000000001),B1>=20)
+
+# Column headers
+header A newton_estimate
+header B iteration
+header C reduced_target
+header D was_reduced
+header E result
+
+# Output the corrected result
+output E last
+
+# Formatting
+default-format number 10
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# atan(0) = 0
+test "0" "0"
+
+# atan(1) = pi/4
+test "1" "0.7853981634"
+
+# atan(-1) = -pi/4
+test "-1" "-0.7853981634"
+
+# atan(sqrt(3)) = pi/3
+test "1.7320508076" "1.0471975512"
+
+# Large value: atan(100) ≈ 1.5607966...
+test "100" "1.5607966601"
+
+save

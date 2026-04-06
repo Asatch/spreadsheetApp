@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeCalculation name="RETIREMENT_YEAR_FULL">
+  <LangSpecs/>
+  <TestCases>
+    <test_case>
+      <input_value Value="77"/>
+      <input_value Value="100000"/>
+      <input_value Value="80000"/>
+      <input_value Value="500000"/>
+      <input_value Value="50000"/>
+      <input_value Value="67"/>
+      <input_value Value="30000"/>
+      <input_value Value="60000"/>
+      <input_value Value="0.05"/>
+      <input_value Value="0.025"/>
+      <input_value Value="0"/>
+      <output_value Value="90302.3166185567"/>
+      <output_value Value="66815.42142680413"/>
+      <output_value Value="502074.237"/>
+      <output_value Value="52500"/>
+      <output_value Value="6173.263298969072"/>
+      <output_value Value="0"/>
+    </test_case>
+    <test_case>
+      <input_value Value="77"/>
+      <input_value Value="100000"/>
+      <input_value Value="80000"/>
+      <input_value Value="500000"/>
+      <input_value Value="50000"/>
+      <input_value Value="67"/>
+      <input_value Value="30000"/>
+      <input_value Value="60000"/>
+      <input_value Value="0.05"/>
+      <input_value Value="0"/>
+      <input_value Value="0"/>
+      <output_value Value="90302.3166185567"/>
+      <output_value Value="68528.63736082474"/>
+      <output_value Value="502074.237"/>
+      <output_value Value="52500"/>
+      <output_value Value="6173.263298969072"/>
+      <output_value Value="0"/>
+    </test_case>
+    <test_case>
+      <input_value Value="80"/>
+      <input_value Value="100000"/>
+      <input_value Value="80000"/>
+      <input_value Value="300000"/>
+      <input_value Value="50000"/>
+      <input_value Value="67"/>
+      <input_value Value="30000"/>
+      <input_value Value="60000"/>
+      <input_value Value="0.04"/>
+      <input_value Value="0.02"/>
+      <input_value Value="0"/>
+      <output_value Value="82912.61590103092"/>
+      <output_value Value="62191.65771216494"/>
+      <output_value Value="296554.45040000003"/>
+      <output_value Value="52000"/>
+      <output_value Value="5525.395979381443"/>
+      <output_value Value="0"/>
+    </test_case>
+  </TestCases>
+  <Nodes>
+    <Node node_id="1" node_type="input" data_type="Number" key="AGE" canonical="77" input_order="0" input_name="AGE"/>
+    <Node node_id="2" node_type="input" data_type="Number" key="TAXABLE_BALANCE" canonical="100000" input_order="1" input_name="TAXABLE_BALANCE"/>
+    <Node node_id="3" node_type="input" data_type="Number" key="TAXABLE_BASIS" canonical="80000" input_order="2" input_name="TAXABLE_BASIS"/>
+    <Node node_id="4" node_type="input" data_type="Number" key="TAX_DEFERRED_BALANCE" canonical="500000" input_order="3" input_name="TAX_DEFERRED_BALANCE"/>
+    <Node node_id="5" node_type="input" data_type="Number" key="TAX_FREE_BALANCE" canonical="50000" input_order="4" input_name="TAX_FREE_BALANCE"/>
+    <Node node_id="6" node_type="input" data_type="Number" key="SS_AGE" canonical="67" input_order="5" input_name="SS_AGE"/>
+    <Node node_id="7" node_type="input" data_type="Number" key="SS_INCOME" canonical="30000" input_order="6" input_name="SS_INCOME"/>
+    <Node node_id="8" node_type="input" data_type="Number" key="SPENDING" canonical="60000" input_order="7" input_name="SPENDING"/>
+    <Node node_id="9" node_type="input" data_type="Number" key="RETURN_RATE" canonical="0.05" input_order="8" input_name="RETURN_RATE"/>
+    <Node node_id="10" node_type="input" data_type="Number" key="INFLATION_RATE" canonical="0.025" input_order="9" input_name="INFLATION_RATE"/>
+    <Node node_id="11" node_type="input" data_type="Number" key="CUSTOM_INCOME" canonical="0" input_order="10" input_name="CUSTOM_INCOME"/>
+    <Node node_id="12" node_type="constant" data_type="Text" key="A1" canonical="&apos;RETIREMENT YEAR (FULL MODEL)" value="RETIREMENT YEAR (FULL MODEL)"/>
+    <Node node_id="13" node_type="constant" data_type="Text" key="A2" canonical="&apos;One year of retirement: income, taxes, withdrawals, investment growth" value="One year of retirement: income, taxes, withdrawals, investment growth"/>
+    <Node node_id="14" node_type="constant" data_type="Text" key="A4" canonical="&apos;─── INCOME SOURCES ───" value="─── INCOME SOURCES ───"/>
+    <Node node_id="15" node_type="constant" data_type="Text" key="A5" canonical="&apos;Age This Year" value="Age This Year"/>
+    <Node node_id="16" node_type="function" data_type="Number" key="B5" canonical="=AGE" function_name="PROCEED"/>
+    <Node node_id="17" node_type="constant" data_type="Text" key="A6" canonical="&apos;Custom Account Income" value="Custom Account Income"/>
+    <Node node_id="18" node_type="function" data_type="Number" key="B6" canonical="=CUSTOM_INCOME" function_name="PROCEED"/>
+    <Node node_id="19" node_type="constant" data_type="Text" key="C6" canonical="&apos;Distribution from custom account" value="Distribution from custom account"/>
+    <Node node_id="20" node_type="constant" data_type="Text" key="A7" canonical="&apos;Social Security" value="Social Security"/>
+    <Node node_id="21" node_type="function" data_type="Boolean" key="=AGE&gt;=SS_AGE" canonical="=AGE&gt;=SS_AGE" function_name="GREATEREQUAL"/>
+    <Node node_id="22" node_type="function" data_type="Number" key="B7" canonical="=IF(AGE&gt;=SS_AGE, SS_INCOME, 0)" function_name="IF"/>
+    <Node node_id="23" node_type="constant" data_type="Text" key="C7" canonical="&apos;SS if at or past SS age" value="SS if at or past SS age"/>
+    <Node node_id="24" node_type="constant" data_type="Text" key="A8" canonical="&apos;RMD from Tax-Deferred" value="RMD from Tax-Deferred"/>
+    <Node node_id="25" node_type="function" data_type="Number" key="B8" canonical="=CALCULATE_RMD(TAX_DEFERRED_BALANCE, AGE)" function_name="CALCULATE_RMD"/>
+    <Node node_id="26" node_type="constant" data_type="Text" key="C8" canonical="&apos;Required minimum distribution" value="Required minimum distribution"/>
+    <Node node_id="27" node_type="constant" data_type="Text" key="A9" canonical="&apos;Tax-Def After RMD" value="Tax-Def After RMD"/>
+    <Node node_id="28" node_type="function" data_type="Number" key="B9" canonical="=TAX_DEFERRED_BALANCE-B8" function_name="SUBTRACT"/>
+    <Node node_id="29" node_type="constant" data_type="Text" key="A10" canonical="&apos;Total Income" value="Total Income"/>
+    <Node node_id="30" node_type="function" data_type="Number" key="=B6+B7" canonical="=B6+B7" function_name="ADD"/>
+    <Node node_id="31" node_type="function" data_type="Number" key="B10" canonical="=B6+B7+B8" function_name="ADD"/>
+    <Node node_id="32" node_type="constant" data_type="Text" key="A12" canonical="&apos;─── TAX ON INCOME ───" value="─── TAX ON INCOME ───"/>
+    <Node node_id="33" node_type="constant" data_type="Text" key="A13" canonical="&apos;Income Tax" value="Income Tax"/>
+    <Node node_id="34" node_type="function" data_type="Number" key="B13" canonical="=PROGRESSIVE_TAX(B10)" function_name="PROGRESSIVE_TAX"/>
+    <Node node_id="35" node_type="constant" data_type="Text" key="A14" canonical="&apos;After-Tax Income" value="After-Tax Income"/>
+    <Node node_id="36" node_type="function" data_type="Number" key="B14" canonical="=B10-B13" function_name="SUBTRACT"/>
+    <Node node_id="37" node_type="constant" data_type="Text" key="A16" canonical="&apos;─── SPENDING ANALYSIS ───" value="─── SPENDING ANALYSIS ───"/>
+    <Node node_id="38" node_type="constant" data_type="Text" key="A17" canonical="&apos;Annual Spending" value="Annual Spending"/>
+    <Node node_id="39" node_type="function" data_type="Number" key="B17" canonical="=SPENDING" function_name="PROCEED"/>
+    <Node node_id="40" node_type="constant" data_type="Text" key="A18" canonical="&apos;Shortfall" value="Shortfall"/>
+    <Node node_id="41" node_type="function" data_type="Number" key="=B17-B14" canonical="=B17-B14" function_name="SUBTRACT"/>
+    <Node node_id="42" node_type="function" data_type="Number" key="B18" canonical="=MAX(0, B17-B14)" function_name="MAX"/>
+    <Node node_id="43" node_type="constant" data_type="Text" key="A19" canonical="&apos;Savings" value="Savings"/>
+    <Node node_id="44" node_type="function" data_type="Number" key="=B14-B17" canonical="=B14-B17" function_name="SUBTRACT"/>
+    <Node node_id="45" node_type="function" data_type="Number" key="B19" canonical="=MAX(0, B14-B17)" function_name="MAX"/>
+    <Node node_id="46" node_type="constant" data_type="Text" key="A21" canonical="&apos;─── STEP 1: TAXABLE WITHDRAWAL ───" value="─── STEP 1: TAXABLE WITHDRAWAL ───"/>
+    <Node node_id="47" node_type="constant" data_type="Text" key="E22" canonical="&apos;WITHDRAWAL" value="WITHDRAWAL"/>
+    <Node node_id="48" node_type="constant" data_type="Text" key="E23" canonical="&apos;TAX" value="TAX"/>
+    <Node node_id="49" node_type="constant" data_type="Text" key="E24" canonical="&apos;REMAINING_SHORTFALL" value="REMAINING_SHORTFALL"/>
+    <Node node_id="50" node_type="constant" data_type="Text" key="E25" canonical="&apos;NEW_BALANCE" value="NEW_BALANCE"/>
+    <Node node_id="51" node_type="constant" data_type="Text" key="A22" canonical="&apos;Withdrawal Amount" value="Withdrawal Amount"/>
+    <Node node_id="52" node_type="function" data_type="Number" key="=WITHDRAW_TAXABLE(TAXABLE_BALANCE, B18, TAXABLE_BASIS)" canonical="=WITHDRAW_TAXABLE(TAXABLE_BALANCE, B18, TAXABLE_BASIS)" function_name="WITHDRAW_TAXABLE"/>
+    <Node node_id="53" node_type="function" data_type="Number" key="B22" canonical="=INDEX(WITHDRAW_TAXABLE(TAXABLE_BALANCE, B18, TAXABLE_BASIS), E22)" function_name="INDEX"/>
+    <Node node_id="54" node_type="constant" data_type="Text" key="A23" canonical="&apos;Tax on Withdrawal" value="Tax on Withdrawal"/>
+    <Node node_id="55" node_type="function" data_type="Number" key="B23" canonical="=INDEX(WITHDRAW_TAXABLE(TAXABLE_BALANCE, B18, TAXABLE_BASIS), E23)" function_name="INDEX"/>
+    <Node node_id="56" node_type="constant" data_type="Text" key="A24" canonical="&apos;Remaining Shortfall" value="Remaining Shortfall"/>
+    <Node node_id="57" node_type="function" data_type="Number" key="B24" canonical="=INDEX(WITHDRAW_TAXABLE(TAXABLE_BALANCE, B18, TAXABLE_BASIS), E24)" function_name="INDEX"/>
+    <Node node_id="58" node_type="constant" data_type="Text" key="A25" canonical="&apos;Basis Reduction" value="Basis Reduction"/>
+    <Node node_id="59" node_type="function" data_type="Number" key="B25" canonical="=INDEX(WITHDRAW_TAXABLE(TAXABLE_BALANCE, B18, TAXABLE_BASIS), E25)" function_name="INDEX"/>
+    <Node node_id="60" node_type="constant" data_type="Text" key="A26" canonical="&apos;Taxable After" value="Taxable After"/>
+    <Node node_id="61" node_type="function" data_type="Number" key="B26" canonical="=TAXABLE_BALANCE-B22" function_name="SUBTRACT"/>
+    <Node node_id="62" node_type="constant" data_type="Text" key="A27" canonical="&apos;Basis After" value="Basis After"/>
+    <Node node_id="63" node_type="function" data_type="Number" key="B27" canonical="=TAXABLE_BASIS-B25" function_name="SUBTRACT"/>
+    <Node node_id="64" node_type="constant" data_type="Text" key="A29" canonical="&apos;─── STEP 2: TAX-DEFERRED WITHDRAWAL ───" value="─── STEP 2: TAX-DEFERRED WITHDRAWAL ───"/>
+    <Node node_id="65" node_type="constant" data_type="Text" key="A30" canonical="&apos;Withdrawal Amount" value="Withdrawal Amount"/>
+    <Node node_id="66" node_type="function" data_type="Number" key="=WITHDRAW_PRETAX(B9, B24, B10)" canonical="=WITHDRAW_PRETAX(B9, B24, B10)" function_name="WITHDRAW_PRETAX"/>
+    <Node node_id="67" node_type="function" data_type="Number" key="B30" canonical="=INDEX(WITHDRAW_PRETAX(B9, B24, B10), E22)" function_name="INDEX"/>
+    <Node node_id="68" node_type="constant" data_type="Text" key="A31" canonical="&apos;Tax on Withdrawal" value="Tax on Withdrawal"/>
+    <Node node_id="69" node_type="function" data_type="Number" key="B31" canonical="=INDEX(WITHDRAW_PRETAX(B9, B24, B10), E23)" function_name="INDEX"/>
+    <Node node_id="70" node_type="constant" data_type="Text" key="A32" canonical="&apos;Remaining Shortfall" value="Remaining Shortfall"/>
+    <Node node_id="71" node_type="function" data_type="Number" key="B32" canonical="=INDEX(WITHDRAW_PRETAX(B9, B24, B10), E24)" function_name="INDEX"/>
+    <Node node_id="72" node_type="constant" data_type="Text" key="A33" canonical="&apos;Tax-Def After Withdrawal" value="Tax-Def After Withdrawal"/>
+    <Node node_id="73" node_type="function" data_type="Number" key="B33" canonical="=B9-B30" function_name="SUBTRACT"/>
+    <Node node_id="74" node_type="constant" data_type="Text" key="A35" canonical="&apos;─── STEP 3: TAX-FREE WITHDRAWAL ───" value="─── STEP 3: TAX-FREE WITHDRAWAL ───"/>
+    <Node node_id="75" node_type="constant" data_type="Text" key="A36" canonical="&apos;Withdrawal Amount" value="Withdrawal Amount"/>
+    <Node node_id="76" node_type="function" data_type="Number" key="B36" canonical="=MIN(TAX_FREE_BALANCE, B32)" function_name="MIN"/>
+    <Node node_id="77" node_type="constant" data_type="Text" key="A37" canonical="&apos;Remaining Shortfall" value="Remaining Shortfall"/>
+    <Node node_id="78" node_type="function" data_type="Number" key="=B32-B36" canonical="=B32-B36" function_name="SUBTRACT"/>
+    <Node node_id="79" node_type="function" data_type="Number" key="B37" canonical="=MAX(0, B32-B36)" function_name="MAX"/>
+    <Node node_id="80" node_type="constant" data_type="Text" key="A38" canonical="&apos;Tax-Free After" value="Tax-Free After"/>
+    <Node node_id="81" node_type="function" data_type="Number" key="B38" canonical="=TAX_FREE_BALANCE-B36" function_name="SUBTRACT"/>
+    <Node node_id="82" node_type="constant" data_type="Text" key="A40" canonical="&apos;─── INVESTMENT RETURNS ───" value="─── INVESTMENT RETURNS ───"/>
+    <Node node_id="83" node_type="constant" data_type="Text" key="A41" canonical="&apos;Taxable + Savings" value="Taxable + Savings"/>
+    <Node node_id="84" node_type="function" data_type="Boolean" key="=B18&gt;0" canonical="=B18&gt;0" function_name="GREATER"/>
+    <Node node_id="85" node_type="function" data_type="Number" key="=TAXABLE_BALANCE+B19" canonical="=TAXABLE_BALANCE+B19" function_name="ADD"/>
+    <Node node_id="86" node_type="function" data_type="Number" key="B41" canonical="=IF(B18&gt;0, B26, TAXABLE_BALANCE+B19)" function_name="IF"/>
+    <Node node_id="87" node_type="constant" data_type="Text" key="C41" canonical="&apos;If shortfall: post-withdrawal. If savings: add to taxable." value="If shortfall: post-withdrawal. If savings: add to taxable."/>
+    <Node node_id="88" node_type="constant" data_type="Text" key="A42" canonical="&apos;Basis + Savings" value="Basis + Savings"/>
+    <Node node_id="89" node_type="function" data_type="Number" key="=TAXABLE_BASIS+B19" canonical="=TAXABLE_BASIS+B19" function_name="ADD"/>
+    <Node node_id="90" node_type="function" data_type="Number" key="B42" canonical="=IF(B18&gt;0, B27, TAXABLE_BASIS+B19)" function_name="IF"/>
+    <Node node_id="91" node_type="constant" data_type="Text" key="A43" canonical="&apos;Taxable End" value="Taxable End"/>
+    <Node node_id="92" node_type="function" data_type="Number" key="=TAXABLE_BALANCE+B41" canonical="=TAXABLE_BALANCE+B41" function_name="ADD"/>
+    <Node node_id="93" node_type="function" data_type="Number" key="=(TAXABLE_BALANCE+B41)" canonical="=(TAXABLE_BALANCE+B41)" function_name="PROCEED"/>
+    <Node node_id="94" node_type="function" data_type="Number" key="=RETURN_RATE*(TAXABLE_BALANCE+B41)" canonical="=RETURN_RATE*(TAXABLE_BALANCE+B41)" function_name="MULTIPLY"/>
+    <Node node_id="95" node_type="function" data_type="Number" key="=RETURN_RATE*(TAXABLE_BALANCE+B41)/2" canonical="=RETURN_RATE*(TAXABLE_BALANCE+B41)/2" function_name="DIVIDE"/>
+    <Node node_id="96" node_type="function" data_type="Number" key="B43" canonical="=B41+RETURN_RATE*(TAXABLE_BALANCE+B41)/2" function_name="ADD"/>
+    <Node node_id="97" node_type="constant" data_type="Text" key="C43" canonical="&apos;Mid-year avg: return × (start + end) / 2" value="Mid-year avg: return × (start + end) / 2"/>
+    <Node node_id="98" node_type="constant" data_type="Text" key="A44" canonical="&apos;Tax-Def End" value="Tax-Def End"/>
+    <Node node_id="99" node_type="function" data_type="Number" key="=B9+B33" canonical="=B9+B33" function_name="ADD"/>
+    <Node node_id="100" node_type="function" data_type="Number" key="=(B9+B33)" canonical="=(B9+B33)" function_name="PROCEED"/>
+    <Node node_id="101" node_type="function" data_type="Number" key="=RETURN_RATE*(B9+B33)" canonical="=RETURN_RATE*(B9+B33)" function_name="MULTIPLY"/>
+    <Node node_id="102" node_type="function" data_type="Number" key="=RETURN_RATE*(B9+B33)/2" canonical="=RETURN_RATE*(B9+B33)/2" function_name="DIVIDE"/>
+    <Node node_id="103" node_type="function" data_type="Number" key="B44" canonical="=B33+RETURN_RATE*(B9+B33)/2" function_name="ADD"/>
+    <Node node_id="104" node_type="constant" data_type="Text" key="C44" canonical="&apos;Start = after RMD, end = after withdrawals" value="Start = after RMD, end = after withdrawals"/>
+    <Node node_id="105" node_type="constant" data_type="Text" key="A45" canonical="&apos;Tax-Free End" value="Tax-Free End"/>
+    <Node node_id="106" node_type="function" data_type="Number" key="=TAX_FREE_BALANCE+B38" canonical="=TAX_FREE_BALANCE+B38" function_name="ADD"/>
+    <Node node_id="107" node_type="function" data_type="Number" key="=(TAX_FREE_BALANCE+B38)" canonical="=(TAX_FREE_BALANCE+B38)" function_name="PROCEED"/>
+    <Node node_id="108" node_type="function" data_type="Number" key="=RETURN_RATE*(TAX_FREE_BALANCE+B38)" canonical="=RETURN_RATE*(TAX_FREE_BALANCE+B38)" function_name="MULTIPLY"/>
+    <Node node_id="109" node_type="function" data_type="Number" key="=RETURN_RATE*(TAX_FREE_BALANCE+B38)/2" canonical="=RETURN_RATE*(TAX_FREE_BALANCE+B38)/2" function_name="DIVIDE"/>
+    <Node node_id="110" node_type="function" data_type="Number" key="B45" canonical="=B38+RETURN_RATE*(TAX_FREE_BALANCE+B38)/2" function_name="ADD"/>
+    <Node node_id="111" node_type="constant" data_type="Text" key="A47" canonical="&apos;─── END OF YEAR ───" value="─── END OF YEAR ───"/>
+    <Node node_id="112" node_type="constant" data_type="Text" key="A48" canonical="&apos;Ending Taxable" value="Ending Taxable"/>
+    <Node node_id="113" node_type="function" data_type="Number" key="B48" canonical="=B43" function_name="PROCEED"/>
+    <Node node_id="114" node_type="constant" data_type="Text" key="A49" canonical="&apos;Ending Basis" value="Ending Basis"/>
+    <Node node_id="115" node_type="function" data_type="Number" key="=1-INFLATION_RATE" canonical="=1-INFLATION_RATE" function_name="SUBTRACT"/>
+    <Node node_id="116" node_type="function" data_type="Number" key="=(1-INFLATION_RATE)" canonical="=(1-INFLATION_RATE)" function_name="PROCEED"/>
+    <Node node_id="117" node_type="function" data_type="Number" key="B49" canonical="=B42*(1-INFLATION_RATE)" function_name="MULTIPLY"/>
+    <Node node_id="118" node_type="constant" data_type="Text" key="C49" canonical="&apos;Basis eroded by inflation" value="Basis eroded by inflation"/>
+    <Node node_id="119" node_type="constant" data_type="Text" key="A50" canonical="&apos;Ending Tax-Def" value="Ending Tax-Def"/>
+    <Node node_id="120" node_type="function" data_type="Number" key="B50" canonical="=B44" function_name="PROCEED"/>
+    <Node node_id="121" node_type="constant" data_type="Text" key="A51" canonical="&apos;Ending Tax-Free" value="Ending Tax-Free"/>
+    <Node node_id="122" node_type="function" data_type="Number" key="B51" canonical="=B45" function_name="PROCEED"/>
+    <Node node_id="123" node_type="constant" data_type="Text" key="A52" canonical="&apos;Total Taxes" value="Total Taxes"/>
+    <Node node_id="124" node_type="function" data_type="Number" key="=B13+B23" canonical="=B13+B23" function_name="ADD"/>
+    <Node node_id="125" node_type="function" data_type="Number" key="B52" canonical="=B13+B23+B31" function_name="ADD"/>
+    <Node node_id="126" node_type="constant" data_type="Text" key="A53" canonical="&apos;Shortfall" value="Shortfall"/>
+    <Node node_id="127" node_type="function" data_type="Number" key="B53" canonical="=B37" function_name="PROCEED"/>
+    <Node node_id="128" node_type="constant" data_type="Text" key="C53" canonical="&apos;0 = success" value="0 = success"/>
+    <Node node_id="129" node_type="constant" data_type="Number" value="0"/>
+    <Node node_id="130" node_type="constant" data_type="Number" value="2"/>
+    <Node node_id="131" node_type="constant" data_type="Number" value="1"/>
+  </Nodes>
+  <NamedNodes>
+    <NamedNode node_name="AGE" node_name_type="alias" node_id="1"/>
+    <NamedNode node_name="TAXABLE_BALANCE" node_name_type="alias" node_id="2"/>
+    <NamedNode node_name="TAXABLE_BASIS" node_name_type="alias" node_id="3"/>
+    <NamedNode node_name="TAX_DEFERRED_BALANCE" node_name_type="alias" node_id="4"/>
+    <NamedNode node_name="TAX_FREE_BALANCE" node_name_type="alias" node_id="5"/>
+    <NamedNode node_name="SS_AGE" node_name_type="alias" node_id="6"/>
+    <NamedNode node_name="SS_INCOME" node_name_type="alias" node_id="7"/>
+    <NamedNode node_name="SPENDING" node_name_type="alias" node_id="8"/>
+    <NamedNode node_name="RETURN_RATE" node_name_type="alias" node_id="9"/>
+    <NamedNode node_name="INFLATION_RATE" node_name_type="alias" node_id="10"/>
+    <NamedNode node_name="CUSTOM_INCOME" node_name_type="alias" node_id="11"/>
+    <NamedNode node_name="A1" node_name_type="address" node_id="12"/>
+    <NamedNode node_name="A2" node_name_type="address" node_id="13"/>
+    <NamedNode node_name="A4" node_name_type="address" node_id="14"/>
+    <NamedNode node_name="A5" node_name_type="address" node_id="15"/>
+    <NamedNode node_name="B5" node_name_type="address" node_id="16"/>
+    <NamedNode node_name="A6" node_name_type="address" node_id="17"/>
+    <NamedNode node_name="B6" node_name_type="address" node_id="18"/>
+    <NamedNode node_name="C6" node_name_type="address" node_id="19"/>
+    <NamedNode node_name="A7" node_name_type="address" node_id="20"/>
+    <NamedNode node_name="B7" node_name_type="address" node_id="22"/>
+    <NamedNode node_name="C7" node_name_type="address" node_id="23"/>
+    <NamedNode node_name="A8" node_name_type="address" node_id="24"/>
+    <NamedNode node_name="B8" node_name_type="address" node_id="25"/>
+    <NamedNode node_name="C8" node_name_type="address" node_id="26"/>
+    <NamedNode node_name="A9" node_name_type="address" node_id="27"/>
+    <NamedNode node_name="B9" node_name_type="address" node_id="28"/>
+    <NamedNode node_name="A10" node_name_type="address" node_id="29"/>
+    <NamedNode node_name="B10" node_name_type="address" node_id="31"/>
+    <NamedNode node_name="A12" node_name_type="address" node_id="32"/>
+    <NamedNode node_name="A13" node_name_type="address" node_id="33"/>
+    <NamedNode node_name="B13" node_name_type="address" node_id="34"/>
+    <NamedNode node_name="A14" node_name_type="address" node_id="35"/>
+    <NamedNode node_name="B14" node_name_type="address" node_id="36"/>
+    <NamedNode node_name="A16" node_name_type="address" node_id="37"/>
+    <NamedNode node_name="A17" node_name_type="address" node_id="38"/>
+    <NamedNode node_name="B17" node_name_type="address" node_id="39"/>
+    <NamedNode node_name="A18" node_name_type="address" node_id="40"/>
+    <NamedNode node_name="B18" node_name_type="address" node_id="42"/>
+    <NamedNode node_name="A19" node_name_type="address" node_id="43"/>
+    <NamedNode node_name="B19" node_name_type="address" node_id="45"/>
+    <NamedNode node_name="A21" node_name_type="address" node_id="46"/>
+    <NamedNode node_name="E22" node_name_type="address" node_id="47"/>
+    <NamedNode node_name="E23" node_name_type="address" node_id="48"/>
+    <NamedNode node_name="E24" node_name_type="address" node_id="49"/>
+    <NamedNode node_name="E25" node_name_type="address" node_id="50"/>
+    <NamedNode node_name="A22" node_name_type="address" node_id="51"/>
+    <NamedNode node_name="B22" node_name_type="address" node_id="53"/>
+    <NamedNode node_name="A23" node_name_type="address" node_id="54"/>
+    <NamedNode node_name="B23" node_name_type="address" node_id="55"/>
+    <NamedNode node_name="A24" node_name_type="address" node_id="56"/>
+    <NamedNode node_name="B24" node_name_type="address" node_id="57"/>
+    <NamedNode node_name="A25" node_name_type="address" node_id="58"/>
+    <NamedNode node_name="B25" node_name_type="address" node_id="59"/>
+    <NamedNode node_name="A26" node_name_type="address" node_id="60"/>
+    <NamedNode node_name="B26" node_name_type="address" node_id="61"/>
+    <NamedNode node_name="A27" node_name_type="address" node_id="62"/>
+    <NamedNode node_name="B27" node_name_type="address" node_id="63"/>
+    <NamedNode node_name="A29" node_name_type="address" node_id="64"/>
+    <NamedNode node_name="A30" node_name_type="address" node_id="65"/>
+    <NamedNode node_name="B30" node_name_type="address" node_id="67"/>
+    <NamedNode node_name="A31" node_name_type="address" node_id="68"/>
+    <NamedNode node_name="B31" node_name_type="address" node_id="69"/>
+    <NamedNode node_name="A32" node_name_type="address" node_id="70"/>
+    <NamedNode node_name="B32" node_name_type="address" node_id="71"/>
+    <NamedNode node_name="A33" node_name_type="address" node_id="72"/>
+    <NamedNode node_name="B33" node_name_type="address" node_id="73"/>
+    <NamedNode node_name="A35" node_name_type="address" node_id="74"/>
+    <NamedNode node_name="A36" node_name_type="address" node_id="75"/>
+    <NamedNode node_name="B36" node_name_type="address" node_id="76"/>
+    <NamedNode node_name="A37" node_name_type="address" node_id="77"/>
+    <NamedNode node_name="B37" node_name_type="address" node_id="79"/>
+    <NamedNode node_name="A38" node_name_type="address" node_id="80"/>
+    <NamedNode node_name="B38" node_name_type="address" node_id="81"/>
+    <NamedNode node_name="A40" node_name_type="address" node_id="82"/>
+    <NamedNode node_name="A41" node_name_type="address" node_id="83"/>
+    <NamedNode node_name="B41" node_name_type="address" node_id="86"/>
+    <NamedNode node_name="C41" node_name_type="address" node_id="87"/>
+    <NamedNode node_name="A42" node_name_type="address" node_id="88"/>
+    <NamedNode node_name="B42" node_name_type="address" node_id="90"/>
+    <NamedNode node_name="A43" node_name_type="address" node_id="91"/>
+    <NamedNode node_name="B43" node_name_type="address" node_id="96"/>
+    <NamedNode node_name="C43" node_name_type="address" node_id="97"/>
+    <NamedNode node_name="A44" node_name_type="address" node_id="98"/>
+    <NamedNode node_name="B44" node_name_type="address" node_id="103"/>
+    <NamedNode node_name="C44" node_name_type="address" node_id="104"/>
+    <NamedNode node_name="A45" node_name_type="address" node_id="105"/>
+    <NamedNode node_name="B45" node_name_type="address" node_id="110"/>
+    <NamedNode node_name="A47" node_name_type="address" node_id="111"/>
+    <NamedNode node_name="A48" node_name_type="address" node_id="112"/>
+    <NamedNode node_name="B48" node_name_type="address" node_id="113"/>
+    <NamedNode node_name="A49" node_name_type="address" node_id="114"/>
+    <NamedNode node_name="B49" node_name_type="address" node_id="117"/>
+    <NamedNode node_name="C49" node_name_type="address" node_id="118"/>
+    <NamedNode node_name="A50" node_name_type="address" node_id="119"/>
+    <NamedNode node_name="B50" node_name_type="address" node_id="120"/>
+    <NamedNode node_name="A51" node_name_type="address" node_id="121"/>
+    <NamedNode node_name="B51" node_name_type="address" node_id="122"/>
+    <NamedNode node_name="A52" node_name_type="address" node_id="123"/>
+    <NamedNode node_name="B52" node_name_type="address" node_id="125"/>
+    <NamedNode node_name="A53" node_name_type="address" node_id="126"/>
+    <NamedNode node_name="B53" node_name_type="address" node_id="127"/>
+    <NamedNode node_name="C53" node_name_type="address" node_id="128"/>
+  </NamedNodes>
+  <NodeComments/>
+  <Outputs>
+    <Output output_name="B48" node_id="113" output_order="0" data_type="Number" key="B48" output_mode="last"/>
+    <Output output_name="B49" node_id="117" output_order="1" data_type="Number" key="B49" output_mode="last"/>
+    <Output output_name="B50" node_id="120" output_order="2" data_type="Number" key="B50" output_mode="last"/>
+    <Output output_name="B51" node_id="122" output_order="3" data_type="Number" key="B51" output_mode="last"/>
+    <Output output_name="B52" node_id="125" output_order="4" data_type="Number" key="B52" output_mode="last"/>
+    <Output output_name="B53" node_id="127" output_order="5" data_type="Number" key="B53" output_mode="last"/>
+  </Outputs>
+  <NodeDependencies>
+    <NodeDependency child_node_id="16" parent_node_id="1" parent_position="0"/>
+    <NodeDependency child_node_id="18" parent_node_id="11" parent_position="0"/>
+    <NodeDependency child_node_id="21" parent_node_id="1" parent_position="0"/>
+    <NodeDependency child_node_id="21" parent_node_id="6" parent_position="1"/>
+    <NodeDependency child_node_id="22" parent_node_id="21" parent_position="0"/>
+    <NodeDependency child_node_id="22" parent_node_id="7" parent_position="1"/>
+    <NodeDependency child_node_id="22" parent_node_id="129" parent_position="2"/>
+    <NodeDependency child_node_id="25" parent_node_id="4" parent_position="0"/>
+    <NodeDependency child_node_id="25" parent_node_id="1" parent_position="1"/>
+    <NodeDependency child_node_id="28" parent_node_id="4" parent_position="0"/>
+    <NodeDependency child_node_id="28" parent_node_id="25" parent_position="1"/>
+    <NodeDependency child_node_id="30" parent_node_id="18" parent_position="0"/>
+    <NodeDependency child_node_id="30" parent_node_id="22" parent_position="1"/>
+    <NodeDependency child_node_id="31" parent_node_id="30" parent_position="0"/>
+    <NodeDependency child_node_id="31" parent_node_id="25" parent_position="1"/>
+    <NodeDependency child_node_id="34" parent_node_id="31" parent_position="0"/>
+    <NodeDependency child_node_id="36" parent_node_id="31" parent_position="0"/>
+    <NodeDependency child_node_id="36" parent_node_id="34" parent_position="1"/>
+    <NodeDependency child_node_id="39" parent_node_id="8" parent_position="0"/>
+    <NodeDependency child_node_id="41" parent_node_id="39" parent_position="0"/>
+    <NodeDependency child_node_id="41" parent_node_id="36" parent_position="1"/>
+    <NodeDependency child_node_id="42" parent_node_id="129" parent_position="0"/>
+    <NodeDependency child_node_id="42" parent_node_id="41" parent_position="1"/>
+    <NodeDependency child_node_id="44" parent_node_id="36" parent_position="0"/>
+    <NodeDependency child_node_id="44" parent_node_id="39" parent_position="1"/>
+    <NodeDependency child_node_id="45" parent_node_id="129" parent_position="0"/>
+    <NodeDependency child_node_id="45" parent_node_id="44" parent_position="1"/>
+    <NodeDependency child_node_id="52" parent_node_id="2" parent_position="0"/>
+    <NodeDependency child_node_id="52" parent_node_id="42" parent_position="1"/>
+    <NodeDependency child_node_id="52" parent_node_id="3" parent_position="2"/>
+    <NodeDependency child_node_id="53" parent_node_id="52" parent_position="0"/>
+    <NodeDependency child_node_id="53" parent_node_id="47" parent_position="1"/>
+    <NodeDependency child_node_id="55" parent_node_id="52" parent_position="0"/>
+    <NodeDependency child_node_id="55" parent_node_id="48" parent_position="1"/>
+    <NodeDependency child_node_id="57" parent_node_id="52" parent_position="0"/>
+    <NodeDependency child_node_id="57" parent_node_id="49" parent_position="1"/>
+    <NodeDependency child_node_id="59" parent_node_id="52" parent_position="0"/>
+    <NodeDependency child_node_id="59" parent_node_id="50" parent_position="1"/>
+    <NodeDependency child_node_id="61" parent_node_id="2" parent_position="0"/>
+    <NodeDependency child_node_id="61" parent_node_id="53" parent_position="1"/>
+    <NodeDependency child_node_id="63" parent_node_id="3" parent_position="0"/>
+    <NodeDependency child_node_id="63" parent_node_id="59" parent_position="1"/>
+    <NodeDependency child_node_id="66" parent_node_id="28" parent_position="0"/>
+    <NodeDependency child_node_id="66" parent_node_id="57" parent_position="1"/>
+    <NodeDependency child_node_id="66" parent_node_id="31" parent_position="2"/>
+    <NodeDependency child_node_id="67" parent_node_id="66" parent_position="0"/>
+    <NodeDependency child_node_id="67" parent_node_id="47" parent_position="1"/>
+    <NodeDependency child_node_id="69" parent_node_id="66" parent_position="0"/>
+    <NodeDependency child_node_id="69" parent_node_id="48" parent_position="1"/>
+    <NodeDependency child_node_id="71" parent_node_id="66" parent_position="0"/>
+    <NodeDependency child_node_id="71" parent_node_id="49" parent_position="1"/>
+    <NodeDependency child_node_id="73" parent_node_id="28" parent_position="0"/>
+    <NodeDependency child_node_id="73" parent_node_id="67" parent_position="1"/>
+    <NodeDependency child_node_id="76" parent_node_id="5" parent_position="0"/>
+    <NodeDependency child_node_id="76" parent_node_id="71" parent_position="1"/>
+    <NodeDependency child_node_id="78" parent_node_id="71" parent_position="0"/>
+    <NodeDependency child_node_id="78" parent_node_id="76" parent_position="1"/>
+    <NodeDependency child_node_id="79" parent_node_id="129" parent_position="0"/>
+    <NodeDependency child_node_id="79" parent_node_id="78" parent_position="1"/>
+    <NodeDependency child_node_id="81" parent_node_id="5" parent_position="0"/>
+    <NodeDependency child_node_id="81" parent_node_id="76" parent_position="1"/>
+    <NodeDependency child_node_id="84" parent_node_id="42" parent_position="0"/>
+    <NodeDependency child_node_id="84" parent_node_id="129" parent_position="1"/>
+    <NodeDependency child_node_id="85" parent_node_id="2" parent_position="0"/>
+    <NodeDependency child_node_id="85" parent_node_id="45" parent_position="1"/>
+    <NodeDependency child_node_id="86" parent_node_id="84" parent_position="0"/>
+    <NodeDependency child_node_id="86" parent_node_id="61" parent_position="1"/>
+    <NodeDependency child_node_id="86" parent_node_id="85" parent_position="2"/>
+    <NodeDependency child_node_id="89" parent_node_id="3" parent_position="0"/>
+    <NodeDependency child_node_id="89" parent_node_id="45" parent_position="1"/>
+    <NodeDependency child_node_id="90" parent_node_id="84" parent_position="0"/>
+    <NodeDependency child_node_id="90" parent_node_id="63" parent_position="1"/>
+    <NodeDependency child_node_id="90" parent_node_id="89" parent_position="2"/>
+    <NodeDependency child_node_id="92" parent_node_id="2" parent_position="0"/>
+    <NodeDependency child_node_id="92" parent_node_id="86" parent_position="1"/>
+    <NodeDependency child_node_id="93" parent_node_id="92" parent_position="0"/>
+    <NodeDependency child_node_id="94" parent_node_id="9" parent_position="0"/>
+    <NodeDependency child_node_id="94" parent_node_id="93" parent_position="1"/>
+    <NodeDependency child_node_id="95" parent_node_id="94" parent_position="0"/>
+    <NodeDependency child_node_id="95" parent_node_id="130" parent_position="1"/>
+    <NodeDependency child_node_id="96" parent_node_id="86" parent_position="0"/>
+    <NodeDependency child_node_id="96" parent_node_id="95" parent_position="1"/>
+    <NodeDependency child_node_id="99" parent_node_id="28" parent_position="0"/>
+    <NodeDependency child_node_id="99" parent_node_id="73" parent_position="1"/>
+    <NodeDependency child_node_id="100" parent_node_id="99" parent_position="0"/>
+    <NodeDependency child_node_id="101" parent_node_id="9" parent_position="0"/>
+    <NodeDependency child_node_id="101" parent_node_id="100" parent_position="1"/>
+    <NodeDependency child_node_id="102" parent_node_id="101" parent_position="0"/>
+    <NodeDependency child_node_id="102" parent_node_id="130" parent_position="1"/>
+    <NodeDependency child_node_id="103" parent_node_id="73" parent_position="0"/>
+    <NodeDependency child_node_id="103" parent_node_id="102" parent_position="1"/>
+    <NodeDependency child_node_id="106" parent_node_id="5" parent_position="0"/>
+    <NodeDependency child_node_id="106" parent_node_id="81" parent_position="1"/>
+    <NodeDependency child_node_id="107" parent_node_id="106" parent_position="0"/>
+    <NodeDependency child_node_id="108" parent_node_id="9" parent_position="0"/>
+    <NodeDependency child_node_id="108" parent_node_id="107" parent_position="1"/>
+    <NodeDependency child_node_id="109" parent_node_id="108" parent_position="0"/>
+    <NodeDependency child_node_id="109" parent_node_id="130" parent_position="1"/>
+    <NodeDependency child_node_id="110" parent_node_id="81" parent_position="0"/>
+    <NodeDependency child_node_id="110" parent_node_id="109" parent_position="1"/>
+    <NodeDependency child_node_id="113" parent_node_id="96" parent_position="0"/>
+    <NodeDependency child_node_id="115" parent_node_id="131" parent_position="0"/>
+    <NodeDependency child_node_id="115" parent_node_id="10" parent_position="1"/>
+    <NodeDependency child_node_id="116" parent_node_id="115" parent_position="0"/>
+    <NodeDependency child_node_id="117" parent_node_id="90" parent_position="0"/>
+    <NodeDependency child_node_id="117" parent_node_id="116" parent_position="1"/>
+    <NodeDependency child_node_id="120" parent_node_id="103" parent_position="0"/>
+    <NodeDependency child_node_id="122" parent_node_id="110" parent_position="0"/>
+    <NodeDependency child_node_id="124" parent_node_id="34" parent_position="0"/>
+    <NodeDependency child_node_id="124" parent_node_id="55" parent_position="1"/>
+    <NodeDependency child_node_id="125" parent_node_id="124" parent_position="0"/>
+    <NodeDependency child_node_id="125" parent_node_id="69" parent_position="1"/>
+    <NodeDependency child_node_id="127" parent_node_id="79" parent_position="0"/>
+  </NodeDependencies>
+  <CustomFunctions>
+    <Function id="586721de-13f6-4c5b-9281-5a4853423e34" name="CALCULATE_RMD" version="1.0.0"/>
+    <Function id="acb30a89-ec52-4ca5-a958-40c7a44829d5" name="PROGRESSIVE_TAX" version="1.0.0"/>
+    <Function id="e424d420-0350-47d8-b167-d29506aa58a3" name="WITHDRAW_TAXABLE" version="1.0.0"/>
+    <Function id="98490159-37a1-4609-a87e-be857e638020" name="WITHDRAW_PRETAX" version="1.0.0"/>
+  </CustomFunctions>
+  <SpreadsheetMeta version="1.0" timestamp="2026-02-14T21:37:44.504Z" gridRows="53" gridCols="E">
+      <FormatRule cellKey="RETURN_RATE" formats="{&quot;NUMBER&quot;:{&quot;subCategory&quot;:&quot;percentage&quot;,&quot;decimalPlaces&quot;:1}}"/>
+      <FormatRule cellKey="INFLATION_RATE" formats="{&quot;NUMBER&quot;:{&quot;subCategory&quot;:&quot;percentage&quot;,&quot;decimalPlaces&quot;:1}}"/>
+      
+      <Default type="NUMBER" settings="{&quot;subCategory&quot;:&quot;currency&quot;,&quot;decimalPlaces&quot;:0}"/>
+      
+    </SpreadsheetMeta>
+</CodeCalculation>

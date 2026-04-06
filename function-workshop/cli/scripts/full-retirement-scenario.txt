@@ -1,0 +1,335 @@
+# RETIREMENT_SCENARIO - Unified lifecycle: accumulation → retirement
+# Calls ACCUMULATION for pre-retirement savings growth, then feeds
+# ending balances into RETIREMENT_PROJECTION for retirement drawdown.
+# One sheet tells the whole story.
+# Output names: TERMINAL_VALUE, TOTAL_TAXES, NET_POSITION, BROKE_AGE
+
+new RETIREMENT_SCENARIO
+
+use ACCUMULATION
+use RETIREMENT_PROJECTION
+
+input CURRENT_AGE 55
+input RETIREMENT_AGE 65
+input PLANNING_HORIZON 85
+input CUSTOM_BALANCE 0
+input TAXABLE_BALANCE 100000
+input TAXABLE_BASIS 80000
+input TAX_DEFERRED_BALANCE 500000
+input TAX_FREE_BALANCE 50000
+input CUSTOM_SAVINGS 0
+input TAXABLE_SAVINGS 10000
+input TAX_DEFERRED_SAVINGS 20000
+input TAX_FREE_SAVINGS 5000
+input SS_AGE 67
+input SS_INCOME 30000
+input SPENDING 60000
+input RETURN_RATE 0.05
+input INFLATION_RATE 0.025
+input TERMINAL_TAX_RATE 0.25
+input STRATEGY 1
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'RETIREMENT SCENARIO
+style A1 bold
+style A1 fontsize 24
+write A2 'Accumulates savings to retirement, then projects drawdown through planning horizon.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-9: YOUR SITUATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Current Age
+write B5 =CURRENT_AGE
+write C5 'How old you are now
+
+write A6 'Retirement Age
+write B6 =RETIREMENT_AGE
+write C6 'When you stop working
+
+write A7 'Planning Horizon
+write B7 =PLANNING_HORIZON
+write C7 'Plan finances through this age
+
+write A8 'Years to Retirement
+write B8 =RETIREMENT_AGE-CURRENT_AGE
+write C8 '= Retirement Age − Current Age
+
+write A9 'Years in Retirement
+write B9 =PLANNING_HORIZON-RETIREMENT_AGE
+write C9 '= Planning Horizon − Retirement Age
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11-16: CURRENT BALANCES
+# ═══════════════════════════════════════════════════════════════════
+
+write A11 '─── CURRENT BALANCES ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+
+write A12 'Custom / Deferred Salary
+write B12 =CUSTOM_BALANCE
+
+write A13 'Taxable Account
+write B13 =TAXABLE_BALANCE
+
+write A14 'Taxable Basis
+write B14 =TAXABLE_BASIS
+write C14 'Cost basis for capital gains
+
+write A15 'Tax-Deferred (401k/IRA)
+write B15 =TAX_DEFERRED_BALANCE
+
+write A16 'Tax-Free (Roth)
+write B16 =TAX_FREE_BALANCE
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 18-22: ANNUAL CONTRIBUTIONS
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── ANNUAL CONTRIBUTIONS ───
+highlight A18 gray
+highlight B18 gray
+highlight C18 gray
+highlight D18 gray
+highlight E18 gray
+highlight F18 gray
+highlight G18 gray
+
+write A19 'Custom / Deferred Salary
+write B19 =CUSTOM_SAVINGS
+
+write A20 'Taxable Savings
+write B20 =TAXABLE_SAVINGS
+
+write A21 'Tax-Deferred Savings
+write B21 =TAX_DEFERRED_SAVINGS
+
+write A22 'Tax-Free Savings
+write B22 =TAX_FREE_SAVINGS
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 24-31: RETIREMENT PARAMETERS
+# ═══════════════════════════════════════════════════════════════════
+
+write A24 '─── RETIREMENT PARAMETERS ───
+highlight A24 gray
+highlight B24 gray
+highlight C24 gray
+highlight D24 gray
+highlight E24 gray
+highlight F24 gray
+highlight G24 gray
+
+write A25 'Social Security Age
+write B25 =SS_AGE
+
+write A26 'Social Security Income
+write B26 =SS_INCOME
+write C26 'Annual benefit (today's dollars)
+
+write A27 'Annual Spending
+write B27 =SPENDING
+
+write A28 'Return Rate
+write B28 =RETURN_RATE
+format B28 percent 1
+
+write A29 'Inflation Rate
+write B29 =INFLATION_RATE
+format B29 percent 1
+
+write A30 'Terminal Tax Rate
+write B30 =TERMINAL_TAX_RATE
+format B30 percent 0
+
+write A31 'Withdrawal Strategy
+write B31 =STRATEGY
+write C31 '1=Taxable, 2=Tax-Def, 3=Tax-Free first
+format B31 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 33-43: ACCUMULATION PHASE
+# ═══════════════════════════════════════════════════════════════════
+
+write A33 '─── ACCUMULATION PHASE ───
+highlight A33 gray
+highlight B33 gray
+highlight C33 gray
+highlight D33 gray
+highlight E33 gray
+highlight F33 gray
+highlight G33 gray
+write A34 'Grow all accounts for years to retirement with annual contributions.
+
+write A35 'Accumulation
+write B35 =ACCUMULATION(CUSTOM_BALANCE, TAXABLE_BALANCE, TAXABLE_BASIS, TAX_DEFERRED_BALANCE, TAX_FREE_BALANCE, CUSTOM_SAVINGS, TAXABLE_SAVINGS, TAX_DEFERRED_SAVINGS, TAX_FREE_SAVINGS, RETURN_RATE, INFLATION_RATE, B8)
+write C35 'Ctrl+D to see year-by-year
+
+write A37 'Balances at Retirement (in today's dollars)
+write A38 'Custom / Deferred Salary
+write B38 =INDEX(B35, "ENDING_CUSTOM")
+
+write A39 'Taxable Account
+write B39 =INDEX(B35, "ENDING_TAXABLE")
+
+write A40 'Taxable Basis
+write B40 =INDEX(B35, "ENDING_BASIS")
+
+write A41 'Tax-Deferred (401k/IRA)
+write B41 =INDEX(B35, "ENDING_TAX_DEFERRED")
+
+write A42 'Tax-Free (Roth)
+write B42 =INDEX(B35, "ENDING_TAX_FREE")
+
+write A43 'Total at Retirement
+write B43 =B38+B39+B41+B42
+write C43 'Sum of all accounts
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 45-55: RETIREMENT PROJECTION
+# ═══════════════════════════════════════════════════════════════════
+
+write A45 '─── RETIREMENT PROJECTION ───
+highlight A45 gray
+highlight B45 gray
+highlight C45 gray
+highlight D45 gray
+highlight E45 gray
+highlight F45 gray
+highlight G45 gray
+write A46 'Draw down accounts from retirement age through planning horizon.
+
+write A47 'Projection
+write B47 =RETIREMENT_PROJECTION(RETIREMENT_AGE, B39, B40, B41, B42, B38, SS_AGE, SS_INCOME, SPENDING, RETURN_RATE, INFLATION_RATE, B9, TERMINAL_TAX_RATE, STRATEGY)
+write C47 'Ctrl+D to see year-by-year
+
+write A49 'Balances at Planning Horizon
+write A50 'Taxable Account
+write B50 =INDEX(B47, "TAXABLE_BALANCE_ENDING")
+
+write A51 'Tax-Deferred (401k/IRA)
+write B51 =INDEX(B47, "TAX_DEFERRED_BALANCE_ENDING")
+
+write A52 'Tax-Free (Roth)
+write B52 =INDEX(B47, "TAX_FREE_BALANCE_ENDING")
+
+write A53 'Custom / Deferred Salary
+write B53 =INDEX(B47, "CUSTOM_BALANCE_ENDING")
+
+write A54 'Total Taxes Paid
+write B54 =INDEX(B47, "TOTAL_TAXES")
+write C54 'Taxes paid during retirement
+
+write A55 'Terminal Value
+write B55 =INDEX(B47, "TERMINAL_VALUE")
+write C55 'Tax-adjusted net worth at end
+
+write A56 'Cumulative Shortfall
+write B56 =INDEX(B47, "CUM_SHORTFALL_ENDING")
+write C56 'Unmet spending if accounts were exhausted
+
+write A57 'Go Broke Age
+write B57 =INDEX(B47, "BROKE_AGE")
+write C57 'Age when money ran out (0 = never)
+format B57 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 59-63: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A59 '─── RESULT ───
+highlight A59 gray
+highlight B59 gray
+highlight C59 gray
+highlight D59 gray
+highlight E59 gray
+highlight F59 gray
+highlight G59 gray
+
+write A60 'Terminal Value
+write B60 =B55
+write C60 '← OUTPUT: Tax-adjusted net worth at planning horizon
+
+write A61 'Total Taxes
+write B61 =B54
+write C61 '← OUTPUT: Lifetime taxes during retirement
+
+write A62 'Net Position
+write B62 =B55-B56
+write C62 '← OUTPUT: Terminal Value minus shortfall
+
+write A63 'Go Broke Age
+write B63 =B57
+write C63 '← OUTPUT: Age when money ran out (0 = never)
+format B63 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B60 TERMINAL_VALUE
+name B61 TOTAL_TAXES
+name B62 NET_POSITION
+name B63 BROKE_AGE
+output TERMINAL_VALUE
+output TOTAL_TAXES
+output NET_POSITION
+output BROKE_AGE
+
+default-format currency 0
+format B5 number 0
+format B6 number 0
+format B7 number 0
+format B8 number 0
+format B9 number 0
+format B25 number 0
+
+# Test cases (ground truth from Python run_retirement_projection end-to-end)
+# Input order: current_age, retirement_age, planning_horizon,
+#              custom_bal, taxable_bal, taxable_basis, tax_def_bal, tax_free_bal,
+#              custom_sav, taxable_sav, tax_def_sav, tax_free_sav,
+#              ss_age, ss_income, spending, return_rate, inflation_rate, terminal_tax_rate, strategy
+
+# 1. Baseline, strategy 1 (taxable first)
+test "55, 65, 85, 0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "2085695.7542630963, 619189.4014196043, 2085695.7542630963, 0"
+
+# 2. Baseline, strategy 2 (tax-deferred first)
+test "55, 65, 85, 0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 67, 30000, 60000, 0.05, 0.025, 0.25, 2" "2243071.769144953, 465006.3058511254, 2243071.769144953, 0"
+
+# 3. Baseline, strategy 3 (tax-free first)
+test "55, 65, 85, 0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 67, 30000, 60000, 0.05, 0.025, 0.25, 3" "2086103.4178395094, 635574.9873925132, 2086103.4178395094, 0"
+
+# 4. No accumulation, strategy 1
+test "67, 67, 87, 200000, 100000, 80000, 500000, 50000, 0, 0, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "793193.6542171702, 329936.2421708106, 793193.6542171702, 0"
+
+# 5. Long accum, strategy 2
+test "40, 65, 90, 0, 50000, 50000, 100000, 20000, 0, 15000, 23000, 7000, 67, 32000, 65000, 0.06, 0.03, 0.25, 2" "10293386.092748877, 1123792.8634394202, 10293386.092748877, 0"
+
+# 6. Custom balance with accum savings, strategy 1
+test "50, 65, 90, 150000, 80000, 60000, 400000, 30000, 5000, 8000, 18000, 4000, 67, 28000, 55000, 0.05, 0.025, 0.25, 1" "4603982.99232692, 832646.1204071185, 4603982.99232692, 0"
+
+# 7. Already retired with $300K custom, strategy 2
+test "65, 65, 85, 300000, 120000, 90000, 600000, 80000, 0, 0, 0, 0, 67, 32000, 70000, 0.06, 0.03, 0.22, 2" "1342232.1219775903, 374056.57087286795, 1342232.1219775903, 0"
+
+# 8. Underfunded: small balances, high spending → goes broke at 67, negative net position
+test "65, 65, 85, 0, 50000, 40000, 100000, 20000, 0, 0, 0, 0, 67, 20000, 80000, 0.05, 0.025, 0.25, 1" "0, 49409.12504370629, -1110543.0985868298, 67"
+
+save

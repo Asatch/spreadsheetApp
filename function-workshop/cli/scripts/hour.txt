@@ -1,0 +1,115 @@
+# HOUR - Extract hour from Excel serial date/time
+# Time is the decimal portion of a serial number
+
+new HOUR
+use INT
+input SERIAL 45306.604687500
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'HOUR FROM TIME
+style A1 bold
+style A1 fontsize 24
+write A2 'Extracts the hour (0-23) from an Excel serial date/time.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUT ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Serial Date/Time
+write B5 =SERIAL
+write C5 'Days + time fraction
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-9: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A7 '─── THE CALCULATION ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+
+write A8 'Time Fraction
+write B8 =MOD(B5,1)
+write C8 'Decimal part (0-1)
+
+write A9 'Hours (decimal)
+write B9 =B8*24
+write C9 'Time as hours
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11-12: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A11 '─── RESULT ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+
+write A12 'Hour
+write B12 =INT(B9)
+write C12 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B12 HOUR
+output HOUR
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B9 number 4
+format B12 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Midnight (start of day)
+test "0" "0"
+
+# Noon (half day)
+test "0.5" "12"
+
+# 6 AM (quarter day)
+test "0.25" "6"
+
+# 6 PM (three-quarter day)
+test "0.75" "18"
+
+# 2:30:45 PM with date (Jan 15, 2024)
+test "45306.604687500" "14"
+
+# 11:59:59 PM (last second of day)
+test "45306.999988426" "23"
+
+# Integer date (no time = midnight)
+test "45306" "0"
+
+# Just past midnight (0:30 AM)
+test "0.020833333" "0"
+
+save

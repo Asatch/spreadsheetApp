@@ -1,0 +1,146 @@
+# RETIREMENT_SCENARIOS - Compare different retirement scenarios
+# A sheet (not a function) that calls RETIREMENT_PROJECTION for each row
+
+new RETIREMENT_SCENARIOS
+
+# Row 1: Headers
+write A1 'Scenario
+write B1 'Starting Balance
+write C1 'Annual Income
+write D1 'Annual Spending
+write E1 'Tax Rate
+write F1 'Return Rate
+write G1 'Years
+write H1 'Ending Balance
+
+# Row 2: Baseline
+write A2 'Baseline
+write B2 500000
+write C2 40000
+write D2 60000
+write E2 0.22
+write F2 0.05
+write G2 25
+write H2 =RETIREMENT_PROJECTION(B2,C2,D2,E2,F2,G2)
+
+# Row 3: Higher Income
+write A3 'Higher Income
+write B3 500000
+write C3 60000
+write D3 60000
+write E3 0.22
+write F3 0.05
+write G3 25
+write H3 =RETIREMENT_PROJECTION(B3,C3,D3,E3,F3,G3)
+
+# Row 4: Lower Spending
+write A4 'Lower Spending
+write B4 500000
+write C4 40000
+write D4 45000
+write E4 0.22
+write F4 0.05
+write G4 25
+write H4 =RETIREMENT_PROJECTION(B4,C4,D4,E4,F4,G4)
+
+# Row 5: Higher Return (7%)
+write A5 'Higher Return (7%)
+write B5 500000
+write C5 40000
+write D5 60000
+write E5 0.22
+write F5 0.07
+write G5 25
+write H5 =RETIREMENT_PROJECTION(B5,C5,D5,E5,F5,G5)
+
+# Row 6: Lower Return (3%)
+write A6 'Lower Return (3%)
+write B6 500000
+write C6 40000
+write D6 60000
+write E6 0.22
+write F6 0.03
+write G6 25
+write H6 =RETIREMENT_PROJECTION(B6,C6,D6,E6,F6,G6)
+
+# Row 7: Longer Retirement (35 years)
+write A7 'Longer Retirement
+write B7 500000
+write C7 40000
+write D7 60000
+write E7 0.22
+write F7 0.05
+write G7 35
+write H7 =RETIREMENT_PROJECTION(B7,C7,D7,E7,F7,G7)
+
+# Row 8: Larger Nest Egg
+write A8 'Larger Nest Egg
+write B8 750000
+write C8 40000
+write D8 60000
+write E8 0.22
+write F8 0.05
+write G8 25
+write H8 =RETIREMENT_PROJECTION(B8,C8,D8,E8,F8,G8)
+
+# Row 9: Lower Tax Bracket
+write A9 'Lower Tax (15%)
+write B9 500000
+write C9 40000
+write D9 60000
+write E9 0.15
+write F9 0.05
+write G9 25
+write H9 =RETIREMENT_PROJECTION(B9,C9,D9,E9,F9,G9)
+
+# Formatting
+format B2 currency 0
+format B3 currency 0
+format B4 currency 0
+format B5 currency 0
+format B6 currency 0
+format B7 currency 0
+format B8 currency 0
+format B9 currency 0
+format C2 currency 0
+format C3 currency 0
+format C4 currency 0
+format C5 currency 0
+format C6 currency 0
+format C7 currency 0
+format C8 currency 0
+format C9 currency 0
+format D2 currency 0
+format D3 currency 0
+format D4 currency 0
+format D5 currency 0
+format D6 currency 0
+format D7 currency 0
+format D8 currency 0
+format D9 currency 0
+format E2 percent 0
+format E3 percent 0
+format E4 percent 0
+format E5 percent 0
+format E6 percent 0
+format E7 percent 0
+format E8 percent 0
+format E9 percent 0
+format F2 percent 0
+format F3 percent 0
+format F4 percent 0
+format F5 percent 0
+format F6 percent 0
+format F7 percent 0
+format F8 percent 0
+format F9 percent 0
+format H2 currency 0
+format H3 currency 0
+format H4 currency 0
+format H5 currency 0
+format H6 currency 0
+format H7 currency 0
+format H8 currency 0
+format H9 currency 0
+
+save output/RETIREMENT_SCENARIOS.xml

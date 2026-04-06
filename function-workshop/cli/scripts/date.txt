@@ -1,0 +1,240 @@
+# DATE - Convert year, month, day to Excel serial number
+# Excel dates: Jan 1, 1900 = 1
+# Handles month overflow (month > 12 or < 1)
+# Includes Excel's 1900 leap year bug for compatibility
+
+new DATE
+use ISLEAPYEAR
+use INT
+input YEAR 2024
+input MONTH 1
+input DAY 15
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'DATE SERIAL NUMBER
+style A1 bold
+style A1 fontsize 24
+write A2 'Converts year, month, day to Excel serial date number.
+write A3 'January 1, 1900 = 1. Handles month overflow.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-8: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUTS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Year
+write B6 =YEAR
+write C6 'Four-digit year (1900+)
+
+write A7 'Month
+write B7 =MONTH
+write C7 'Month number (can exceed 12)
+
+write A8 'Day
+write B8 =DAY
+write C8 'Day of month
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: CUMULATIVE DAYS TABLE (columns F-G)
+# ═══════════════════════════════════════════════════════════════════
+
+write F5 '─── DAYS BEFORE MONTH ───
+write F6 'Month
+write G6 'Cum. Days
+
+write F7 1
+write G7 0
+write F8 2
+write G8 31
+write F9 3
+write G9 59
+write F10 4
+write G10 90
+write F11 5
+write G11 120
+write F12 6
+write G12 151
+write F13 7
+write G13 181
+write F14 8
+write G14 212
+write F15 9
+write G15 243
+write F16 10
+write G16 273
+write F17 11
+write G17 304
+write F18 12
+write G18 334
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 10-14: NORMALIZE MONTH
+# ═══════════════════════════════════════════════════════════════════
+
+write A10 '─── NORMALIZE MONTH ───
+highlight A10 gray
+highlight B10 gray
+highlight C10 gray
+highlight D10 gray
+highlight E10 gray
+highlight F10 gray
+highlight G10 gray
+
+write A11 'Month - 1
+write B11 =B7-1
+write C11 'Zero-based month
+
+write A12 'Year Adjustment
+write B12 =INT(B11/12)
+write C12 'Years to add from month overflow
+
+write A13 'Adjusted Year
+write B13 =B6+B12
+write C13 'Year after overflow adjustment
+
+write A14 'Adjusted Month
+write B14 =MOD(B11,12)+1
+write C14 'Month 1-12 after normalization
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 16-21: DAYS IN CURRENT YEAR
+# ═══════════════════════════════════════════════════════════════════
+
+write A16 '─── DAYS IN CURRENT YEAR ───
+highlight A16 gray
+highlight B16 gray
+highlight C16 gray
+highlight D16 gray
+highlight E16 gray
+highlight F16 gray
+highlight G16 gray
+
+write A18 'Days Before Month
+write B18 =IF(B14=1,G7,IF(B14=2,G8,IF(B14=3,G9,IF(B14=4,G10,IF(B14=5,G11,IF(B14=6,G12,IF(B14=7,G13,IF(B14=8,G14,IF(B14=9,G15,IF(B14=10,G16,IF(B14=11,G17,G18)))))))))))
+write C18 'Cumulative days before this month
+
+write A19 'Is Leap Year?
+write B19 =ISLEAPYEAR(B13)
+write C19 '1 if leap year, 0 otherwise
+
+write A20 'Leap Adjustment
+write B20 =IF(B14>2,B19,0)
+write C20 'Add 1 day if past Feb in leap year
+
+write A21 'Days in Year
+write B21 =B18+B20+B8
+write C21 'Days before month + leap adj + day
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 23-28: DAYS FROM PRIOR YEARS
+# ═══════════════════════════════════════════════════════════════════
+
+write A23 '─── DAYS FROM PRIOR YEARS ───
+highlight A23 gray
+highlight B23 gray
+highlight C23 gray
+highlight D23 gray
+highlight E23 gray
+highlight F23 gray
+highlight G23 gray
+
+write A24 'Years Since 1900
+write B24 =B13-1900
+write C24 'Complete years from 1900
+
+write A25 'Base Days
+write B25 =B24*365
+write C25 '365 days per year
+
+# Leap year count formula (with Excel 1900 bug)
+write A26 'Prior Year
+write B26 =B13-1
+write C26 'Last complete year
+
+write A27 'Leap Years
+write B27 =IF(B13<=1900,0,INT(B26/4)-INT(B26/100)+INT(B26/400)-459)
+write C27 'Leap year count (includes 1900 bug)
+
+write A28 'Days From Years
+write B28 =B25+B27
+write C28 'Base days + leap days
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 30-31: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A30 '─── RESULT ───
+highlight A30 gray
+highlight B30 gray
+highlight C30 gray
+highlight D30 gray
+highlight E30 gray
+highlight F30 gray
+highlight G30 gray
+
+write A31 'Serial Date
+write B31 =B28+B21
+write C31 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B31 DATE_SERIAL
+output DATE_SERIAL
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 0
+format B6 number 0 period-only
+format B13 number 0 period-only
+format B26 number 0 period-only
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# First day ever (Jan 1, 1900)
+test "1900, 1, 1" "1"
+
+# Feb 28, 1900
+test "1900, 2, 28" "59"
+
+# Feb 29, 1900 (Excel's fake leap day)
+test "1900, 2, 29" "60"
+
+# Mar 1, 1900
+test "1900, 3, 1" "61"
+
+# Jan 1, 2000 (Y2K boundary)
+test "2000, 1, 1" "36526"
+
+# Jan 15, 2024
+test "2024, 1, 15" "45306"
+
+# Jun 15, 2024
+test "2024, 6, 15" "45458"
+
+# Dec 31, 1999
+test "1999, 12, 31" "36525"
+
+# Feb 29, 2020 (leap day)
+test "2020, 2, 29" "43890"
+
+# Month overflow: month 14 = Feb next year
+test "2023, 14, 5" "45327"
+
+save

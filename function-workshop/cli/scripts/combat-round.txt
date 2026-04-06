@@ -1,0 +1,180 @@
+# COMBAT_ROUND — D&D 5e Combat Analysis
+# Front door display sheet for the D&D package.
+# No inputs, no outputs — editable values are blue-highlighted cells.
+# Shows expected damage (DPR_CALCULATOR) vs actual dice rolls (ATTACK_RESOLVER).
+
+new COMBAT_ROUND
+
+use ATTACK_RESOLVER
+use DPR_CALCULATOR
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'D&D 5e COMBAT ANALYSIS
+write A2 'Set up your character (blue cells), see expected damage, then roll dice and compare.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-10: YOUR CHARACTER
+# ═══════════════════════════════════════════════════════════════════
+write A4 '─── YOUR CHARACTER ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+write A5 'Attack Bonus
+write B5 5
+highlight B5 blue
+write C5 'Total modifier to d20 (ability mod + proficiency + magic)
+write A6 'Target AC
+write B6 15
+highlight B6 blue
+write C6 'Enemy Armor Class to meet or beat
+write A7 'Damage Die
+write B7 8
+highlight B7 blue
+write C7 '4=dagger  6=shortsword  8=longsword  10=pike  12=greataxe
+write A8 'Damage Bonus
+write B8 3
+highlight B8 blue
+write C8 'Ability modifier added to damage (Strength or Dexterity)
+write A9 'Crit Range
+write B9 20
+highlight B9 blue
+write C9 'Minimum d20 for critical (usually 20; Champion: 19)
+write A10 'Advantage Mode
+write B10 0
+highlight B10 blue
+write C10 '0=Normal  1=Advantage  2=Disadvantage
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 12-18: EXPECTED DAMAGE
+# ═══════════════════════════════════════════════════════════════════
+write A12 '─── EXPECTED DAMAGE ───
+highlight A12 gray
+highlight B12 gray
+highlight C12 gray
+highlight D12 gray
+highlight E12 gray
+highlight F12 gray
+highlight G12 gray
+write A13 'Attacks (Expected)
+write B13 1
+highlight B13 blue
+write C13 'Number of attacks for expected damage calc
+write A14 'DPR Analysis
+write B14 =DPR_CALCULATOR(B5, B6, B7, B8, B13, B9, B10)
+write C14 'Ctrl+D to drill into the probability math
+write A15 'Hit Chance
+write B15 =INDEX(B14, "HIT_CHANCE")
+write C15 'Probability of hitting the target
+write A16 'Crit Chance
+write B16 =INDEX(B14, "CRIT_CHANCE")
+write C16 'Probability of a critical hit
+write A17 'Damage per Hit
+write B17 =INDEX(B14, "DAMAGE_PER_HIT")
+write C17 'Average damage when you hit
+write A18 'Damage per Crit
+write B18 =INDEX(B14, "DAMAGE_PER_CRIT")
+write C18 'Average damage on a critical (dice double)
+write A19 'Expected Damage
+write B19 =INDEX(B14, "DPR")
+write C19 'Weighted average across hit, miss, and crit
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 21-29: ROLL THE DICE
+# ═══════════════════════════════════════════════════════════════════
+write A21 '─── ROLL THE DICE ───
+highlight A21 gray
+highlight B21 gray
+highlight C21 gray
+highlight D21 gray
+highlight E21 gray
+highlight F21 gray
+highlight G21 gray
+write A22 'Roll your d20 and damage die for each attack. Ctrl+D on Resolve to see the breakdown.
+
+write B23 'Attack 1
+write D23 'Attack 2
+write F23 'Attack 3
+style B23 bold
+style D23 bold
+style F23 bold
+
+write A24 'd20 Roll
+write B24 14
+write D24 17
+write F24 8
+highlight B24 blue
+highlight D24 blue
+highlight F24 blue
+
+write A25 'Damage Roll
+write B25 6
+write D25 4
+write F25 5
+highlight B25 blue
+highlight D25 blue
+highlight F25 blue
+
+write A26 'Resolve
+write B26 =ATTACK_RESOLVER(B24, B5, B6, B25, B8, B9)
+write D26 =ATTACK_RESOLVER(D24, B5, B6, D25, B8, B9)
+write F26 =ATTACK_RESOLVER(F24, B5, B6, F25, B8, B9)
+
+write A27 'Hit?
+write B27 =INDEX(B26, "IS_HIT")
+write D27 =INDEX(D26, "IS_HIT")
+write F27 =INDEX(F26, "IS_HIT")
+
+write A28 'Critical?
+write B28 =INDEX(B26, "IS_CRIT")
+write D28 =INDEX(D26, "IS_CRIT")
+write F28 =INDEX(F26, "IS_CRIT")
+
+write A29 'Damage
+write B29 =INDEX(B26, "DAMAGE")
+write D29 =INDEX(D26, "DAMAGE")
+write F29 =INDEX(F26, "DAMAGE")
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 31-35: ROUND TOTAL
+# ═══════════════════════════════════════════════════════════════════
+write A31 '─── ROUND TOTAL ───
+highlight A31 gray
+highlight B31 gray
+highlight C31 gray
+highlight D31 gray
+highlight E31 gray
+highlight F31 gray
+highlight G31 gray
+write A32 'Hits
+write B32 =B27+D27+F27
+write C32 'out of 3
+write A33 'Actual Damage
+write B33 =B29+D29+F29
+write C33 'Sum of 3 attack rolls above
+write A34 'Expected Damage (3 Attacks)
+write B34 =B19*3
+write C34 'Expected per attack × 3
+write A35 'Difference
+write B35 =B33-B34
+write C35 'Positive = you rolled well, negative = below average
+highlight B35 yellow
+
+# Formatting
+default-format number 0
+format B15 percent 1
+format B16 percent 1
+format B17 number 2
+format B18 number 2
+format B19 number 2
+format B34 number 2
+format B35 number 2
+
+save

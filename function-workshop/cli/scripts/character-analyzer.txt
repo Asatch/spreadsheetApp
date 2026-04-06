@@ -1,0 +1,325 @@
+# CHARACTER_ANALYZER — D&D 5e Character Combat Dashboard
+# Front door display sheet for Phase 2: demonstrates function composition.
+# No inputs, no outputs — editable values are blue-highlighted cells.
+# Composes 6 functions: PROFICIENCY_BONUS, HP_CALCULATOR, AC_CALCULATOR,
+# DPR_CALCULATOR, SPELL_SLOT_CALCULATOR, INT.
+
+new CHARACTER_ANALYZER
+
+use INT
+use PROFICIENCY_BONUS
+use HP_CALCULATOR
+use AC_CALCULATOR
+use DPR_CALCULATOR
+use SPELL_SLOT_CALCULATOR
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'CHARACTER ANALYZER — D&D 5e
+write A2 'Enter your character build and see all combat stats at a glance.
+write A3 'Edit blue cells. Ctrl+D on any result to see the full calculation.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-7: YOUR CHARACTER
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR CHARACTER ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+highlight H5 gray
+write A6 'Character Level
+write B6 5
+highlight B6 blue
+write C6 'Level 1-20
+write A7 'Hit Die
+write B7 10
+highlight B7 blue
+write C7 '6=Wizard  8=Cleric/Rogue  10=Fighter/Ranger  12=Barbarian
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-14: YOUR ABILITIES
+# ═══════════════════════════════════════════════════════════════════
+write A9 '─── YOUR ABILITIES ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+highlight H9 gray
+write A10 'Strength
+write B10 16
+highlight B10 blue
+write C10 'Modifier
+write D10 =INT((B10-10)/2)
+write A11 'Dexterity
+write B11 14
+highlight B11 blue
+write C11 'Modifier
+write D11 =INT((B11-10)/2)
+name D11 DEX_MOD
+write A12 'Constitution
+write B12 14
+highlight B12 blue
+write C12 'Modifier
+write D12 =INT((B12-10)/2)
+name D12 CON_MOD
+write A13 'Attack With
+write B13 1
+highlight B13 blue
+write C13 '1=Strength  2=Dexterity (for attack and damage rolls)
+write A14 'Attack Modifier
+write B14 =IF(B13=1,D10,D11)
+write C14 'From your chosen ability
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 16-21: COMBAT STATS
+# ═══════════════════════════════════════════════════════════════════
+write A16 '─── COMBAT STATS ───
+highlight A16 gray
+highlight B16 gray
+highlight C16 gray
+highlight D16 gray
+highlight E16 gray
+highlight F16 gray
+highlight G16 gray
+highlight H16 gray
+write A17 'Proficiency Bonus
+write B17 =PROFICIENCY_BONUS(B6)
+write C17 'Ctrl+D to see the level-to-bonus table
+write A18 'Attack Bonus
+write B18 =B14+B17
+write C18 '= Attack modifier + proficiency
+name B18 ATK_BONUS
+write A19 'Damage Bonus
+write B19 =B14
+write C19 '= Ability modifier added to each damage roll
+name B19 DMG_BONUS
+write A20 'Hit Points
+write B20 =HP_CALCULATOR(B6, B7, CON_MOD)
+write C20 'Ctrl+D to see the HP breakdown
+highlight B20 yellow
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 22-29: YOUR ARMOR
+# ═══════════════════════════════════════════════════════════════════
+write A22 '─── YOUR ARMOR ───
+highlight A22 gray
+highlight B22 gray
+highlight C22 gray
+highlight D22 gray
+highlight E22 gray
+highlight F22 gray
+highlight G22 gray
+highlight H22 gray
+write A23 'Armor Type
+write B23 2
+highlight B23 blue
+write C23 '0=None  1=Light  2=Medium  3=Heavy
+write A24 'Base Armor AC
+write B24 15
+highlight B24 blue
+write C24 'Leather 11  Chain Shirt 13  Half Plate 15  Plate 18
+write A25 'Shield
+write B25 0
+highlight B25 blue
+write C25 '0=No  1=Yes (+2 AC)
+write A26 'Magic Bonus
+write B26 0
+highlight B26 blue
+write C26 '+1/+2/+3 armor enchantment
+write A27 'AC Analysis
+write B27 =AC_CALCULATOR(B23, B24, DEX_MOD, B25, B26, 0)
+write C27 'Ctrl+D to see how armor type caps your DEX
+write A28 'Your AC
+write B28 =INDEX(B27, "FINAL_AC")
+highlight B28 yellow
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 30-35: YOUR WEAPON
+# ═══════════════════════════════════════════════════════════════════
+write A30 '─── YOUR WEAPON ───
+highlight A30 gray
+highlight B30 gray
+highlight C30 gray
+highlight D30 gray
+highlight E30 gray
+highlight F30 gray
+highlight G30 gray
+highlight H30 gray
+write A31 'Weapon Die
+write B31 8
+highlight B31 blue
+write C31 '4=Dagger  6=Shortsword  8=Longsword  10=Halberd  12=Greataxe
+write A32 'Attacks Per Round
+write B32 1
+highlight B32 blue
+write C32 'Extra Attack at level 5 = 2, level 11 = 3, level 20 = 4
+write A33 'Crit Range
+write B33 20
+highlight B33 blue
+write C33 'Minimum d20 for critical hit (Champion Fighter: 19)
+write A34 'Advantage Mode
+write B34 0
+highlight B34 blue
+write C34 '0=Normal  1=Advantage  2=Disadvantage
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 36-44: DPR BY ENEMY AC
+# Four side-by-side DPR calculations at different target ACs
+# ═══════════════════════════════════════════════════════════════════
+write A36 '─── DPR BY ENEMY AC ───
+highlight A36 gray
+highlight B36 gray
+highlight C36 gray
+highlight D36 gray
+highlight E36 gray
+highlight F36 gray
+highlight G36 gray
+highlight H36 gray
+write A37 'Your damage output against enemies of different Armor Classes.
+
+# Column headers — monster archetypes at each AC
+write B38 'Goblin
+write D38 'Orc
+write F38 'Knight
+write H38 'Plate+Shield
+style B38 bold
+style D38 bold
+style F38 bold
+style H38 bold
+
+# Editable target ACs
+write A39 'Target AC
+write B39 12
+write D39 14
+write F39 16
+write H39 18
+highlight B39 blue
+highlight D39 blue
+highlight F39 blue
+highlight H39 blue
+
+# DPR function calls — one per target AC
+write A40 'DPR Analysis
+write B40 =DPR_CALCULATOR(ATK_BONUS, B39, B31, DMG_BONUS, B32, B33, B34)
+write C40 'Ctrl+D to drill in
+write D40 =DPR_CALCULATOR(ATK_BONUS, D39, B31, DMG_BONUS, B32, B33, B34)
+write F40 =DPR_CALCULATOR(ATK_BONUS, F39, B31, DMG_BONUS, B32, B33, B34)
+write H40 =DPR_CALCULATOR(ATK_BONUS, H39, B31, DMG_BONUS, B32, B33, B34)
+
+# Hit chance extracted from each analysis
+write A41 'Hit Chance
+write B41 =INDEX(B40, "HIT_CHANCE")
+write D41 =INDEX(D40, "HIT_CHANCE")
+write F41 =INDEX(F40, "HIT_CHANCE")
+write H41 =INDEX(H40, "HIT_CHANCE")
+
+# Damage per hit
+write A42 'Damage per Hit
+write B42 =INDEX(B40, "DAMAGE_PER_HIT")
+write D42 =INDEX(D40, "DAMAGE_PER_HIT")
+write F42 =INDEX(F40, "DAMAGE_PER_HIT")
+write H42 =INDEX(H40, "DAMAGE_PER_HIT")
+
+# DPR — the highlighted payoff
+write A43 'DPR
+write B43 =INDEX(B40, "DPR")
+write D43 =INDEX(D40, "DPR")
+write F43 =INDEX(F40, "DPR")
+write H43 =INDEX(H40, "DPR")
+highlight B43 yellow
+highlight D43 yellow
+highlight F43 yellow
+highlight H43 yellow
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 45-55: SPELL SLOTS
+# ═══════════════════════════════════════════════════════════════════
+write A45 '─── SPELL SLOTS ───
+highlight A45 gray
+highlight B45 gray
+highlight C45 gray
+highlight D45 gray
+highlight E45 gray
+highlight F45 gray
+highlight G45 gray
+highlight H45 gray
+write A46 'Full Caster Levels
+write B46 5
+highlight B46 blue
+write C46 'Wizard, Cleric, Druid, Sorcerer, Bard
+write A47 'Half Caster Levels
+write B47 0
+highlight B47 blue
+write C47 'Paladin, Ranger
+write A48 'Third Caster Levels
+write B48 0
+highlight B48 blue
+write C48 'Eldritch Knight (Fighter), Arcane Trickster (Rogue)
+write A49 'Slot Analysis
+write B49 =SPELL_SLOT_CALCULATOR(B46, B47, B48)
+write C49 'Ctrl+D to see multiclass spell slot pooling
+write A50 'Caster Level
+write B50 =INDEX(B49, "CASTER_LEVEL")
+write C50 'Effective caster level after multiclass pooling
+
+# Spell slot bar
+write B51 '1st
+write C51 '2nd
+write D51 '3rd
+write E51 '4th
+write F51 '5th
+write G51 '6th
+write H51 '7th
+write I51 '8th
+write J51 '9th
+style B51 bold
+style C51 bold
+style D51 bold
+style E51 bold
+style F51 bold
+style G51 bold
+style H51 bold
+style I51 bold
+style J51 bold
+write B52 =INDEX(B49, "SLOT_1")
+write C52 =INDEX(B49, "SLOT_2")
+write D52 =INDEX(B49, "SLOT_3")
+write E52 =INDEX(B49, "SLOT_4")
+write F52 =INDEX(B49, "SLOT_5")
+write G52 =INDEX(B49, "SLOT_6")
+write H52 =INDEX(B49, "SLOT_7")
+write I52 =INDEX(B49, "SLOT_8")
+write J52 =INDEX(B49, "SLOT_9")
+write A53 'Total Slots
+write B53 =B52+C52+D52+E52+F52+G52+H52+I52+J52
+write C53 'Spell slots available per long rest
+write A54 'Highest Slot
+write B54 =IF(J52>0,"9th",IF(I52>0,"8th",IF(H52>0,"7th",IF(G52>0,"6th",IF(F52>0,"5th",IF(E52>0,"4th",IF(D52>0,"3rd",IF(C52>0,"2nd",IF(B52>0,"1st","None")))))))))
+write C54 'Highest level spell you can cast
+
+# Formatting
+default-format number 0
+format B41 percent 0
+format D41 percent 0
+format F41 percent 0
+format H41 percent 0
+format B42 number 1
+format D42 number 1
+format F42 number 1
+format H42 number 1
+format B43 number 2
+format D43 number 2
+format F43 number 2
+format H43 number 2
+
+save

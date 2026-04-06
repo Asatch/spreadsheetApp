@@ -1,0 +1,116 @@
+# PROFICIENCY_BONUS — D&D 5e Proficiency Bonus by Level
+# Returns the proficiency bonus for a character level (1-20).
+# Formula: INT((LEVEL-1)/4) + 2
+# Output: BONUS
+
+new PROFICIENCY_BONUS
+
+use INT
+
+input LEVEL 5
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'PROFICIENCY BONUS — D&D 5e
+write A2 'Returns the proficiency bonus for a character level (1-20).
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: YOUR LEVEL
+# ═══════════════════════════════════════════════════════════════════
+write A4 '─── YOUR LEVEL ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+write A5 'Character Level
+write B5 =LEVEL
+write C5 'Level 1-20
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-9: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+write A7 '─── THE CALCULATION ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+write A8 'Level Tier
+write B8 =INT((LEVEL-1)/4)
+write C8 'Which group of 4 levels (0 through 4)
+write A9 'Proficiency Bonus
+write B9 =B8+2
+write C9 '= Tier + 2
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11-17: REFERENCE
+# ═══════════════════════════════════════════════════════════════════
+write A11 '─── REFERENCE ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+write A12 'Levels
+write B12 'Bonus
+style A12 bold
+style B12 bold
+write A13 '1 - 4
+write B13 2
+write A14 '5 - 8
+write B14 3
+write A15 '9 - 12
+write B15 4
+write A16 '13 - 16
+write B16 5
+write A17 '17 - 20
+write B17 6
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 19-20: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A19 '─── RESULT ───
+highlight A19 gray
+highlight B19 gray
+highlight C19 gray
+highlight D19 gray
+highlight E19 gray
+highlight F19 gray
+highlight G19 gray
+write A20 'Proficiency Bonus
+write B20 =B9
+write C20 '← OUTPUT  Proficiency bonus for your level
+highlight B20 yellow
+
+name B20 BONUS
+output BONUS
+
+default-format number 0
+
+# Test cases
+# Level 1: tier 0, bonus 2
+test "1" "2"
+# Level 4: still tier 0, bonus 2
+test "4" "2"
+# Level 5: tier 1, bonus 3
+test "5" "3"
+# Level 9: tier 2, bonus 4
+test "9" "4"
+# Level 13: tier 3, bonus 5
+test "13" "5"
+# Level 17: tier 4, bonus 6
+test "17" "6"
+# Level 20: tier 4, bonus 6
+test "20" "6"
+
+save

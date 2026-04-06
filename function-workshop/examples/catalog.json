@@ -1,0 +1,32 @@
+[
+  {
+    "file": "basics.zip",
+    "name": "Basics",
+    "description": "Simple starter examples: addition, compound interest, and tax brackets.",
+    "sheets": 3
+  },
+  {
+    "file": "common-math.zip",
+    "name": "Common Math",
+    "description": "24 standard math functions: trig, rounding, aggregation, and more.",
+    "sheets": 24
+  },
+  {
+    "file": "excel-functions.zip",
+    "name": "Excel Functions",
+    "description": "Excel-compatible functions: PMT, NPER, NORMSDIST, DATE, and more.",
+    "sheets": 36
+  },
+  {
+    "file": "retirement.zip",
+    "name": "Retirement Planning",
+    "description": "Full retirement suite: accumulation, projections, withdrawals, RMD.",
+    "sheets": 11
+  },
+  {
+    "file": "dnd.zip",
+    "name": "D&D Tools",
+    "description": "Dungeons & Dragons utilities: combat, CR calculator, encounter balancing.",
+    "sheets": 19
+  }
+]

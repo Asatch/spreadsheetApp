@@ -1,0 +1,98 @@
+# ACCUMULATION - Multi-account pre-retirement accumulation loop
+# Grows 4 account types (custom/deferred-salary, taxable, tax-deferred, tax-free)
+# with annual contributions and half-year timing. Tracks taxable basis with
+# inflation erosion. Matches Python calculation.py lines 297-312.
+
+new ACCUMULATION loop
+
+input CUSTOM_BALANCE 0
+input TAXABLE_BALANCE 100000
+input TAXABLE_BASIS 80000
+input TAX_DEFERRED_BALANCE 500000
+input TAX_FREE_BALANCE 50000
+input CUSTOM_SAVINGS 0
+input TAXABLE_SAVINGS 10000
+input TAX_DEFERRED_SAVINGS 20000
+input TAX_FREE_SAVINGS 5000
+input RETURN_RATE 0.05
+input INFLATION_RATE 0.025
+input YEARS 10
+
+# Row 0: initial state
+# B=custom, C=taxable, D=basis, E=tax_deferred, F=tax_free, G=counter
+write B0 =CUSTOM_BALANCE
+write C0 =TAXABLE_BALANCE
+write D0 =TAXABLE_BASIS
+write E0 =TAX_DEFERRED_BALANCE
+write F0 =TAX_FREE_BALANCE
+write G0 0
+
+# Row 1: one year of accumulation
+# Each account: full-year growth on balance + half-year growth on contribution
+# Basis: add contribution at cost (no growth), then erode by inflation
+write B1 =B0*(1+RETURN_RATE)+CUSTOM_SAVINGS*((1+RETURN_RATE)^0.5)
+write C1 =C0*(1+RETURN_RATE)+TAXABLE_SAVINGS*((1+RETURN_RATE)^0.5)
+write D1 =(D0+TAXABLE_SAVINGS)*(1-INFLATION_RATE)
+write E1 =E0*(1+RETURN_RATE)+TAX_DEFERRED_SAVINGS*((1+RETURN_RATE)^0.5)
+write F1 =F0*(1+RETURN_RATE)+TAX_FREE_SAVINGS*((1+RETURN_RATE)^0.5)
+write G1 =G0+1
+
+# Stop conditions
+write _STOP0 =YEARS<=0
+write _STOP1 =G1>=YEARS
+
+# Column headers
+header B ENDING_CUSTOM
+header C ENDING_TAXABLE
+header D ENDING_BASIS
+header E ENDING_TAX_DEFERRED
+header F ENDING_TAX_FREE
+header G YEAR
+
+# Outputs
+output B last
+output C last
+output D last
+output E last
+output F last
+
+default-format currency 0
+format G0 number 0
+format G1 number 0
+
+# Test cases (ground truth from Python calculation.py accumulation logic)
+# Input order: custom_bal, taxable_bal, taxable_basis, tax_def_bal, tax_free_bal,
+#              custom_sav, taxable_sav, tax_def_sav, tax_free_sav,
+#              return_rate, inflation_rate, years
+
+# 1. Baseline 10yr
+test "0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 0.05, 0.025, 10" "0.0, 291774.5082290439, 149337.81753450428, 1072217.404491321, 145887.25411452196"
+
+# 2. With custom savings
+test "50000, 100000, 80000, 500000, 50000, 10000, 10000, 20000, 5000, 0.05, 0.025, 10" "210329.77689017172, 291774.5082290439, 149337.81753450428, 1072217.404491321, 145887.25411452196"
+
+# 3. Short 3yr
+test "0, 50000, 40000, 200000, 30000, 0, 5000, 15000, 3000, 0.04, 0.02, 3" "0.0, 72160.29931363124, 52055.64, 272724.0979408937, 43296.17958817874"
+
+# 4. Long 20yr
+test "0, 50000, 40000, 100000, 20000, 0, 12000, 25000, 6000, 0.06, 0.03, 20" "0.0, 614833.7834697653, 198759.56866149197, 1267540.6510944583, 291381.21437381854"
+
+# 5. Zero contributions
+test "100000, 200000, 150000, 300000, 50000, 0, 0, 0, 0, 0.05, 0.025, 10" "162889.46267774416, 325778.9253554883, 116449.44312846566, 488668.38803323254, 81444.73133887208"
+
+# 6. Zero starting
+test "0, 0, 0, 0, 0, 5000, 10000, 20000, 5000, 0.07, 0.02, 15" "129968.31243551054, 259936.62487102108, 128101.13970375211, 519873.24974204216, 129968.31243551054"
+
+# 7. Zero return
+test "0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 0, 0.025, 5" "0.0, 150000.0, 116860.33505859374, 600000.0, 75000.0"
+
+# 8. Zero inflation
+test "0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 0.05, 0, 10" "0.0, 291774.5082290439, 180000, 1072217.404491321, 145887.25411452196"
+
+# 9. High return 10%
+test "20000, 100000, 80000, 300000, 40000, 5000, 15000, 30000, 8000, 0.1, 0.03, 12" "174908.697668576, 650263.2280745686, 203993.8437968476, 1614369.293821237, 304961.3432834898"
+
+# 10. Single year
+test "0, 100000, 80000, 500000, 50000, 0, 10000, 20000, 5000, 0.05, 0.025, 1" "0.0, 115246.9507659596, 87750.0, 545493.9015319193, 57623.4753829798"
+
+save

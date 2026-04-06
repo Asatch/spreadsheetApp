@@ -1,0 +1,106 @@
+# RADIANS - Convert degrees to radians
+# radians = degrees * pi / 180
+
+new RADIANS
+input DEGREES 180
+
+use PI
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'RADIANS
+style A1 bold
+style A1 fontsize 24
+write A2 'Converts degrees to radians.
+write A3 'Multiply by pi/180.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-6: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUT ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Degrees
+write B6 =DEGREES
+write C6 'Angle in degrees
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-10: THE CONVERSION
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── THE CONVERSION ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+highlight E8 gray
+highlight F8 gray
+highlight G8 gray
+
+write A9 'pi
+write B9 =PI(1)
+write C9 '3.14159...
+
+write A10 'pi / 180
+write B10 =B9/180
+write C10 'Conversion factor
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 12-13: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A12 '─── RESULT ───
+highlight A12 gray
+highlight B12 gray
+highlight C12 gray
+highlight D12 gray
+highlight E12 gray
+highlight F12 gray
+highlight G12 gray
+
+write A13 'Radians
+write B13 =B6*B10
+write C13 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B13 RADIANS
+output RADIANS
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 10
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# 180° = pi
+test "180" "3.1415926536"
+
+# 90° = pi/2
+test "90" "1.5707963268"
+
+# 0°
+test "0" "0"
+
+# 360° = 2*pi
+test "360" "6.2831853072"
+
+# 45° = pi/4
+test "45" "0.7853981634"
+
+save

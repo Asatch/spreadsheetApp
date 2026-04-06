@@ -1,0 +1,839 @@
+# EXCEL_FUNCTIONS_SHOWCASE — Display Sheet
+# Front-door dashboard for the Excel Functions package
+# No inputs, no outputs — editable blue cells for exploration
+
+new EXCEL_FUNCTIONS_SHOWCASE
+
+# Financial
+use PMT
+use IPMT
+use PPMT
+use FV
+use PV
+use NPER
+use SLN
+use SYD
+
+# Date & Time
+use DATE
+use YEAR
+use MONTH
+use DAY
+use ISLEAPYEAR
+use DAYS360
+use YEARFRAC
+use TIME
+use HOUR
+use MINUTE
+use SECOND
+
+# Statistics & Probability
+use NORMSDIST
+use NORMSINV
+use FISHER
+use FISHERINV
+
+# Combinatorics
+use FACTORIAL
+use COMBIN
+use PERMUT
+
+# Math & Rounding
+use ABS
+use LOG10
+use EVEN
+use ODD
+use ROUNDDOWN
+use ROUNDUP
+use TRUNC
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'EXCEL FUNCTIONS SHOWCASE
+style A1 bold
+style A1 fontsize 24
+write A2 'Explore 33 Excel-compatible functions. Change the blue cells to try different scenarios.
+write A3 'Green cells use custom functions — press Ctrl+D to drill down and see how they work.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-21: LOAN CALCULATOR
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '═══════ LOAN CALCULATOR ═══════
+style A5 bold
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A7 'Loan Amount
+write B7 250000
+highlight B7 blue
+name B7 LOAN_AMOUNT
+write C7 'How much you're borrowing
+
+write A8 'Annual Rate
+write B8 0.06
+highlight B8 blue
+name B8 ANNUAL_RATE
+write C8 'Annual interest rate
+
+write A9 'Term (years)
+write B9 30
+highlight B9 blue
+name B9 LOAN_YEARS
+write C9 'Loan duration in years
+
+write A11 '─── MONTHLY BREAKDOWN ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+
+write A12 'Monthly Rate
+write B12 =ANNUAL_RATE/12
+write C12 'Annual rate / 12
+
+write A13 'Total Payments
+write B13 =LOAN_YEARS*12
+write C13 'Years × 12 months
+
+write A14 'Monthly Payment
+write B14 =PMT(B12,B13,-LOAN_AMOUNT,0,0)
+highlight B14 green
+write C14 'PMT(rate, nper, -pv, fv, type)
+
+write A15 'Total Paid
+write B15 =B14*B13
+write C15 'Payment × number of months
+
+write A16 'Total Interest
+write B16 =B15-LOAN_AMOUNT
+write C16 'Total paid minus principal
+
+write A18 '─── FIRST vs LAST PAYMENT ───
+highlight A18 gray
+highlight B18 gray
+highlight C18 gray
+highlight D18 gray
+highlight E18 gray
+highlight F18 gray
+highlight G18 gray
+
+write A19 'First Payment
+write C19 'Interest
+write D19 'Principal
+
+write A20 'Payment #1
+write C20 =-IPMT(B12,1,B13,-LOAN_AMOUNT,0,0)
+highlight C20 green
+write D20 =PPMT(B12,1,B13,-LOAN_AMOUNT,0,0)
+highlight D20 green
+
+write A21 'Last Payment
+write C21 =-IPMT(B12,B13,B13,-LOAN_AMOUNT,0,0)
+highlight C21 green
+write D21 =PPMT(B12,B13,B13,-LOAN_AMOUNT,0,0)
+highlight D21 green
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 23-33: INVESTMENT GROWTH
+# ═══════════════════════════════════════════════════════════════════
+
+write A23 '═══════ INVESTMENT GROWTH ═══════
+style A23 bold
+highlight A23 gray
+highlight B23 gray
+highlight C23 gray
+highlight D23 gray
+highlight E23 gray
+highlight F23 gray
+highlight G23 gray
+
+write A25 'Initial Investment
+write B25 10000
+highlight B25 blue
+name B25 INITIAL_INVEST
+write C25 'Starting balance
+
+write A26 'Annual Contribution
+write B26 5000
+highlight B26 blue
+name B26 ANNUAL_CONTRIB
+write C26 'Added each year
+
+write A27 'Annual Return
+write B27 0.08
+highlight B27 blue
+name B27 INVEST_RETURN
+write C27 'Expected annual return
+
+write A28 'Years
+write B28 25
+highlight B28 blue
+name B28 INVEST_YEARS
+write C28 'Investment horizon
+
+write A30 '─── RESULTS ───
+highlight A30 gray
+highlight B30 gray
+highlight C30 gray
+highlight D30 gray
+highlight E30 gray
+highlight F30 gray
+highlight G30 gray
+
+write A31 'Future Value
+write B31 =FV(INVEST_RETURN,INVEST_YEARS,-ANNUAL_CONTRIB,-INITIAL_INVEST,0)
+highlight B31 green
+write C31 'FV(rate, nper, -pmt, -pv, type)
+
+write A32 'Total Contributed
+write B32 =INITIAL_INVEST+ANNUAL_CONTRIB*INVEST_YEARS
+write C32 'Initial + annual × years
+
+write A33 'Investment Gain
+write B33 =B31-B32
+write C33 'Future value minus contributions
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 35-45: DEPRECIATION COMPARISON
+# ═══════════════════════════════════════════════════════════════════
+
+write A35 '═══════ DEPRECIATION COMPARISON ═══════
+style A35 bold
+highlight A35 gray
+highlight B35 gray
+highlight C35 gray
+highlight D35 gray
+highlight E35 gray
+highlight F35 gray
+highlight G35 gray
+
+write A37 'Asset Cost
+write B37 50000
+highlight B37 blue
+name B37 ASSET_COST
+write C37 'Purchase price
+
+write A38 'Salvage Value
+write B38 5000
+highlight B38 blue
+name B38 ASSET_SALVAGE
+write C38 'Value at end of life
+
+write A39 'Useful Life
+write B39 10
+highlight B39 blue
+name B39 ASSET_LIFE
+write C39 'Years of useful life
+
+write A41 '─── STRAIGHT-LINE vs ACCELERATED ───
+highlight A41 gray
+highlight B41 gray
+highlight C41 gray
+highlight D41 gray
+highlight E41 gray
+highlight F41 gray
+highlight G41 gray
+
+write B42 'Straight-Line
+write C42 'Accelerated (SYD)
+
+write A43 'Year 1
+write B43 =SLN(ASSET_COST,ASSET_SALVAGE,ASSET_LIFE)
+highlight B43 green
+write C43 =SYD(ASSET_COST,ASSET_SALVAGE,ASSET_LIFE,1)
+highlight C43 green
+
+write A44 'Year 5
+write B44 =SLN(ASSET_COST,ASSET_SALVAGE,ASSET_LIFE)
+highlight B44 green
+write C44 =SYD(ASSET_COST,ASSET_SALVAGE,ASSET_LIFE,5)
+highlight C44 green
+
+write A45 'Year 10
+write B45 =SLN(ASSET_COST,ASSET_SALVAGE,ASSET_LIFE)
+highlight B45 green
+write C45 =SYD(ASSET_COST,ASSET_SALVAGE,ASSET_LIFE,10)
+highlight C45 green
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 47-58: DATE FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════
+
+write A47 '═══════ DATE FUNCTIONS ═══════
+style A47 bold
+highlight A47 gray
+highlight B47 gray
+highlight C47 gray
+highlight D47 gray
+highlight E47 gray
+highlight F47 gray
+highlight G47 gray
+
+write A49 'Year
+write B49 2024
+highlight B49 blue
+name B49 INPUT_YEAR
+
+write A50 'Month
+write B50 7
+highlight B50 blue
+name B50 INPUT_MONTH
+
+write A51 'Day
+write B51 4
+highlight B51 blue
+name B51 INPUT_DAY
+
+write A53 '─── RESULTS ───
+highlight A53 gray
+highlight B53 gray
+highlight C53 gray
+highlight D53 gray
+highlight E53 gray
+highlight F53 gray
+highlight G53 gray
+
+write A54 'Serial Date
+write B54 =DATE(INPUT_YEAR,INPUT_MONTH,INPUT_DAY)
+highlight B54 green
+write C54 'DATE(year, month, day)
+
+write A55 'Year (extracted)
+write B55 =YEAR(B54)
+highlight B55 green
+write C55 'YEAR(serial)
+
+write A56 'Month (extracted)
+write B56 =MONTH(B54)
+highlight B56 green
+write C56 'MONTH(serial)
+
+write A57 'Day (extracted)
+write B57 =DAY(B54)
+highlight B57 green
+write C57 'DAY(serial)
+
+write A58 'Is Leap Year?
+write B58 =ISLEAPYEAR(INPUT_YEAR)
+highlight B58 green
+write C58 '1 = Yes, 0 = No
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 60-68: PROBABILITY
+# ═══════════════════════════════════════════════════════════════════
+
+write A60 '═══════ PROBABILITY ═══════
+style A60 bold
+highlight A60 gray
+highlight B60 gray
+highlight C60 gray
+highlight D60 gray
+highlight E60 gray
+highlight F60 gray
+highlight G60 gray
+
+write A62 'Z-Score
+write B62 1.96
+highlight B62 blue
+name B62 INPUT_Z
+write C62 'Standard deviations from mean
+
+write A64 '─── NORMAL DISTRIBUTION ───
+highlight A64 gray
+highlight B64 gray
+highlight C64 gray
+highlight D64 gray
+highlight E64 gray
+highlight F64 gray
+highlight G64 gray
+
+write A65 'P(X <= z)
+write B65 =NORMSDIST(INPUT_Z)
+highlight B65 green
+write C65 'Cumulative probability
+
+write A66 'P(X > z)
+write B66 =1-B65
+write C66 'Right tail probability
+
+write A67 'Z for 95%
+write B67 =NORMSINV(0.95)
+highlight B67 green
+write C67 'NORMSINV(0.95)
+
+write A68 'Z for 99%
+write B68 =NORMSINV(0.99)
+highlight B68 green
+write C68 'NORMSINV(0.99)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 70-78: COMBINATORICS
+# ═══════════════════════════════════════════════════════════════════
+
+write A70 '═══════ COMBINATORICS ═══════
+style A70 bold
+highlight A70 gray
+highlight B70 gray
+highlight C70 gray
+highlight D70 gray
+highlight E70 gray
+highlight F70 gray
+highlight G70 gray
+
+write A72 'Total Items (n)
+write B72 52
+highlight B72 blue
+name B72 COMBO_N
+write C72 'Size of the pool
+
+write A73 'Choose (k)
+write B73 5
+highlight B73 blue
+name B73 COMBO_K
+write C73 'How many to select
+
+write A75 '─── RESULTS ───
+highlight A75 gray
+highlight B75 gray
+highlight C75 gray
+highlight D75 gray
+highlight E75 gray
+highlight F75 gray
+highlight G75 gray
+
+write A76 'n!
+write B76 =FACTORIAL(COMBO_N)
+highlight B76 green
+write C76 'FACTORIAL(n)
+
+write A77 'Combinations
+write B77 =COMBIN(COMBO_N,COMBO_K)
+highlight B77 green
+write C77 'Order doesn't matter (poker hands)
+
+write A78 'Permutations
+write B78 =PERMUT(COMBO_N,COMBO_K)
+highlight B78 green
+write C78 'Order matters (arrangements)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 80-91: TIME VALUE OF MONEY
+# ═══════════════════════════════════════════════════════════════════
+
+write A80 '═══════ TIME VALUE OF MONEY ═══════
+style A80 bold
+highlight A80 gray
+highlight B80 gray
+highlight C80 gray
+highlight D80 gray
+highlight E80 gray
+highlight F80 gray
+highlight G80 gray
+
+write A82 'Annual Rate
+write B82 0.06
+highlight B82 blue
+name B82 TVM_RATE
+write C82 'Interest/discount rate
+
+write A83 'Annual Payment
+write B83 5000
+highlight B83 blue
+name B83 TVM_PAYMENT
+write C83 'Amount per period
+
+write A84 'Number of Years
+write B84 20
+highlight B84 blue
+name B84 TVM_YEARS
+write C84 'Duration
+
+write A86 '─── PRESENT VALUE ───
+highlight A86 gray
+highlight B86 gray
+highlight C86 gray
+highlight D86 gray
+highlight E86 gray
+highlight F86 gray
+highlight G86 gray
+
+write A87 'Present Value
+write B87 =PV(TVM_RATE,TVM_YEARS,-TVM_PAYMENT,0,0)
+highlight B87 green
+write C87 'PV(rate, nper, -pmt, fv, type)
+
+write A89 '─── SAVINGS GOAL ───
+highlight A89 gray
+highlight B89 gray
+highlight C89 gray
+highlight D89 gray
+highlight E89 gray
+highlight F89 gray
+highlight G89 gray
+
+write A90 'Target Amount
+write B90 100000
+highlight B90 blue
+name B90 SAVINGS_GOAL
+write C90 'How much you want to save
+
+write A91 'Years to Goal
+write B91 =NPER(TVM_RATE,-TVM_PAYMENT,0,SAVINGS_GOAL,0)
+highlight B91 green
+write C91 'NPER(rate, -pmt, pv, fv, type)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 93-103: TIME FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════
+
+write A93 '═══════ TIME FUNCTIONS ═══════
+style A93 bold
+highlight A93 gray
+highlight B93 gray
+highlight C93 gray
+highlight D93 gray
+highlight E93 gray
+highlight F93 gray
+highlight G93 gray
+
+write A95 'Hour
+write B95 14
+highlight B95 blue
+name B95 INPUT_HOUR
+write C95 '0-23
+
+write A96 'Minute
+write B96 30
+highlight B96 blue
+name B96 INPUT_MINUTE
+write C96 '0-59
+
+write A97 'Second
+write B97 45
+highlight B97 blue
+name B97 INPUT_SECOND
+write C97 '0-59
+
+write A99 '─── RESULTS ───
+highlight A99 gray
+highlight B99 gray
+highlight C99 gray
+highlight D99 gray
+highlight E99 gray
+highlight F99 gray
+highlight G99 gray
+
+write A100 'Time Serial
+write B100 =TIME(INPUT_HOUR,INPUT_MINUTE,INPUT_SECOND)
+highlight B100 green
+write C100 'TIME(hour, minute, second)
+
+write A101 'Hour (extracted)
+write B101 =HOUR(B100)
+highlight B101 green
+write C101 'HOUR(serial)
+
+write A102 'Minute (extracted)
+write B102 =MINUTE(B100)
+highlight B102 green
+write C102 'MINUTE(serial)
+
+write A103 'Second (extracted)
+write B103 =SECOND(B100)
+highlight B103 green
+write C103 'SECOND(serial)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 105-118: DATE INTERVALS
+# ═══════════════════════════════════════════════════════════════════
+
+write A105 '═══════ DATE INTERVALS ═══════
+style A105 bold
+highlight A105 gray
+highlight B105 gray
+highlight C105 gray
+highlight D105 gray
+highlight E105 gray
+highlight F105 gray
+highlight G105 gray
+
+write A107 'Start Year
+write B107 2024
+highlight B107 blue
+name B107 START_YEAR
+
+write A108 'Start Month
+write B108 1
+highlight B108 blue
+name B108 START_MONTH
+
+write A109 'Start Day
+write B109 15
+highlight B109 blue
+name B109 START_DAY
+
+write A110 'End Year
+write B110 2024
+highlight B110 blue
+name B110 END_YEAR
+
+write A111 'End Month
+write B111 7
+highlight B111 blue
+name B111 END_MONTH
+
+write A112 'End Day
+write B112 4
+highlight B112 blue
+name B112 END_DAY
+
+write A114 '─── RESULTS ───
+highlight A114 gray
+highlight B114 gray
+highlight C114 gray
+highlight D114 gray
+highlight E114 gray
+highlight F114 gray
+highlight G114 gray
+
+write A115 'Start Date
+write B115 =DATE(START_YEAR,START_MONTH,START_DAY)
+highlight B115 green
+write C115 'DATE(year, month, day)
+
+write A116 'End Date
+write B116 =DATE(END_YEAR,END_MONTH,END_DAY)
+highlight B116 green
+write C116 'DATE(year, month, day)
+
+write A117 'Days (30/360)
+write B117 =DAYS360(B115,B116,0)
+highlight B117 green
+write C117 'DAYS360(start, end, method)
+
+write A118 'Year Fraction
+write B118 =YEARFRAC(B115,B116,0)
+highlight B118 green
+write C118 'YEARFRAC(start, end, basis)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 120-126: FISHER TRANSFORMATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A120 '═══════ FISHER TRANSFORMATION ═══════
+style A120 bold
+highlight A120 gray
+highlight B120 gray
+highlight C120 gray
+highlight D120 gray
+highlight E120 gray
+highlight F120 gray
+highlight G120 gray
+
+write A122 'Correlation (r)
+write B122 0.75
+highlight B122 blue
+name B122 INPUT_R
+write C122 'Value between -1 and 1
+
+write A124 '─── RESULTS ───
+highlight A124 gray
+highlight B124 gray
+highlight C124 gray
+highlight D124 gray
+highlight E124 gray
+highlight F124 gray
+highlight G124 gray
+
+write A125 'Fisher Z
+write B125 =FISHER(INPUT_R)
+highlight B125 green
+write C125 'FISHER(r)
+
+write A126 'Back to r
+write B126 =FISHERINV(B125)
+highlight B126 green
+write C126 'FISHERINV(z) — round-trips back to r
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 128-139: MATH & ROUNDING
+# ═══════════════════════════════════════════════════════════════════
+
+write A128 '═══════ MATH & ROUNDING ═══════
+style A128 bold
+highlight A128 gray
+highlight B128 gray
+highlight C128 gray
+highlight D128 gray
+highlight E128 gray
+highlight F128 gray
+highlight G128 gray
+
+write A130 'Number
+write B130 -17.385
+highlight B130 blue
+name B130 INPUT_NUMBER
+write C130 'Try different values
+
+write A132 '─── RESULTS ───
+highlight A132 gray
+highlight B132 gray
+highlight C132 gray
+highlight D132 gray
+highlight E132 gray
+highlight F132 gray
+highlight G132 gray
+
+write A133 'Absolute Value
+write B133 =ABS(INPUT_NUMBER)
+highlight B133 green
+write C133 'ABS(number)
+
+write A134 'Log Base 10
+write B134 =LOG10(B133)
+highlight B134 green
+write C134 'LOG10(|number|)
+
+write A135 'Round Up (2dp)
+write B135 =ROUNDUP(INPUT_NUMBER,2)
+highlight B135 green
+write C135 'ROUNDUP(number, 2)
+
+write A136 'Round Down (2dp)
+write B136 =ROUNDDOWN(INPUT_NUMBER,2)
+highlight B136 green
+write C136 'ROUNDDOWN(number, 2)
+
+write A137 'Truncate
+write B137 =TRUNC(INPUT_NUMBER,0)
+highlight B137 green
+write C137 'TRUNC(number, 0)
+
+write A138 'Nearest Even
+write B138 =EVEN(INPUT_NUMBER)
+highlight B138 green
+write C138 'EVEN(number) — rounds away from zero
+
+write A139 'Nearest Odd
+write B139 =ODD(INPUT_NUMBER)
+highlight B139 green
+write C139 'ODD(number) — rounds away from zero
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+# Loan section
+format B7 currency 0
+format B8 percent 2
+format B9 number 0
+format B12 percent 4
+format B13 number 0
+format B14 currency 2
+format B15 currency 0
+format B16 currency 0
+format C20 currency 2
+format D20 currency 2
+format C21 currency 2
+format D21 currency 2
+
+# Investment section
+format B25 currency 0
+format B26 currency 0
+format B27 percent 1
+format B28 number 0
+format B31 currency 0
+format B32 currency 0
+format B33 currency 0
+
+# Depreciation section
+format B37 currency 0
+format B38 currency 0
+format B39 number 0
+format B43 currency 0
+format C43 currency 0
+format B44 currency 0
+format C44 currency 0
+format B45 currency 0
+format C45 currency 0
+
+# Date section
+format B49 number 0 period-only
+format B50 number 0
+format B51 number 0
+format B54 number 0
+format B55 number 0 period-only
+format B56 number 0
+format B57 number 0
+format B58 number 0
+
+# Probability section
+format B62 number 2
+format B65 number 6
+format B66 number 6
+format B67 number 4
+format B68 number 4
+
+# Combinatorics section
+format B72 number 0
+format B73 number 0
+format B76 scientific 2
+format B77 number 0
+format B78 number 0
+
+# Time value of money section
+format B82 percent 1
+format B83 currency 0
+format B84 number 0
+format B87 currency 0
+format B90 currency 0
+format B91 number 1
+
+# Time section
+format B95 number 0
+format B96 number 0
+format B97 number 0
+format B100 number 6
+format B101 number 0
+format B102 number 0
+format B103 number 0
+
+# Date intervals section
+format B107 number 0 period-only
+format B108 number 0
+format B109 number 0
+format B110 number 0 period-only
+format B111 number 0
+format B112 number 0
+format B115 number 0
+format B116 number 0
+format B117 number 0
+format B118 number 4
+
+# Fisher transformation section
+format B122 number 4
+format B125 number 6
+format B126 number 4
+
+# Math & rounding section
+format B130 number 3
+format B133 number 3
+format B134 number 4
+format B135 number 2
+format B136 number 2
+format B137 number 0
+format B138 number 0
+format B139 number 0
+
+save

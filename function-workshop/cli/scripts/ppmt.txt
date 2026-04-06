@@ -1,0 +1,166 @@
+# PPMT - Principal Portion of a Payment
+# Shows how much of a specific payment goes to principal
+# Principal = Total Payment - Interest
+
+new PPMT
+input RATE 0.08
+input PER 1
+input NPER 10
+input PV -10000
+input FV 0
+input TYPE 0
+default-format currency 2
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'PRINCIPAL PAYMENT
+style A1 bold
+style A1 fontsize 24
+write A2 'Returns the principal portion of a payment.
+write A3 'Principal reduces the loan balance each period.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-11: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUTS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Interest Rate
+write B6 =RATE
+write C6 'Rate per period
+
+write A7 'Period
+write B7 =PER
+write C7 'Which payment (1 to nper)
+
+write A8 'Total Periods
+write B8 =NPER
+write C8 'Total number of payments
+
+write A9 'Present Value
+write B9 =PV
+write C9 'Loan amount
+
+write A10 'Future Value
+write B10 =FV
+write C10 'Balance after last payment
+
+write A11 'Payment Type
+write B11 =TYPE
+write C11 '0 = end, 1 = beginning
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-16: PAYMENT CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 '─── PAYMENT CALCULATION ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+
+write A14 'Discount Factor
+write B14 =(1+B6)^B8
+write C14 '(1+r)^n
+
+write A15 'Timing Factor
+write B15 =IF(B11=1,1+B6,1)
+write C15 'Adjust for payment timing
+
+write A16 'Total Payment
+write B16 =-B6*(B9*B14+B10)/((B14-1)*B15)
+write C16 'Constant periodic payment
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 18-21: INTEREST PORTION
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── INTEREST PORTION ───
+highlight A18 gray
+highlight B18 gray
+highlight C18 gray
+highlight D18 gray
+highlight E18 gray
+highlight F18 gray
+highlight G18 gray
+
+write A19 'Growth to Period
+write B19 =(1+B6)^(B7-1)
+write C19 '(1+r)^(per-1)
+
+write A20 'Starting Balance
+write B20 =B9*B19+B16*IF(B6=0,B7-1,(B19-1)/B6)*B15
+write C20 'Balance at start of this period
+
+write A21 'Interest Payment
+write B21 =B20*B6
+write C21 'Balance × rate
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 23-24: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A23 '─── RESULT ───
+highlight A23 gray
+highlight B23 gray
+highlight C23 gray
+highlight D23 gray
+highlight E23 gray
+highlight F23 gray
+highlight G23 gray
+
+write A24 'Principal Payment
+write B24 =B16+B21
+write C24 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B24 PPMT
+output PPMT
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B6 percent 2
+format B7 number 0
+format B8 number 0
+format B11 number 0
+format B14 number 4
+format B15 number 4
+format B19 number 4
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# First payment: least principal
+test "0.08, 1, 10, -10000, 0, 0" "690.2948869707534"
+
+# Period 5: increasing principal
+test "0.08, 5, 10, -10000, 0, 0" "939.138572868158"
+
+# Last payment: most principal
+test "0.08, 10, 10, -10000, 0, 0" "1379.902673121068"
+
+# Beginning-of-period
+test "0.05, 1, 5, -10000, 0, 1" "1699.76"
+
+# Period 3
+test "0.08, 3, 10, -10000, 0, 0" "805.16"
+
+save

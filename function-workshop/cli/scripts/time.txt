@@ -1,0 +1,142 @@
+# TIME - Convert hours, minutes, seconds to Excel time serial
+# Time is the decimal portion of a serial number (0-1)
+# 0.0 = midnight, 0.5 = noon, 1.0 = next midnight
+
+new TIME
+input HOUR 14
+input MINUTE 30
+input SECOND 45
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'TIME SERIAL NUMBER
+style A1 bold
+style A1 fontsize 24
+write A2 'Converts hours, minutes, seconds to Excel time serial (0-1).
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-7: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUTS ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Hour
+write B5 =HOUR
+write C5 '0-23
+
+write A6 'Minute
+write B6 =MINUTE
+write C6 '0-59
+
+write A7 'Second
+write B7 =SECOND
+write C7 '0-59
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: CONVERSION FACTORS
+# ═══════════════════════════════════════════════════════════════════
+
+write E4 '─── FACTORS ───
+write E5 'Hours/day
+write F5 24
+write E6 'Minutes/day
+write F6 1440
+write E7 'Seconds/day
+write F7 86400
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-12: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── THE CALCULATION ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+
+write A10 'Hour Fraction
+write B10 =B5/F5
+write C10 'Hours as fraction of day
+
+write A11 'Minute Fraction
+write B11 =B6/F6
+write C11 'Minutes as fraction of day
+
+write A12 'Second Fraction
+write B12 =B7/F7
+write C12 'Seconds as fraction of day
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 14-15: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A14 '─── RESULT ───
+highlight A14 gray
+highlight B14 gray
+highlight C14 gray
+highlight D14 gray
+highlight E14 gray
+highlight F14 gray
+highlight G14 gray
+
+write A15 'Time Serial
+write B15 =B10+B11+B12
+write C15 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B15 TIME_SERIAL
+output TIME_SERIAL
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B5 number 0
+format B6 number 0
+format B7 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Midnight (0:00:00)
+test "0, 0, 0" "0"
+
+# Noon (12:00:00)
+test "12, 0, 0" "0.5"
+
+# 6 AM
+test "6, 0, 0" "0.25"
+
+# 6 PM
+test "18, 0, 0" "0.75"
+
+# 2:30:45 PM (matches HOUR/MINUTE/SECOND test inputs)
+test "14, 30, 45" "0.604687500"
+
+# 11:59:59 PM (last second of day)
+test "23, 59, 59" "0.999988426"
+
+# 0:30:00 AM (just minutes)
+test "0, 30, 0" "0.020833333333333332"
+
+# 0:00:30 (just seconds)
+test "0, 0, 30" "0.00034722222222222224"
+
+save

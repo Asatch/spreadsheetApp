@@ -1,0 +1,211 @@
+# WITHDRAW_PRETAX - Withdraw from pre-tax account with progressive tax
+# Python signature: withdraw_from_pre_tax(balance, shortfall, prior_income)
+# Returns: gross_withdrawal, additional_tax, remaining_needed
+
+new WITHDRAW_PRETAX
+input BALANCE 100000
+input SHORTFALL 10000
+input PRIOR_INCOME 50000
+
+# Row 1-3: Display inputs
+write A1 'Account Balance
+write B1 =BALANCE
+write C1 'Pre-tax account balance
+
+write A2 'Amount Needed (net)
+write B2 =SHORTFALL
+write C2 'Net amount needed after tax
+
+write A3 'Prior Income
+write B3 =PRIOR_INCOME
+write C3 'Taxable income before withdrawal
+
+# Tax brackets table (columns E-G)
+write E5 'Lower
+write F5 'Upper
+write G5 'Rate
+
+# Bracket 1: 0 - 23850 @ 10%
+write E6 0
+write F6 23850
+write G6 0.10
+
+# Bracket 2: 23850 - 96950 @ 12%
+write E7 23850
+write F7 96950
+write G7 0.12
+
+# Bracket 3: 96950 - 206700 @ 22%
+write E8 96950
+write F8 206700
+write G8 0.22
+
+# Bracket 4: 206700 - 394600 @ 24%
+write E9 206700
+write F9 394600
+write G9 0.24
+
+# Bracket 5: 394600 - 501050 @ 32%
+write E10 394600
+write F10 501050
+write G10 0.32
+
+# Bracket 6: 501050 - 751600 @ 35%
+write E11 501050
+write F11 751600
+write G11 0.35
+
+# Bracket 7: 751600 - Infinity @ 37%
+write E12 751600
+write F12 999999999
+write G12 0.37
+
+# Processing columns (columns H-N):
+# H: Skip bracket? (prior income >= upper)
+# I: Bracket space available (upper - current income, capped at 0)
+# J: Withdrawal possible (min of bracket space and account remaining)
+# K: Net possible (withdrawal * (1 - rate))
+# L: Required withdrawal this bracket
+# M: Tax this bracket
+# N: Remaining shortfall after this bracket
+
+# Running state columns:
+# O: Account remaining (running)
+# P: Taxable income (running)
+# Q: Gross withdrawal (running)
+# R: Total tax (running)
+
+# Headers
+write H5 'Skip?
+write I5 'BracketSpace
+write J5 'WdPossible
+write K5 'NetPossible
+write L5 'RequiredWd
+write M5 'TaxBracket
+write N5 'ShortRemain
+write O5 'AcctRemain
+write P5 'TaxIncome
+write Q5 'GrossWd
+write R5 'TotalTax
+
+# Initial state (before any brackets - row 5 dummy or use inputs)
+# We'll process brackets in rows 6-12
+
+# Bracket 1 (row 6)
+# H6: Skip if prior income >= upper bound
+write H6 =PRIOR_INCOME>=F6
+# O6: Account remaining starts at BALANCE
+write O6 =BALANCE
+# P6: Taxable income starts at PRIOR_INCOME
+write P6 =PRIOR_INCOME
+# I6: Bracket space = upper - current income (0 if skipped)
+write I6 =IF(H6,0,MAX(0,F6-P6))
+# J6: Withdrawal possible = min(bracket space, account remaining)
+write J6 =IF(H6,0,MIN(I6,O6))
+# K6: Net possible = withdrawal * (1 - rate)
+write K6 =J6*(1-G6)
+# N6: Remaining shortfall starts at SHORTFALL
+write N6 =SHORTFALL
+# L6: Required withdrawal = if net covers shortfall, exact amount, else full bracket
+write L6 =IF(H6,0,IF(K6>=N6,N6/(1-G6),J6))
+# M6: Tax on this withdrawal
+write M6 =L6*G6
+# Q6: Gross withdrawal so far
+write Q6 =L6
+# R6: Total tax so far
+write R6 =M6
+
+# Bracket 2 (row 7)
+write H7 =P6+L6>=F7
+write O7 =O6-L6
+write P7 =P6+L6
+write I7 =IF(H7,0,MAX(0,F7-P7))
+write J7 =IF(H7,0,MIN(I7,O7))
+write K7 =J7*(1-G7)
+# Remaining shortfall from previous = shortfall - net withdrawn so far
+write N7 =MAX(0,SHORTFALL-(Q6-R6))
+write L7 =IF(H7,0,IF(O7<=0,0,IF(N7<=0,0,IF(K7>=N7,N7/(1-G7),J7))))
+write M7 =L7*G7
+write Q7 =Q6+L7
+write R7 =R6+M7
+
+# Bracket 3 (row 8)
+write H8 =P7+L7>=F8
+write O8 =O7-L7
+write P8 =P7+L7
+write I8 =IF(H8,0,MAX(0,F8-P8))
+write J8 =IF(H8,0,MIN(I8,O8))
+write K8 =J8*(1-G8)
+write N8 =MAX(0,SHORTFALL-(Q7-R7))
+write L8 =IF(H8,0,IF(O8<=0,0,IF(N8<=0,0,IF(K8>=N8,N8/(1-G8),J8))))
+write M8 =L8*G8
+write Q8 =Q7+L8
+write R8 =R7+M8
+
+# Bracket 4 (row 9)
+write H9 =P8+L8>=F9
+write O9 =O8-L8
+write P9 =P8+L8
+write I9 =IF(H9,0,MAX(0,F9-P9))
+write J9 =IF(H9,0,MIN(I9,O9))
+write K9 =J9*(1-G9)
+write N9 =MAX(0,SHORTFALL-(Q8-R8))
+write L9 =IF(H9,0,IF(O9<=0,0,IF(N9<=0,0,IF(K9>=N9,N9/(1-G9),J9))))
+write M9 =L9*G9
+write Q9 =Q8+L9
+write R9 =R8+M9
+
+# Bracket 5 (row 10)
+write H10 =P9+L9>=F10
+write O10 =O9-L9
+write P10 =P9+L9
+write I10 =IF(H10,0,MAX(0,F10-P10))
+write J10 =IF(H10,0,MIN(I10,O10))
+write K10 =J10*(1-G10)
+write N10 =MAX(0,SHORTFALL-(Q9-R9))
+write L10 =IF(H10,0,IF(O10<=0,0,IF(N10<=0,0,IF(K10>=N10,N10/(1-G10),J10))))
+write M10 =L10*G10
+write Q10 =Q9+L10
+write R10 =R9+M10
+
+# Bracket 6 (row 11)
+write H11 =P10+L10>=F11
+write O11 =O10-L10
+write P11 =P10+L10
+write I11 =IF(H11,0,MAX(0,F11-P11))
+write J11 =IF(H11,0,MIN(I11,O11))
+write K11 =J11*(1-G11)
+write N11 =MAX(0,SHORTFALL-(Q10-R10))
+write L11 =IF(H11,0,IF(O11<=0,0,IF(N11<=0,0,IF(K11>=N11,N11/(1-G11),J11))))
+write M11 =L11*G11
+write Q11 =Q10+L11
+write R11 =R10+M11
+
+# Bracket 7 (row 12)
+write H12 =P11+L11>=F12
+write O12 =O11-L11
+write P12 =P11+L11
+write I12 =IF(H12,0,MAX(0,F12-P12))
+write J12 =IF(H12,0,MIN(I12,O12))
+write K12 =J12*(1-G12)
+write N12 =MAX(0,SHORTFALL-(Q11-R11))
+write L12 =IF(H12,0,IF(O12<=0,0,IF(N12<=0,0,IF(K12>=N12,N12/(1-G12),J12))))
+write M12 =L12*G12
+write Q12 =Q11+L12
+write R12 =R11+M12
+
+# Row 14: Final outputs
+write A14 'Gross Withdrawal
+write B14 =Q12
+
+write A15 'Additional Tax
+write B15 =R12
+
+write A16 'Remaining Needed
+write B16 =N12
+
+output B14
+output B15
+output B16
+
+save output/WITHDRAW_PRETAX.xml

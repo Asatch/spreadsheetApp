@@ -1,0 +1,105 @@
+# CEILING - Round up toward positive infinity
+# The complement to FLOOR (which is built-in)
+
+new CEILING
+input NUMBER 3.2
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'CEILING
+style A1 bold
+style A1 fontsize 24
+write A2 'Rounds a number up toward positive infinity.
+write A3 'The complement of FLOOR, which rounds down.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-6: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUT ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Number
+write B6 =NUMBER
+write C6 'The value to round up
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-10: THE LOGIC
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── THE LOGIC ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+highlight E8 gray
+highlight F8 gray
+highlight G8 gray
+
+write A9 'Negate
+write B9 =-B6
+write C9 'Flip the sign
+
+write A10 'Floor of Negated
+write B10 =FLOOR(B9)
+write C10 'Round down (toward -infinity)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 12-13: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A12 '─── RESULT ───
+highlight A12 gray
+highlight B12 gray
+highlight C12 gray
+highlight D12 gray
+highlight E12 gray
+highlight F12 gray
+highlight G12 gray
+
+write A13 'Ceiling
+write B13 =-B10
+write C13 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B13 CEILING
+output CEILING
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 4
+format B13 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Positive decimal rounds up
+test "3.2" "4"
+
+# Already integer (unchanged)
+test "5" "5"
+
+# Zero
+test "0" "0"
+
+# Negative decimal rounds toward zero (up on number line)
+test "-3.2" "-3"
+
+# Negative integer (unchanged)
+test "-5" "-5"
+
+save

@@ -1,0 +1,150 @@
+# YEAR - Extract year from Excel serial date
+# Self-contained (doesn't depend on DATE function)
+
+new YEAR
+use INT
+input SERIAL 45306
+default-format number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'YEAR FROM DATE
+style A1 bold
+style A1 fontsize 24
+write A2 'Extracts the year from an Excel serial date number.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUT ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Serial Date
+write B5 =SERIAL
+write C5 'Days since Jan 1, 1900
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-16: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A7 '─── THE CALCULATION ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+
+write A8 'Adjusted Serial
+write B8 =B5+109571.75
+write C8 'Add offset for calculation
+
+write A9 'Average Year
+write B9 =B8/365.2425
+write C9 'Divide by avg days per year
+
+write A10 'Estimated Year
+write B10 =INT(B9-300+1900)
+write C10 'Convert to calendar year
+
+# Calculate Jan 1 of estimated year inline (same as DATE formula)
+write A11 'Years Since 1900
+write B11 =B10-1900
+write C11 'For base days calculation
+
+write A12 'Base Days
+write B12 =B11*365
+write C12 '365 days per year
+
+write A13 'Prior Year
+write B13 =B10-1
+write C13 'For leap year calculation
+
+write A14 'Leap Years
+write B14 =IF(B10<=1900,0,INT(B13/4)-INT(B13/100)+INT(B13/400)-459)
+write C14 'Leap days before this year
+
+write A15 'Jan 1 Serial
+write B15 =B12+B14+1
+write C15 'Serial number for Jan 1 (+1 for day 1)
+
+write A16 'Days Into Year
+write B16 =B5-B15+1
+write C16 'Position within the year
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 18-19: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── RESULT ───
+highlight A18 gray
+highlight B18 gray
+highlight C18 gray
+highlight D18 gray
+highlight E18 gray
+highlight F18 gray
+highlight G18 gray
+
+write A19 'Year
+write B19 =IF(B16<1,B10-1,B10)
+write C19 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B19 YEAR_RESULT
+output YEAR_RESULT
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B8 number 2
+format B9 number 4
+format B10 number 0 period-only
+format B13 number 0 period-only
+format B19 number 0 period-only
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# First day ever (Jan 1, 1900)
+test "1" "1900"
+
+# Feb 28, 1900
+test "59" "1900"
+
+# Feb 29, 1900 (Excel's fake leap day)
+test "60" "1900"
+
+# Mar 1, 1900
+test "61" "1900"
+
+# Dec 31, 1999
+test "36525" "1999"
+
+# Jan 1, 2000 (Y2K boundary)
+test "36526" "2000"
+
+# Jan 15, 2024
+test "45306" "2024"
+
+# Jun 15, 2024
+test "45458" "2024"
+
+# Feb 29, 2020 (leap day)
+test "43890" "2020"
+
+save

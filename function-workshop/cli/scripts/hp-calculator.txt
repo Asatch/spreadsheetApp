@@ -1,0 +1,101 @@
+# HP_CALCULATOR — D&D 5e Hit Point Calculator
+# Computes average hit points from level, hit die, and Constitution modifier.
+# Level 1 gets max hit die; subsequent levels get the rounded-up average.
+# Output: HP
+
+new HP_CALCULATOR
+
+input LEVEL 5
+input HIT_DIE 10
+input CON_MOD 2
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'HP CALCULATOR — D&D 5e
+write A2 'Computes average hit points from level, hit die, and Constitution modifier.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-7: YOUR CHARACTER
+# ═══════════════════════════════════════════════════════════════════
+write A4 '─── YOUR CHARACTER ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+write A5 'Character Level
+write B5 =LEVEL
+write C5 'Level 1-20
+write A6 'Hit Die Size
+write B6 =HIT_DIE
+write C6 '6=Wizard/Sorc  8=Cleric/Rogue  10=Fighter/Ranger  12=Barbarian
+write A7 'CON Modifier
+write B7 =CON_MOD
+write C7 'Constitution ability modifier (usually +1 to +3)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-14: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+write A9 '─── THE CALCULATION ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+write A10 'First Level HP
+write B10 =HIT_DIE
+write C10 'Max hit die at level 1
+write A11 'Average Per Level
+write B11 =HIT_DIE/2+1
+write C11 '(die / 2) + 1 — the rounded-up average for subsequent levels
+write A12 'Remaining Levels
+write B12 =LEVEL-1
+write C12 'Levels after first
+write A13 'HP from Hit Dice
+write B13 =B10+B12*B11
+write C13 '= First level max + remaining levels x average
+write A14 'HP from Constitution
+write B14 =CON_MOD*LEVEL
+write C14 '= CON modifier x total levels
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 16-17: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A16 '─── RESULT ───
+highlight A16 gray
+highlight B16 gray
+highlight C16 gray
+highlight D16 gray
+highlight E16 gray
+highlight F16 gray
+highlight G16 gray
+write A17 'Hit Points
+write B17 =B13+B14
+write C17 '← OUTPUT  Total HP (hit dice + Constitution bonus)
+highlight B17 yellow
+
+name B17 HP
+output HP
+
+default-format number 0
+
+# Test cases (LEVEL, HIT_DIE, CON_MOD -> HP)
+# Level 5 Fighter (d10, +2 CON): 10 + 4x6 + 2x5 = 44
+test "5, 10, 2" "44"
+# Level 1 Wizard (d6, +1 CON): 6 + 0 + 1 = 7
+test "1, 6, 1" "7"
+# Level 20 Barbarian (d12, +3 CON): 12 + 19x7 + 3x20 = 205
+test "20, 12, 3" "205"
+# Level 1 Fighter (d10, +0 CON): just the max die = 10
+test "1, 10, 0" "10"
+# Level 10 Cleric (d8, +2 CON): 8 + 9x5 + 2x10 = 73
+test "10, 8, 2" "73"
+
+save

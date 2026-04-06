@@ -1,0 +1,197 @@
+# CLASS_BENCHMARK — D&D 5e Official Class Benchmarks
+# Returns expected stats for official class archetypes at each tier level.
+# Archetypes: 1=Martial (Fighter Champion), 2=Half-Caster (Paladin), 3=Full-Caster (Wizard)
+# Assumptions: Standard array, longsword+shield+Dueling for 1&2, Fire Bolt cantrip for 3.
+# Fighter Champion: Improved Critical (19-20) at 3, Superior Critical (18-20) at 15, Extra Attack x2 at 11.
+# Paladin: Improved Divine Smite (+1d8/hit, avg 4.5 added to damage bonus) at 11.
+# Wizard: Fire Bolt cantrip scales 1d10/2d10/3d10/4d10 at tiers, Mage Armor + DEX 1.
+# All use CON +2, standard ASI progression (STR/INT 17→18 at 4→20 at 8).
+# Target ACs from DMG: CR1=13, CR3-5=15, CR8-11=17, CR17+=19.
+
+new CLASS_BENCHMARK
+
+input ARCHETYPE 1
+input LEVEL 5
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'CLASS BENCHMARK — D&D 5e
+write A2 'Expected stats for official class archetypes at each tier.
+write A3 '1=Martial (Fighter Champion)  2=Half-Caster (Paladin)  3=Full-Caster (Wizard)
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-9: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── INPUTS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'Archetype
+write B6 =ARCHETYPE
+write C6 '1=Martial  2=Half-Caster  3=Full-Caster
+write A7 'Level
+write B7 =LEVEL
+write C7 'Snapped to nearest tier: 1, 5, 11, or 17
+write A8 'Tier Level
+write B8 =IF(LEVEL<=3,1,IF(LEVEL<=8,5,IF(LEVEL<=14,11,17)))
+write C8 'Tier breakpoints where class features change
+write A9 'Lookup Key
+write B9 =ARCHETYPE*100+B8
+write C9 '= Archetype x 100 + Tier (compound key for table lookup)
+name B8 TIER
+name B9 LOOKUP_KEY
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11-26: REFERENCE TABLE
+# ═══════════════════════════════════════════════════════════════════
+write A11 '─── REFERENCE TABLE ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+write A12 'Key
+write B12 'HP
+write C12 'AC
+write D12 'DPR
+write E12 'ATK
+write F12 'DC
+write G12 'Match
+style A12 bold
+style B12 bold
+style C12 bold
+style D12 bold
+style E12 bold
+style F12 bold
+style G12 bold
+
+# Load CSV: columns A(key), B(hp), C(ac), D(dpr), E(atk), F(dc)
+csv A13 cli/data/class-benchmark.csv
+
+# Match column: does this row's key equal the lookup key?
+write G13 =A13=LOOKUP_KEY
+fill G13:G24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11 continued: CASCADE COLUMNS (H-L)
+# First match wins for each stat
+# ═══════════════════════════════════════════════════════════════════
+# HP cascade (column H)
+write H12 'HP*
+style H12 bold
+write H13 =IF(G13,B13,0)
+write H14 =IF(H13>0,H13,IF(G14,B14,0))
+fill H14:H24
+
+# AC cascade (column I)
+write I12 'AC*
+style I12 bold
+write I13 =IF(G13,C13,0)
+write I14 =IF(I13>0,I13,IF(G14,C14,0))
+fill I14:I24
+
+# DPR cascade (column J)
+write J12 'DPR*
+style J12 bold
+write J13 =IF(G13,D13,0)
+write J14 =IF(J13>0,J13,IF(G14,D14,0))
+fill J14:J24
+
+# ATK cascade (column K)
+write K12 'ATK*
+style K12 bold
+write K13 =IF(G13,E13,0)
+write K14 =IF(K13>0,K13,IF(G14,E14,0))
+fill K14:K24
+
+# DC cascade (column L)
+write L12 'DC*
+style L12 bold
+write L13 =IF(G13,F13,0)
+write L14 =IF(L13>0,L13,IF(G14,F14,0))
+fill L14:L24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 26-32: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A26 '─── RESULT ───
+highlight A26 gray
+highlight B26 gray
+highlight C26 gray
+highlight D26 gray
+highlight E26 gray
+highlight F26 gray
+highlight G26 gray
+write A27 'Hit Points
+write B27 =H24
+write C27 '← OUTPUT
+highlight B27 yellow
+write A28 'Armor Class
+write B28 =I24
+write C28 '← OUTPUT
+highlight B28 yellow
+write A29 'Damage Per Round
+write B29 =J24
+write C29 '← OUTPUT  Sustained DPR vs level-appropriate AC
+highlight B29 yellow
+write A30 'Attack Bonus
+write B30 =K24
+write C30 '← OUTPUT
+highlight B30 yellow
+write A31 'Save DC
+write B31 =L24
+write C31 '← OUTPUT  0 = no spellcasting
+highlight B31 yellow
+
+name B27 HP
+name B28 AC
+name B29 DPR
+name B30 ATK_BONUS
+name B31 SAVE_DC
+
+output HP
+output AC
+output DPR
+output ATK_BONUS
+output SAVE_DC
+
+# Formatting
+default-format number 1
+format B6 number 0
+format B7 number 0
+format B8 number 0
+format B9 number 0
+format B27 number 0
+format B28 number 0
+format B29 number 2
+format B30 number 0
+format B31 number 0
+
+# Test cases: "ARCHETYPE, LEVEL" "HP, AC, DPR, ATK_BONUS, SAVE_DC"
+# Martial tier 2 (Fighter Champion, level 5)
+test "1, 5" "44, 20, 14.55, 7, 0"
+# Half-caster tier 3 (Paladin, level 11 with IDS)
+test "2, 11" "92, 20, 21.25, 9, 14"
+# Full-caster tier 1 (Wizard, level 1)
+test "3, 1" "8, 14, 3.85, 5, 13"
+# Martial tier 4 (Fighter Champion, level 17 with Superior Critical)
+test "1, 17" "140, 20, 24.45, 11, 0"
+# Full-caster tier 4
+test "3, 17" "104, 14, 15.4, 11, 19"
+# Martial tier 3 (Fighter Champion, level 11, Extra Attack x2, crit 19-20)
+test "1, 11" "92, 20, 23.775, 9, 0"
+# Tier snapping: level 3 → tier 1
+test "1, 3" "12, 18, 6.4, 5, 0"
+# Tier snapping: level 8 → tier 5
+test "2, 8" "44, 20, 14.1, 7, 13"
+
+save

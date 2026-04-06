@@ -1,0 +1,149 @@
+# ATTACK_RESOLVER — D&D 5e
+# Resolve a weapon attack from actual dice rolls.
+# Returns: DAMAGE, IS_HIT, IS_CRIT
+# Companion to DPR_CALCULATOR: that one gives averages, this one resolves a real roll.
+
+new ATTACK_RESOLVER
+
+input D20_ROLL 14
+input ATTACK_BONUS 5
+input TARGET_AC 15
+input DAMAGE_ROLL 4
+input DAMAGE_BONUS 3
+input CRIT_RANGE 20
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'ATTACK RESOLVER — D&D 5e
+write A2 'Resolve a weapon attack from your actual dice rolls.
+write A3 'Roll your d20 and damage die, enter the results, see what happens.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-11: YOUR ROLL (inputs)
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR ROLL ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'd20 Roll
+write B6 =D20_ROLL
+write C6 'Natural d20 result (1-20)
+write A7 'Attack Bonus
+write B7 =ATTACK_BONUS
+write C7 'Total modifier to d20 (ability mod + proficiency + magic)
+write A8 'Target AC
+write B8 =TARGET_AC
+write C8 'Armor Class to beat
+write A9 'Damage Roll
+write B9 =DAMAGE_ROLL
+write C9 'What you rolled on the damage die
+write A10 'Damage Bonus
+write B10 =DAMAGE_BONUS
+write C10 'Ability modifier added to damage (Strength or Dexterity)
+write A11 'Crit Range
+write B11 =CRIT_RANGE
+write C11 'Minimum d20 for critical (usually 20)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-17: DID YOU HIT?
+# ═══════════════════════════════════════════════════════════════════
+write A13 '─── DID YOU HIT? ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+write A14 'Attack Total
+write B14 =D20_ROLL+ATTACK_BONUS
+write C14 'd20 + bonus
+write A15 'Natural 1?
+write B15 =IF(D20_ROLL=1,1,0)
+write C15 'Always misses regardless of total
+write A16 'Critical Roll?
+write B16 =IF(D20_ROLL>=CRIT_RANGE,1,0)
+write C16 'd20 >= crit range — always hits
+write A17 'Hit?
+write B17 =IF(B15=1,0,IF(OR(B16=1,B14>=TARGET_AC),1,0))
+write C17 'Not nat 1, and (crit or total >= AC)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 19-21: DAMAGE
+# ═══════════════════════════════════════════════════════════════════
+write A19 '─── DAMAGE ───
+highlight A19 gray
+highlight B19 gray
+highlight C19 gray
+highlight D19 gray
+highlight E19 gray
+highlight F19 gray
+highlight G19 gray
+write A20 'Normal Damage
+write B20 =DAMAGE_ROLL+DAMAGE_BONUS
+write C20 'Die roll + bonus
+write A21 'Crit Damage
+write B21 =2*DAMAGE_ROLL+DAMAGE_BONUS
+write C21 '2x die roll + bonus (only dice double in 5e)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 23-26: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A23 '─── RESULT ───
+highlight A23 gray
+highlight B23 gray
+highlight C23 gray
+highlight D23 gray
+highlight E23 gray
+highlight F23 gray
+highlight G23 gray
+write A24 'Damage Dealt
+write B24 =IF(B17=0,0,IF(B16=1,B21,B20))
+write C24 '← OUTPUT: 0 if miss, crit dmg if crit, normal if hit
+highlight B24 yellow
+write A25 'Hit?
+write B25 =B17
+write C25 '← OUTPUT
+write A26 'Critical?
+write B26 =B16
+write C26 '← OUTPUT
+
+# Named outputs
+name B24 DAMAGE
+name B25 IS_HIT
+name B26 IS_CRIT
+
+# Outputs
+output DAMAGE
+output IS_HIT
+output IS_CRIT
+
+# Formatting
+default-format number 0
+
+# Test cases
+# Normal hit: 14+5=19 vs AC 15
+test "14, 5, 15, 4, 3, 20" "7, 1, 0"
+# Miss: 5+5=10 vs AC 15
+test "5, 5, 15, 4, 3, 20" "0, 0, 0"
+# Natural 20 crit: 20+5=25, damage 2*6+3=15
+test "20, 5, 15, 6, 3, 20" "15, 1, 1"
+# Natural 1 auto-miss even with +20
+test "1, 20, 10, 6, 3, 20" "0, 0, 0"
+# Nat 20 vs impossible AC 30: still hits (auto-hit)
+test "20, 0, 30, 3, 0, 20" "6, 1, 1"
+# Champion crit 19: roll=19, crit range 19, damage 2*5+3=13
+test "19, 5, 15, 5, 3, 19" "13, 1, 1"
+# Barely hit: 10+5=15 vs AC 15 (meets AC = hit)
+test "10, 5, 15, 7, 3, 20" "10, 1, 0"
+# Barely miss: 9+5=14 vs AC 15
+test "9, 5, 15, 7, 3, 20" "0, 0, 0"
+
+save

@@ -1,0 +1,127 @@
+# SECOND - Extract second from Excel serial date/time
+# Time is the decimal portion of a serial number
+
+new SECOND
+use INT
+input SERIAL 45306.604687500
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'SECOND FROM TIME
+style A1 bold
+style A1 fontsize 24
+write A2 'Extracts the second (0-59) from an Excel serial date/time.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUT ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Serial Date/Time
+write B5 =SERIAL
+write C5 'Days + time fraction
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-13: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A7 '─── THE CALCULATION ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+
+write A8 'Time Fraction
+write B8 =MOD(B5,1)
+write C8 'Decimal part (0-1)
+
+write A9 'Hours (decimal)
+write B9 =B8*24
+write C9 'Time as hours
+
+write A10 'Hour Remainder
+write B10 =MOD(B9,1)
+write C10 'Fractional hours
+
+write A11 'Minutes (decimal)
+write B11 =B10*60
+write C11 'Remainder as minutes
+
+write A12 'Minute Remainder
+write B12 =MOD(B11,1)
+write C12 'Fractional minutes
+
+write A13 'Seconds (decimal)
+write B13 =B12*60
+write C13 'Remainder as seconds
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 15-16: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A15 '─── RESULT ───
+highlight A15 gray
+highlight B15 gray
+highlight C15 gray
+highlight D15 gray
+highlight E15 gray
+highlight F15 gray
+highlight G15 gray
+
+write A16 'Second
+write B16 =INT(B13+0.0001)
+write C16 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B16 SECOND
+output SECOND
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B5 number 9
+format B8 number 9
+format B13 number 4
+format B16 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Midnight (0 seconds)
+test "0" "0"
+
+# Noon (exact hour, 0 seconds)
+test "0.5" "0"
+
+# 2:30:45 PM (45 seconds)
+test "45306.604687500" "45"
+
+# 11:59:59 PM (59 seconds)
+test "45306.999988426" "59"
+
+# 0:00:01 (1 second past midnight)
+test "0.000011574" "1"
+
+# Exact minute boundary (0 seconds)
+test "0.0006944444444444445" "0"
+
+save

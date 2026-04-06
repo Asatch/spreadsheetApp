@@ -1,0 +1,356 @@
+# RETIREMENT_YEAR - One complete year of retirement
+# Custom account distributions, income, taxes, withdrawals, investment growth,
+# and terminal value — everything in one function.
+# Returns: ending balances (taxable, basis, tax-deferred, tax-free, custom),
+#          total taxes, cumulative taxes, cumulative shortfall, terminal value
+# Output names: ENDING_TAXABLE, ENDING_BASIS, ENDING_TAX_DEFERRED, ENDING_TAX_FREE,
+#               ENDING_CUSTOM, TOTAL_TAXES, CUM_TAXES_END, CUM_SHORTFALL_END, TERMINAL_VALUE
+
+new RETIREMENT_YEAR
+
+use CUSTOM_ACCOUNT_DIST
+use CALCULATE_RMD
+use PROGRESSIVE_TAX
+use PAY_FOR_EXPENSES
+
+input AGE 77
+input TAXABLE_BALANCE 100000
+input TAXABLE_BASIS 80000
+input TAX_DEFERRED_BALANCE 500000
+input TAX_FREE_BALANCE 50000
+input CUSTOM_BALANCE 0
+input YEAR 1
+input CUM_TAXES 0
+input CUM_SHORTFALL 0
+
+input SS_AGE 67
+input SS_INCOME 30000
+input SPENDING 60000
+input RETURN_RATE 0.05
+input INFLATION_RATE 0.025
+input TERMINAL_TAX_RATE 0.25
+input STRATEGY 1
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'RETIREMENT YEAR
+style A1 bold
+style A1 fontsize 24
+write A2 'One complete year of retirement: custom distributions, income, taxes, withdrawals, growth, terminal value.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-8: CUSTOM ACCOUNT
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── CUSTOM ACCOUNT ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Starting Balance
+write B5 =CUSTOM_BALANCE
+
+write A6 'Mid-Year Balance
+write B6 =CUSTOM_BALANCE*((1+RETURN_RATE)^0.5)
+write C6 'Half-year growth before distribution
+
+write A7 'Distribution
+write B7 =CUSTOM_ACCOUNT_DIST(B6, YEAR)
+write C7 'Scheduled annual distribution
+
+write A8 'Ending Balance
+write B8 =(B6-B7)*((1+RETURN_RATE)^0.5)
+write C8 'Second half-year growth after distribution
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 10-16: INCOME SOURCES
+# ═══════════════════════════════════════════════════════════════════
+
+write A10 '─── INCOME SOURCES ───
+highlight A10 gray
+highlight B10 gray
+highlight C10 gray
+highlight D10 gray
+highlight E10 gray
+highlight F10 gray
+highlight G10 gray
+
+write A11 'Age
+write B11 =AGE
+format B11 number 0
+
+write A12 'Custom Income
+write B12 =B7
+write C12 'Distribution from custom account
+
+write A13 'Social Security
+write B13 =IF(AGE>=SS_AGE, SS_INCOME, 0)
+write C13 'SS if at or past SS age
+
+write A14 'RMD from Tax-Deferred
+write B14 =CALCULATE_RMD(TAX_DEFERRED_BALANCE, AGE)
+write C14 'Required minimum distribution
+
+write A15 'Tax-Def After RMD
+write B15 =TAX_DEFERRED_BALANCE-B14
+write C15 'Tax-deferred balance minus RMD
+
+write A16 'Total Income
+write B16 =B12+B13+B14
+write C16 'Custom + SS + RMD
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 18-20: TAX ON INCOME
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── TAX ON INCOME ───
+highlight A18 gray
+highlight B18 gray
+highlight C18 gray
+highlight D18 gray
+highlight E18 gray
+highlight F18 gray
+highlight G18 gray
+
+write A19 'Income Tax
+write B19 =PROGRESSIVE_TAX(B16)
+write C19 'Federal income tax on total income
+
+write A20 'After-Tax Income
+write B20 =B16-B19
+write C20 'Total income minus income tax
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 22-25: SPENDING ANALYSIS
+# ═══════════════════════════════════════════════════════════════════
+
+write A22 '─── SPENDING ANALYSIS ───
+highlight A22 gray
+highlight B22 gray
+highlight C22 gray
+highlight D22 gray
+highlight E22 gray
+highlight F22 gray
+highlight G22 gray
+
+write A23 'Annual Spending
+write B23 =SPENDING
+write C23 'Annual expenses in retirement
+
+write A24 'Shortfall
+write B24 =MAX(0, B23-B20)
+write C24 'Amount needing withdrawal
+
+write A25 'Savings
+write B25 =MAX(0, B20-B23)
+write C25 'Surplus going to taxable
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 27-36: WITHDRAWALS
+# ═══════════════════════════════════════════════════════════════════
+
+write A27 '─── WITHDRAWALS ───
+highlight A27 gray
+highlight B27 gray
+highlight C27 gray
+highlight D27 gray
+highlight E27 gray
+highlight F27 gray
+highlight G27 gray
+
+write A28 'Strategy
+write B28 =STRATEGY
+write C28 '1=Taxable, 2=Tax-Def, 3=Tax-Free first
+format B28 number 0
+
+write A29 'Expenses Result
+write B29 =PAY_FOR_EXPENSES(TAXABLE_BALANCE, TAXABLE_BASIS, B15, TAX_FREE_BALANCE, B24, B16, STRATEGY)
+write C29 'PAY_FOR_EXPENSES result (see below)
+
+write A31 'Taxable After
+write B31 =INDEX(B29, "ENDING_TAXABLE")
+write C31 'Taxable balance after withdrawals
+
+write A32 'Basis After
+write B32 =INDEX(B29, "ENDING_BASIS")
+write C32 'Cost basis after withdrawals
+
+write A33 'Tax-Def After
+write B33 =INDEX(B29, "ENDING_TAX_DEFERRED")
+write C33 'Tax-deferred balance after withdrawals
+
+write A34 'Tax-Free After
+write B34 =INDEX(B29, "ENDING_TAX_FREE")
+write C34 'Tax-free balance after withdrawals
+
+write A35 'Withdrawal Tax
+write B35 =INDEX(B29, "WITHDRAWAL_TAX")
+write C35 'Tax from capital gains on withdrawals
+
+write A36 'Remaining Shortfall
+write B36 =INDEX(B29, "REMAINING_SHORTFALL")
+write C36 'Unfunded spending if accounts exhausted
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 38-43: INVESTMENT RETURNS
+# ═══════════════════════════════════════════════════════════════════
+
+write A38 '─── INVESTMENT RETURNS ───
+highlight A38 gray
+highlight B38 gray
+highlight C38 gray
+highlight D38 gray
+highlight E38 gray
+highlight F38 gray
+highlight G38 gray
+write C38 'Mid-year avg: return × (start + end) / 2
+
+write A39 'Taxable + Savings
+write B39 =IF(B24>0, B31, TAXABLE_BALANCE+B25)
+write C39 'If shortfall: post-withdrawal. If savings: add to taxable
+
+write A40 'Basis + Savings
+write B40 =IF(B24>0, B32, TAXABLE_BASIS+B25)
+write C40 'If shortfall: post-withdrawal. If savings: add to basis
+
+write A41 'Taxable End
+write B41 =B39+RETURN_RATE*(TAXABLE_BALANCE+B39)/2
+write C41 'After mid-year average investment growth
+
+write A42 'Tax-Def End
+write B42 =B33+RETURN_RATE*(B15+B33)/2
+write C42 'Start = after RMD, end = after withdrawals
+
+write A43 'Tax-Free End
+write B43 =B34+RETURN_RATE*(TAX_FREE_BALANCE+B34)/2
+write C43 'After mid-year average investment growth
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 45-55: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A45 '─── RESULT ───
+highlight A45 gray
+highlight B45 gray
+highlight C45 gray
+highlight D45 gray
+highlight E45 gray
+highlight F45 gray
+highlight G45 gray
+
+write A46 'Ending Taxable
+write B46 =B41
+write C46 '← OUTPUT
+
+write A47 'Ending Basis
+write B47 =B40*(1-INFLATION_RATE)
+write C47 '← OUTPUT: Basis eroded by inflation
+
+write A48 'Ending Tax-Deferred
+write B48 =B42
+write C48 '← OUTPUT
+
+write A49 'Ending Tax-Free
+write B49 =B43
+write C49 '← OUTPUT
+
+write A50 'Ending Custom
+write B50 =B8
+write C50 '← OUTPUT
+
+write A51 'Year Taxes
+write B51 =B19+B35
+write C51 'Income tax + withdrawal tax
+
+write A52 'Cumulative Taxes
+write B52 =CUM_TAXES+B51
+write C52 '← OUTPUT: Running total of actual taxes paid
+
+write A53 'Total Taxes
+write B53 =B52+TERMINAL_TAX_RATE*B48
+write C53 '← OUTPUT: Plus terminal tax on tax-deferred
+
+write A54 'Cumulative Shortfall
+write B54 =CUM_SHORTFALL+B36
+write C54 '← OUTPUT
+
+write A55 'Terminal Value
+write B55 =B46+B50+B48*(1-TERMINAL_TAX_RATE)+B49
+write C55 '← OUTPUT: Tax-adjusted net worth if liquidated now
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B46 ENDING_TAXABLE
+name B47 ENDING_BASIS
+name B48 ENDING_TAX_DEFERRED
+name B49 ENDING_TAX_FREE
+name B50 ENDING_CUSTOM
+name B53 TOTAL_TAXES
+name B52 CUM_TAXES_END
+name B54 CUM_SHORTFALL_END
+name B55 TERMINAL_VALUE
+
+output ENDING_TAXABLE
+output ENDING_BASIS
+output ENDING_TAX_DEFERRED
+output ENDING_TAX_FREE
+output ENDING_CUSTOM
+output TOTAL_TAXES
+output CUM_TAXES_END
+output CUM_SHORTFALL_END
+output TERMINAL_VALUE
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format RETURN_RATE percent 1
+format INFLATION_RATE percent 1
+format TERMINAL_TAX_RATE percent 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# Independent verification: expected values from Python retirement_year() implementation
+# Input order: age, taxable, basis, tax_def, tax_free, custom, year, cum_taxes, cum_shortfall,
+#              ss_age, ss_income, spending, return_rate, inflation_rate, terminal_tax_rate, strategy
+# Output order: taxable_end, basis_end, tax_def_end, tax_free_end, custom_end,
+#               total_taxes, cum_taxes_end, cum_shortfall_end, terminal_value
+# ═══════════════════════════════════════════════════════════════════
+
+# 1. No custom, strategy 1 (baseline) — YEAR=1 means first retirement year
+test "77, 100000, 80000, 500000, 50000, 0, 1, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "90302.31767433484, 66815.42223022555, 502074.23580786027, 52500, 0, 131691.82235627784, 6173.26340431279, 0, 519357.99453023006"
+
+# 2. No custom, strategy 2 (tax-deferred first)
+test "77, 100000, 80000, 500000, 50000, 0, 1, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 2" "105000, 78000, 485873.3814261612, 52500, 0, 129108.11808381302, 7639.772727272728, 0, 521905.0360696209"
+
+# 3. Strategy 3 (tax-free first)
+test "77, 100000, 80000, 500000, 50000, 0, 1, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 3" "105000, 78000, 502074.23580786027, 38243.2481441048, 0, 131261.6462882096, 5743.087336244542, 0, 519798.925"
+
+# 4. Pre-SS age (60) — no SS income, no RMD, full spending from withdrawals
+test "60, 100000, 80000, 300000, 50000, 0, 1, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "41597.93814432989, 29752.577319587625, 315000, 52500, 0, 80605.67010309278, 1855.6701030927836, 0, 330347.9381443299"
+
+# 5. Pre-RMD age (70) — has SS but no RMD
+test "70, 100000, 80000, 300000, 50000, 0, 1, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "69998.89175257731, 51365.01030927834, 315000, 52500, 0, 82897.42268041238, 4147.422680412371, 0, 358748.8917525773"
+
+# 6. Custom account active (year 6, $200K custom)
+test "77, 100000, 80000, 500000, 50000, 200000, 6, 30000, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "127714.24650768704, 99606.23448292182, 502074.23580786027, 52500, 168000.00000000006, 166180.18265587022, 40661.62370390515, 0, 724769.9233635822"
+
+# 7. Insufficient funds — high spending, low balances, generates shortfall
+test "80, 10000, 8000, 20000, 5000, 0, 1, 0, 0, 67, 30000, 80000, 0.03, 0.02, 0.25, 1" "150, 0, 285.1485148514851, 75, 0, 5894.287128712871, 5823, 20823, 438.86138613861385"
+
+# 8. Zero spending — no withdrawals, surplus goes to taxable
+test "77, 100000, 80000, 500000, 50000, 0, 1, 0, 0, 67, 30000, 0, 0.05, 0.025, 0.25, 1" "152243.2481441048, 122938.69945414846, 502074.23580786027, 52500, 0, 131261.6462882096, 5743.087336244542, 0, 581298.925"
+
+# 9. Only custom account — all other balances zero (year 4)
+test "77, 0, 0, 0, 0, 500000, 4, 0, 0, 67, 30000, 60000, 0.05, 0.025, 0.25, 1" "31428.708124176428, 29895.600410801966, 0, 0, 450000.00000000006, 12530.3512036508, 12530.3512036508, 0, 481428.7081241765"
+
+save

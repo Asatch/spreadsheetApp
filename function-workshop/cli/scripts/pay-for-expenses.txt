@@ -1,0 +1,162 @@
+# PAY_FOR_EXPENSES - Orchestrates withdrawals from multiple accounts
+# Strategy: Withdraw Taxable First, then Tax-Deferred, then Tax-Free
+# Matches Python pay_for_expenses() with "Withdraw Taxable First" strategy
+
+new PAY_FOR_EXPENSES
+
+# Inputs
+input TAXABLE_BALANCE 100000
+input TAXABLE_BASIS 80000
+input TAX_DEFERRED_BALANCE 200000
+input TAX_FREE_BALANCE 50000
+input SHORTFALL 30000
+input PRIOR_INCOME 40000
+
+# Row 1-2: Docstring
+write A1 'PAY FOR EXPENSES
+write A2 'Withdraw from accounts to cover spending shortfall. Strategy: Taxable → Tax-Deferred → Tax-Free
+
+# Row 4: Section header
+write A4 '─── STARTING POSITION ───
+
+# Row 5-8: Display inputs
+write A5 'Taxable Balance
+write B5 =TAXABLE_BALANCE
+write C5 'Brokerage account
+
+write A6 'Taxable Basis
+write B6 =TAXABLE_BASIS
+write C6 'Cost basis in taxable account
+
+write A7 'Tax-Deferred Balance
+write B7 =TAX_DEFERRED_BALANCE
+write C7 '401k/IRA balance
+
+write A8 'Tax-Free Balance
+write B8 =TAX_FREE_BALANCE
+write C8 'Roth balance
+
+write A9 'Shortfall to Cover
+write B9 =SHORTFALL
+write C9 'Net amount needed after tax
+
+write A10 'Prior Income
+write B10 =PRIOR_INCOME
+write C10 'Income already received (for tax bracket)
+
+# Row 12: Step 1 - Taxable withdrawal
+write A12 '─── STEP 1: TAXABLE ACCOUNT ───
+
+write A13 'Taxable Withdrawal
+write C13 'Call WITHDRAW_TAXABLE for each output
+
+# Key names for INDEX (must be in cells)
+write D14 'WITHDRAWAL
+write D15 'TAX
+write D16 'REMAINING_SHORTFALL
+write D17 'BASIS_REDUCTION
+
+write A14 'Withdrawal Amount
+write B14 =INDEX(WITHDRAW_TAXABLE(B5, B9, B6), D14)
+
+write A15 'Tax on Withdrawal
+write B15 =INDEX(WITHDRAW_TAXABLE(B5, B9, B6), D15)
+
+write A16 'Remaining Shortfall
+write B16 =INDEX(WITHDRAW_TAXABLE(B5, B9, B6), D16)
+
+write A17 'Basis Reduction
+write B17 =INDEX(WITHDRAW_TAXABLE(B5, B9, B6), D17)
+
+write A18 'Taxable Balance After
+write B18 =B5-B14
+
+write A19 'Taxable Basis After
+write B19 =B6-B17
+
+# Row 21: Step 2 - Tax-Deferred withdrawal (if still shortfall)
+write A21 '─── STEP 2: TAX-DEFERRED ACCOUNT ───
+
+write A22 'Tax-Deferred Withdrawal
+write C22 'Call WITHDRAW_PRETAX for each output
+
+# Reuse key names from column D
+write A23 'Withdrawal Amount
+write B23 =INDEX(WITHDRAW_PRETAX(B7, B16, B10), D14)
+
+write A24 'Tax on Withdrawal
+write B24 =INDEX(WITHDRAW_PRETAX(B7, B16, B10), D15)
+
+write A25 'Remaining Shortfall
+write B25 =INDEX(WITHDRAW_PRETAX(B7, B16, B10), D16)
+
+write A26 'Tax-Deferred Balance After
+write B26 =B7-B23
+
+# Row 28: Step 3 - Tax-Free withdrawal (if still shortfall)
+write A28 '─── STEP 3: TAX-FREE ACCOUNT ───
+
+write A29 'Withdrawal Needed
+write B29 =B25
+write C29 'Remaining shortfall from step 2
+
+write A30 'Withdrawal Amount
+write B30 =MIN(B8, B29)
+write C30 'Take min of balance and need (no tax)
+
+write A31 'Remaining Shortfall
+write B31 =MAX(0, B29-B30)
+
+write A32 'Tax-Free Balance After
+write B32 =B8-B30
+
+# Row 34: Summary
+write A34 '─── RESULT ───
+
+write A35 'Ending Taxable Balance
+write B35 =B18
+
+write A36 'Ending Taxable Basis
+write B36 =B19
+
+write A37 'Ending Tax-Deferred Balance
+write B37 =B26
+
+write A38 'Ending Tax-Free Balance
+write B38 =B32
+
+write A39 'Total After-Tax Withdrawal
+write B39 =(B14-B15)+(B23-B24)+B30
+write C39 'Net amount received
+
+write A40 'Total Additional Tax
+write B40 =B15+B24
+write C40 'Tax paid on withdrawals
+
+write A41 'Remaining Shortfall
+write B41 =B31
+write C41 'Unmet need (if accounts exhausted)
+
+# Outputs (matching Python return values)
+output B35
+output B36
+output B37
+output B38
+output B39
+output B40
+output B41
+
+# Formatting
+default-format currency 0
+
+# Test cases from Python pay_for_expenses()
+# Test 1: Normal case - taxable covers all
+test "100000, 80000, 200000, 50000, 30000, 40000" "69072.1649484536, 55257.73195876289, 200000, 50000, 30000, 927.8350515463918, 0"
+
+# Test 2: Need to tap tax-deferred
+test "20000, 15000, 200000, 50000, 30000, 40000" "0, 0, 187784.0909090909, 50000, 30000, 2215.909090909091, 0"
+
+# Test 3: Exhaust all accounts
+test "10000, 8000, 5000, 3000, 50000, 40000" "0, 0, 0, 0, 17100, 900, 32900"
+
+save output/PAY_FOR_EXPENSES.xml

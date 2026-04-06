@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeCalculation name="TEST_INDEX_BOTH">
+  <LangSpecs/>
+  <TestCases>
+    <test_case>
+      <input_value Value="10"/>
+      <output_value Value="20"/>
+      <output_value Value="5"/>
+      <output_value Value="5"/>
+    </test_case>
+  </TestCases>
+
+  <Nodes>
+    <Node node_id="1" node_type="input" data_type="Number" key="X" canonical="10" input_order="0" input_name="X"/>
+
+    <Node node_id="2" node_type="constant" data_type="Text" key="A1" canonical="'Multi result" value="Multi result"/>
+    <Node node_id="3" node_type="function" data_type="Number" key="B1" canonical="=TEST_MULTI_OUTPUT(X)" function_name="TEST_MULTI_OUTPUT"/>
+
+    <Node node_id="4" node_type="constant" data_type="Text" key="A2" canonical="'By position 0" value="By position 0"/>
+    <Node node_id="5" node_type="function" data_type="Number" key="B2" canonical="=INDEX(B1, 1)" function_name="INDEX"/>
+
+    <Node node_id="6" node_type="constant" data_type="Text" key="A3" canonical="'By position 1" value="By position 1"/>
+    <Node node_id="7" node_type="function" data_type="Number" key="B3" canonical="=INDEX(B1, 2)" function_name="INDEX"/>
+
+    <Node node_id="8" node_type="constant" data_type="Text" key="A4" canonical="'By name HALF" value="By name HALF"/>
+    <Node node_id="9" node_type="function" data_type="Number" key="B4" canonical="=INDEX(B1,&quot;HALF&quot;)" function_name="INDEX"/>
+
+    <Node node_id="10" node_type="constant" data_type="Number" value="0"/>
+    <Node node_id="11" node_type="constant" data_type="Number" value="1"/>
+    <Node node_id="12" node_type="constant" data_type="Text" value="HALF"/>
+  </Nodes>
+
+  <NamedNodes>
+    <NamedNode node_name="X" node_name_type="alias" node_id="1"/>
+    <NamedNode node_name="A1" node_name_type="address" node_id="2"/>
+    <NamedNode node_name="B1" node_name_type="address" node_id="3"/>
+    <NamedNode node_name="A2" node_name_type="address" node_id="4"/>
+    <NamedNode node_name="B2" node_name_type="address" node_id="5"/>
+    <NamedNode node_name="A3" node_name_type="address" node_id="6"/>
+    <NamedNode node_name="B3" node_name_type="address" node_id="7"/>
+    <NamedNode node_name="A4" node_name_type="address" node_id="8"/>
+    <NamedNode node_name="B4" node_name_type="address" node_id="9"/>
+  </NamedNodes>
+
+  <NodeComments/>
+
+  <Outputs>
+    <Output output_name="POS0" node_id="5" output_order="0" data_type="Number" key="B2" output_mode="last"/>
+    <Output output_name="POS1" node_id="7" output_order="1" data_type="Number" key="B3" output_mode="last"/>
+    <Output output_name="BY_NAME" node_id="9" output_order="2" data_type="Number" key="B4" output_mode="last"/>
+  </Outputs>
+
+  <NodeDependencies>
+    <NodeDependency child_node_id="3" parent_node_id="1" parent_position="0"/>
+    <NodeDependency child_node_id="5" parent_node_id="3" parent_position="0"/>
+    <NodeDependency child_node_id="5" parent_node_id="10" parent_position="1"/>
+    <NodeDependency child_node_id="7" parent_node_id="3" parent_position="0"/>
+    <NodeDependency child_node_id="7" parent_node_id="11" parent_position="1"/>
+    <NodeDependency child_node_id="9" parent_node_id="3" parent_position="0"/>
+    <NodeDependency child_node_id="9" parent_node_id="12" parent_position="1"/>
+  </NodeDependencies>
+
+  <CustomFunctions>
+    <Function name="TEST_MULTI_OUTPUT" id="66b33836-df3f-481a-a7d3-7058b664f7fa" version="1.0.0"/>
+  </CustomFunctions>
+
+  <SpreadsheetMeta version="1.0" gridRows="6" gridCols="C"/>
+</CodeCalculation>

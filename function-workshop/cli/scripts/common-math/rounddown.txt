@@ -1,0 +1,130 @@
+# ROUNDDOWN - Round down toward zero
+# Rounds a number down (toward zero) to specified decimal places
+
+new ROUNDDOWN
+use ABS
+use INT
+input NUMBER 3.14159
+input NUM_DIGITS 2
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'ROUND DOWN TOWARD ZERO
+style A1 bold
+style A1 fontsize 24
+write A2 'Rounds a number down toward zero.
+write A3 'Truncates to specified decimal places.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-7: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUTS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Number
+write B6 =NUMBER
+write C6 'The value to round
+
+write A7 'Num Digits
+write B7 =NUM_DIGITS
+write C7 'Decimal places (negative = left of decimal)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-15: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── THE CALCULATION ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+
+write A10 'Absolute Value
+write B10 =ABS(B6)
+write C10 'Work with positive number
+
+write A11 'Scale Factor
+write B11 =10^B7
+write C11 '10 ^ num_digits
+
+write A12 'Scaled Value
+write B12 =B10*B11
+write C12 'Shift decimal right
+
+write A13 'Truncated
+write B13 =INT(B12)
+write C13 'Drop fractional part
+
+write A14 'Unscaled
+write B14 =B13/B11
+write C14 'Shift decimal back
+
+write A15 'Sign
+write B15 =IF(B6<0,-1,1)
+write C15 'Preserve original sign
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 17-18: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A17 '─── RESULT ───
+highlight A17 gray
+highlight B17 gray
+highlight C17 gray
+highlight D17 gray
+highlight E17 gray
+highlight F17 gray
+highlight G17 gray
+
+write A18 'Rounded Down
+write B18 =B15*B14
+write C18 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B18 ROUNDDOWN
+output ROUNDDOWN
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 6
+format B7 number 0
+format B11 number 0
+format B13 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Round down to 2 decimal places
+test "3.14159, 2" "3.14"
+
+# Negative rounds toward zero
+test "-3.14159, 2" "-3.14"
+
+# Negative digits: round left of decimal
+test "31415.92, -2" "31400"
+
+# Round down to integer
+test "3.9, 0" "3"
+
+# Already exact (no change)
+test "5, 0" "5"
+
+save

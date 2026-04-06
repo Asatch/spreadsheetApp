@@ -1,0 +1,53 @@
+# GCD - Greatest Common Divisor via Euclidean algorithm
+# Loop: repeatedly replace (a, b) with (b, a mod b) until b = 0
+
+new GCD loop
+input NUM1 48
+input NUM2 18
+
+use ABS
+
+# Row 0: initial values (work with absolute values)
+write A0 =ABS(NUM1)
+write B0 =ABS(NUM2)
+
+# Row 1: Euclidean step
+# new_a = old_b
+# new_b = old_a mod old_b
+write A1 =B0
+write B1 =A0-B0*FLOOR(A0/B0)
+
+# Stop conditions
+write _STOP0 =NUM2=0
+write _STOP1 =B1<=0
+
+# Column headers
+header A x
+header B y
+
+# Output: when b reaches 0, a is the GCD
+output A last
+
+# Formatting
+default-format number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Classic example
+test "48, 18" "6"
+
+# Coprime
+test "17, 13" "1"
+
+# One divides the other
+test "12, 4" "4"
+
+# Same number
+test "7, 7" "7"
+
+# One is zero (GCD(n, 0) = n)
+test "15, 0" "15"
+
+save

@@ -1,0 +1,141 @@
+# ISLEAPYEAR - Leap year check
+# Returns 1 if the year has 366 days, 0 otherwise
+# Includes Excel 1900 compatibility (1900 is treated as leap)
+
+new ISLEAPYEAR
+input YEAR 2024
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'LEAP YEAR CHECK
+style A1 bold
+style A1 fontsize 24
+write A2 'Determines if a year has 366 days (February 29).
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUT ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Year
+write B5 =YEAR
+write C5 'The year to check
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-9: DIVISIBILITY CHECKS
+# ═══════════════════════════════════════════════════════════════════
+
+write A7 '─── DIVISIBILITY CHECKS ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+
+write B8 'by 4
+write C8 'by 100
+write D8 'by 400
+write E8 'is 1900
+
+write A9 'Divisible?
+write B9 =IF(MOD(B5,4)=0,1,0)
+write C9 =IF(MOD(B5,100)=0,1,0)
+write D9 =IF(MOD(B5,400)=0,1,0)
+write E9 =IF(B5=1900,1,0)
+
+write A10 'Meaning
+write B10 'basic rule
+write C10 'century skip
+write D10 '400yr override
+write E10 'Excel compat
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 12: THE LOGIC
+# ═══════════════════════════════════════════════════════════════════
+
+write A12 '─── THE LOGIC ───
+highlight A12 gray
+highlight B12 gray
+highlight C12 gray
+highlight D12 gray
+highlight E12 gray
+highlight F12 gray
+highlight G12 gray
+
+write C12 '÷4 AND (NOT ÷100 OR ÷400 OR =1900)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 14-15: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A14 '─── RESULT ───
+highlight A14 gray
+highlight B14 gray
+highlight C14 gray
+highlight D14 gray
+highlight E14 gray
+highlight F14 gray
+highlight G14 gray
+
+write A15 'Is Leap Year?
+write B15 =IF(B9=0,0,IF(C9=0,1,IF(D9=1,1,E9)))
+write C15 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B15 ISLEAPYEAR
+output ISLEAPYEAR
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 0
+format B5 number 0 period-only
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Standard leap year (divisible by 4)
+test "2024" "1"
+
+# Not a leap year (odd year)
+test "2023" "0"
+
+# Century leap year (divisible by 400)
+test "2000" "1"
+
+# Excel 1900 bug (1900 is treated as leap year)
+test "1900" "1"
+
+# Century non-leap (divisible by 100 but not 400)
+test "2100" "0"
+
+# Recent leap year
+test "2020" "1"
+
+# Recent non-leap year
+test "2025" "0"
+
+# Century non-leap (1800)
+test "1800" "0"
+
+# Historical leap year (divisible by 400)
+test "1600" "1"
+
+save

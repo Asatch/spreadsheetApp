@@ -1,0 +1,57 @@
+# GCD_MULTI - GCD of an array of numbers
+# Loop: accumulates GCD across elements using GCD(running, next)
+# GCD({12, 18, 24}) → GCD(GCD(12, 18), 24) → GCD(6, 24) → 6
+
+new GCD_MULTI loop
+input VALUES {12,18,24}
+
+use GCD
+
+# Row 0: start with first element
+# A = running GCD
+# B = index counter
+# C = array length
+write A0 =INDEX(VALUES,1)
+write B0 1
+write C0 =LEN(VALUES)
+
+# Row 1: fold GCD across elements
+write B1 =B0+1
+write A1 =GCD(A0,INDEX(VALUES,B1))
+write C1 =C0
+
+# Stop conditions
+write _STOP0 =C0<=1
+write _STOP1 =B1>=C1
+
+# Column headers
+header A running_gcd
+header B index
+header C count
+
+# Output
+output A last
+
+# Formatting
+default-format number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Three numbers
+test "{12,18,24}" "6"
+
+# All same
+test "{15,15,15}" "15"
+
+# Coprime set
+test "{7,11,13}" "1"
+
+# Two numbers (degenerates to GCD)
+test "{48,18}" "6"
+
+# Single element
+test "{42}" "42"
+
+save

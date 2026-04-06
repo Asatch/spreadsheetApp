@@ -1,0 +1,27 @@
+# TAN - Tangent via SIN(X) / COS(X)
+new TAN
+input X 0
+
+use COS
+
+write A1 'TAN
+write A2 'Returns the tangent of an angle in radians.
+write A3 'Computed as SIN(X) / COS(X).
+
+write A5 'INPUT
+write A6 'X
+write B6 =X
+write C6 'Angle in radians
+
+write A8 'RESULT
+write A9 'Tangent
+write B9 =SIN(X)/COS(X)
+write C9 '= SIN(X) / COS(X)
+
+output B9
+default-format number 6
+
+test "0" "0"
+test "0.7853981633974483" "1"
+test "0.5235987755982988" "0.577350"
+save

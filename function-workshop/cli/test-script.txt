@@ -1,0 +1,19 @@
+# Test script for spreadsheet CLI
+
+new SIMPLE_ADD
+input A 10
+input B 20
+
+# Display inputs
+write A1 'First Number
+write B1 =A
+
+write A2 'Second Number
+write B2 =B
+
+# Calculate sum
+write A3 'Sum
+write B3 =A+B
+
+output B3
+save output/SIMPLE_ADD.xml

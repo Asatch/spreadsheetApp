@@ -1,0 +1,162 @@
+# PROGRESSIVE_TAX - Federal income tax using 2025 marginal brackets
+# Single filer only. Applies each bracket rate to the portion of income
+# that falls within that bracket, then sums for total tax.
+# Output name: TAX
+
+new PROGRESSIVE_TAX
+input INCOME 75000
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'PROGRESSIVE TAX CALCULATION
+style A1 bold
+style A1 fontsize 24
+write A2 'Calculates federal income tax using 2025 marginal brackets (single filer)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: YOUR SITUATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Taxable Income
+write B5 =INCOME
+write C5 'Federal taxable income (after deductions)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-15: TAX BRACKETS
+# ═══════════════════════════════════════════════════════════════════
+
+write A7 '─── TAX BRACKETS ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+
+write A8 'Bracket
+write B8 'Rate
+write C8 'Taxable Amount
+write D8 'Tax
+
+# Bracket 1: 10% on first $23,850
+write A9 '$0 - $23,850
+write B9 0.10
+write C9 =MIN(B5,23850)
+write D9 =C9*B9
+
+# Bracket 2: 12% on $23,850 - $96,950
+write A10 '$23,850 - $96,950
+write B10 0.12
+write C10 =MAX(0,MIN(B5,96950)-23850)
+write D10 =C10*B10
+
+# Bracket 3: 22% on $96,950 - $206,700
+write A11 '$96,950 - $206,700
+write B11 0.22
+write C11 =MAX(0,MIN(B5,206700)-96950)
+write D11 =C11*B11
+
+# Bracket 4: 24% on $206,700 - $394,600
+write A12 '$206,700 - $394,600
+write B12 0.24
+write C12 =MAX(0,MIN(B5,394600)-206700)
+write D12 =C12*B12
+
+# Bracket 5: 32% on $394,600 - $501,050
+write A13 '$394,600 - $501,050
+write B13 0.32
+write C13 =MAX(0,MIN(B5,501050)-394600)
+write D13 =C13*B13
+
+# Bracket 6: 35% on $501,050 - $751,600
+write A14 '$501,050 - $751,600
+write B14 0.35
+write C14 =MAX(0,MIN(B5,751600)-501050)
+write D14 =C14*B14
+
+# Bracket 7: 37% on everything above $751,600
+write A15 '$751,600+
+write B15 0.37
+write C15 =MAX(0,B5-751600)
+write D15 =C15*B15
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 17-18: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A17 '─── RESULT ───
+highlight A17 gray
+highlight B17 gray
+highlight C17 gray
+highlight D17 gray
+highlight E17 gray
+highlight F17 gray
+highlight G17 gray
+
+write A18 'Total Federal Tax
+write B18 =SUM(D9,D10,D11,D12,D13,D14,D15)
+write C18 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B18 TAX
+output TAX
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format B9 percent 0
+format B10 percent 0
+format B11 percent 0
+format B12 percent 0
+format B13 percent 0
+format B14 percent 0
+format B15 percent 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# Verified against IRS 2025 tax brackets for single filers.
+# Each bracket taxes only the income within that bracket's range.
+# ═══════════════════════════════════════════════════════════════════
+
+# Zero income: no tax owed
+test "0" "0"
+
+# $10,000: entirely within 10% bracket → 10000 × 10% = 1000
+test "10000" "1000"
+
+# $23,850: exactly fills 10% bracket → 23850 × 10% = 2385
+test "23850" "2385"
+
+# $50,000: spans 10% and 12% brackets → 2385 + (50000-23850)×12% = 5523
+test "50000" "5523"
+
+# $100,000: spans 10%, 12%, and into 22% → 2385 + 8772 + (100000-96950)×22% = 11828
+test "100000" "11828"
+
+# $200,000: deep into 22% bracket → 2385 + 8772 + (200000-96950)×22% = 33828
+test "200000" "33828"
+
+# $500,000: spans through 32% bracket
+test "500000" "114126"
+
+# $1,000,000: into the top 37% bracket
+test "1000000" "294062.5"
+
+save

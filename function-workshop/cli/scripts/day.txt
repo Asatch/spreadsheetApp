@@ -1,0 +1,255 @@
+# DAY - Extract day of month from Excel serial date
+# Depends on ISLEAPYEAR for leap year detection
+
+new DAY
+use ISLEAPYEAR
+use INT
+input SERIAL 45306
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'DAY OF MONTH
+style A1 bold
+style A1 fontsize 24
+write A2 'Extracts the day of month (1-31) from an Excel serial date number.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-5: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUT ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Serial Date
+write B5 =SERIAL
+write C5 'Days since Jan 1, 1900
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: CUMULATIVE DAYS TABLE (columns F-G)
+# Days at END of each month (non-leap year)
+# ═══════════════════════════════════════════════════════════════════
+
+write F4 '─── MONTH ENDS ───
+write F5 'Month
+write G5 'Cum Days
+
+write F6 1
+write G6 31
+write F7 2
+write G7 59
+write F8 3
+write G8 90
+write F9 4
+write G9 120
+write F10 5
+write G10 151
+write F11 6
+write G11 181
+write F12 7
+write G12 212
+write F13 8
+write G13 243
+write F14 9
+write G14 273
+write F15 10
+write G15 304
+write F16 11
+write G16 334
+write F17 12
+write G17 365
+
+# Days BEFORE each month (non-leap)
+write F19 '─── MONTH STARTS ───
+write F20 1
+write G20 0
+write F21 2
+write G21 31
+write F22 3
+write G22 59
+write F23 4
+write G23 90
+write F24 5
+write G24 120
+write F25 6
+write G25 151
+write F26 7
+write G26 181
+write F27 8
+write G27 212
+write F28 9
+write G28 243
+write F29 10
+write G29 273
+write F30 11
+write G30 304
+write F31 12
+write G31 334
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 7-11: FIND YEAR
+# ═══════════════════════════════════════════════════════════════════
+
+write A7 '─── FIND YEAR ───
+highlight A7 gray
+highlight B7 gray
+highlight C7 gray
+highlight D7 gray
+highlight E7 gray
+highlight F7 gray
+highlight G7 gray
+
+write A8 'Est. Year
+write B8 =INT((B5+109571.75)/365.2425-300+1900)
+write C8 'Initial estimate
+
+write A9 'Jan 1 Serial (Est)
+write B9 =(B8-1900)*365+IF(B8<=1900,0,INT((B8-1)/4)-INT((B8-1)/100)+INT((B8-1)/400)-459)+1
+write C9 'Serial for Jan 1 of est year
+
+write A10 'Days Into Year
+write B10 =B5-B9+1
+write C10 'Check if before Jan 1
+
+write A11 'Year
+write B11 =IF(B10<1,B8-1,B8)
+write C11 'Final year value
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-19: FIND MONTH
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 '─── FIND MONTH ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+
+write A14 'Jan 1 (final)
+write B14 =(B11-1900)*365+IF(B11<=1900,0,INT((B11-1)/4)-INT((B11-1)/100)+INT((B11-1)/400)-459)+1
+write C14 'Jan 1 of actual year
+
+write A15 'Day of Year
+write B15 =B5-B14+1
+write C15 'Position within year
+
+write A16 'Is Leap Year?
+write B16 =ISLEAPYEAR(B11)
+write C16 '1 if leap year
+
+write A17 'Leap Adjust
+write B17 =IF(B15>59,B16,0)
+write C17 'Adjust if past Feb in leap
+
+write A18 'Adjusted DOY
+write B18 =B15-B17
+write C18 'Normalized to non-leap scale
+
+write A19 'Month
+write B19 =IF(B18<=G6,1,IF(B18<=G7,2,IF(B18<=G8,3,IF(B18<=G9,4,IF(B18<=G10,5,IF(B18<=G11,6,IF(B18<=G12,7,IF(B18<=G13,8,IF(B18<=G14,9,IF(B18<=G15,10,IF(B18<=G16,11,12)))))))))))
+write C19 'Month number (1-12)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 21-23: CALCULATE DAY
+# ═══════════════════════════════════════════════════════════════════
+
+write A21 '─── CALCULATE DAY ───
+highlight A21 gray
+highlight B21 gray
+highlight C21 gray
+highlight D21 gray
+highlight E21 gray
+highlight F21 gray
+highlight G21 gray
+
+write A22 'Days Before Month
+write B22 =IF(B19=1,G20,IF(B19=2,G21,IF(B19=3,G22,IF(B19=4,G23,IF(B19=5,G24,IF(B19=6,G25,IF(B19=7,G26,IF(B19=8,G27,IF(B19=9,G28,IF(B19=10,G29,IF(B19=11,G30,G31)))))))))))
+write C22 'Cumulative days before month
+
+write A23 'Leap Month Adj
+write B23 =IF(B19>2,B16,0)
+write C23 'Add 1 if past Feb in leap
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 25-26: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A25 '─── RESULT ───
+highlight A25 gray
+highlight B25 gray
+highlight C25 gray
+highlight D25 gray
+highlight E25 gray
+highlight F25 gray
+highlight G25 gray
+
+write A26 'Day
+write B26 =B15-B22-B23
+write C26 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B26 DAY_RESULT
+output DAY_RESULT
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 0
+format B8 number 0 period-only
+format B11 number 0 period-only
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Jan 1, 1900 (serial 1)
+test "1" "1"
+
+# Jan 15, 1900
+test "15" "15"
+
+# Jan 31, 1900 (end of first month)
+test "31" "31"
+
+# Feb 1, 1900 (start of second month)
+test "32" "1"
+
+# Feb 28, 1900
+test "59" "28"
+
+# Feb 29, 1900 (Excel's fake leap day)
+test "60" "29"
+
+# Mar 1, 1900
+test "61" "1"
+
+# Dec 31, 1999
+test "36525" "31"
+
+# Jan 1, 2000 (Y2K boundary)
+test "36526" "1"
+
+# Jan 15, 2024
+test "45306" "15"
+
+# Jun 15, 2024
+test "45458" "15"
+
+# Feb 29, 2020 (leap day)
+test "43890" "29"
+
+save

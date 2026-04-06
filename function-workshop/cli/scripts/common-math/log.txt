@@ -1,0 +1,109 @@
+# LOG - Logarithm with arbitrary base
+# Returns log base B of a number, using change of base formula
+
+new LOG
+input NUMBER 100
+input BASE 10
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'LOGARITHM
+style A1 bold
+style A1 fontsize 24
+write A2 'Returns the logarithm of a number in any base.
+write A3 'Answers: BASE to what power equals NUMBER?
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-7: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUTS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Number
+write B6 =NUMBER
+write C6 'Must be positive
+
+write A7 'Base
+write B7 =BASE
+write C7 'Logarithm base (must be positive, not 1)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-11: CHANGE OF BASE
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── CHANGE OF BASE ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+
+write A10 'ln(number)
+write B10 =LN(B6)
+write C10 'Natural log of the number
+
+write A11 'ln(base)
+write B11 =LN(B7)
+write C11 'Natural log of the base
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-14: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 '─── RESULT ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+
+write A14 'Logarithm
+write B14 =B10/B11
+write C14 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B14 LOG
+output LOG
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# log10(100) = 2
+test "100, 10" "2"
+
+# log2(8) = 3
+test "8, 2" "3"
+
+# log10(1) = 0
+test "1, 10" "0"
+
+# log10(10) = 1
+test "10, 10" "1"
+
+# log2(1024) = 10
+test "1024, 2" "10"
+
+save

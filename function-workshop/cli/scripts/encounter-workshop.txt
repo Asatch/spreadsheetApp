@@ -1,0 +1,270 @@
+# ENCOUNTER_WORKSHOP — D&D 5e Encounter Design Tool
+# Front door display sheet for CR Calculator, Encounter Balancer, and Spell Slot Calculator.
+# No inputs, no outputs — editable values are blue-highlighted cells.
+# Build a homebrew monster, see its CR and archetype, then test encounters against your party.
+
+new ENCOUNTER_WORKSHOP
+
+use CR_CALCULATOR
+use ENCOUNTER_BALANCER
+use SPELL_SLOT_CALCULATOR
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'ENCOUNTER WORKSHOP — D&D 5e
+write A2 'Build a homebrew monster, profile its strengths, and test encounters against your party.
+write A3 'Edit blue cells to try different scenarios. Ctrl+D on any result to see how it was computed.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-9: YOUR MONSTER
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR MONSTER ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'Hit Points
+write B6 90
+highlight B6 blue
+write C6 'Total HP of the monster
+write A7 'Armor Class
+write B7 13
+highlight B7 blue
+write C7 'Monster's AC
+write A8 'Damage Per Round
+write B8 40
+highlight B8 blue
+write C8 'Average damage dealt per round (first 3 rounds)
+write A9 'Attack Bonus
+write B9 6
+highlight B9 blue
+write C9 'Highest attack modifier
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 11-21: MONSTER PROFILE
+# ═══════════════════════════════════════════════════════════════════
+write A11 '─── MONSTER PROFILE ───
+highlight A11 gray
+highlight B11 gray
+highlight C11 gray
+highlight D11 gray
+highlight E11 gray
+highlight F11 gray
+highlight G11 gray
+write A12 'CR Analysis
+write B12 =CR_CALCULATOR(B6, B7, B8, B9)
+write C12 'Ctrl+D to see the full DMG CR process
+write A13 'Challenge Rating
+write B13 =INDEX(B12, "CR")
+write C13 'The DMG's CR estimate for your monster
+highlight B13 yellow
+name B13 MONSTER_CR
+write A14 'Defensive CR
+write B14 =INDEX(B12, "DEFENSIVE_CR")
+write C14 'Based on HP, adjusted for AC
+write A15 'Offensive CR
+write B15 =INDEX(B12, "OFFENSIVE_CR")
+write C15 'Based on damage, adjusted for attack bonus
+write A16 'Archetype
+write B16 =IF(B14-B15>=2,"Tank",IF(B15-B14>=2,"Glass Cannon","Balanced"))
+write C16 'Tank = tough but low damage. Glass Cannon = deadly but fragile.
+highlight B16 yellow
+
+write A18 'Expected AC
+write B18 =INDEX(B12, "EXPECTED_AC")
+write C18 'What the DMG expects at this CR
+write A19 'Your AC vs Expected
+write B19 =B7-B18
+write C19 'Positive = tankier than typical, negative = squishier
+write A20 'Expected Attack
+write B20 =INDEX(B12, "EXPECTED_ATTACK")
+write C20 'What the DMG expects at this CR
+write A21 'Your ATK vs Expected
+write B21 =B9-B20
+write C21 'Positive = hits harder, negative = weaker
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 23-28: YOUR PARTY
+# ═══════════════════════════════════════════════════════════════════
+write A23 '─── YOUR PARTY ───
+highlight A23 gray
+highlight B23 gray
+highlight C23 gray
+highlight D23 gray
+highlight E23 gray
+highlight F23 gray
+highlight G23 gray
+write A24 'Party Size
+write B24 4
+highlight B24 blue
+write C24 'Number of player characters
+write A25 'Party Level
+write B25 5
+highlight B25 blue
+write C25 'Character level (1-20)
+write A26 'Full Caster Levels
+write B26 5
+highlight B26 blue
+write C26 'Wizard, Cleric, Druid, Sorcerer, Bard
+write A27 'Half Caster Levels
+write B27 0
+highlight B27 blue
+write C27 'Paladin, Ranger
+write A28 'Third Caster Levels
+write B28 0
+highlight B28 blue
+write C28 'Eldritch Knight (Fighter), Arcane Trickster (Rogue)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 30-37: SPELL SLOTS
+# ═══════════════════════════════════════════════════════════════════
+write A30 '─── SPELL SLOTS ───
+highlight A30 gray
+highlight B30 gray
+highlight C30 gray
+highlight D30 gray
+highlight E30 gray
+highlight F30 gray
+highlight G30 gray
+write A31 'Slot Analysis
+write B31 =SPELL_SLOT_CALCULATOR(B26, B27, B28)
+write C31 'Ctrl+D to see the multiclass spell slot pooling
+write A32 'Caster Level
+write B32 =INDEX(B31, "CASTER_LEVEL")
+write C32 'Effective caster level after multiclass pooling
+
+# Spell slot bar — horizontal display of all 9 slot levels
+write B33 '1st
+write C33 '2nd
+write D33 '3rd
+write E33 '4th
+write F33 '5th
+write G33 '6th
+write H33 '7th
+write I33 '8th
+write J33 '9th
+style B33 bold
+style C33 bold
+style D33 bold
+style E33 bold
+style F33 bold
+style G33 bold
+style H33 bold
+style I33 bold
+style J33 bold
+write B34 =INDEX(B31, "SLOT_1")
+write C34 =INDEX(B31, "SLOT_2")
+write D34 =INDEX(B31, "SLOT_3")
+write E34 =INDEX(B31, "SLOT_4")
+write F34 =INDEX(B31, "SLOT_5")
+write G34 =INDEX(B31, "SLOT_6")
+write H34 =INDEX(B31, "SLOT_7")
+write I34 =INDEX(B31, "SLOT_8")
+write J34 =INDEX(B31, "SLOT_9")
+write A35 'Total Slots
+write B35 =B34+C34+D34+E34+F34+G34+H34+I34+J34
+write C35 'Spell slots available per long rest
+write A36 'Highest Slot
+write B36 =IF(J34>0,"9th",IF(I34>0,"8th",IF(H34>0,"7th",IF(G34>0,"6th",IF(F34>0,"5th",IF(E34>0,"4th",IF(D34>0,"3rd",IF(C34>0,"2nd",IF(B34>0,"1st","None")))))))))
+write C36 'Highest level spell you can cast
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 38-47: ENCOUNTER SCALING
+# Three side-by-side scenarios: 1, 2, and 3 of your monster
+# ═══════════════════════════════════════════════════════════════════
+write A38 '─── ENCOUNTER SCALING ───
+highlight A38 gray
+highlight B38 gray
+highlight C38 gray
+highlight D38 gray
+highlight E38 gray
+highlight F38 gray
+highlight G38 gray
+write A39 'How tough is this monster for your party? See how difficulty escalates.
+
+# Column headers for side-by-side comparison
+write B40 '1 Monster
+write D40 '2 Monsters
+write F40 '3 Monsters
+style B40 bold
+style D40 bold
+style F40 bold
+
+# Function calls — one ENCOUNTER_BALANCER per scenario
+write A41 'Encounter
+write B41 =ENCOUNTER_BALANCER(B24, B25, MONSTER_CR, 0, 0, 0, 0, 0)
+write C41 'Ctrl+D any cell to drill in
+write D41 =ENCOUNTER_BALANCER(B24, B25, MONSTER_CR, MONSTER_CR, 0, 0, 0, 0)
+write F41 =ENCOUNTER_BALANCER(B24, B25, MONSTER_CR, MONSTER_CR, MONSTER_CR, 0, 0, 0)
+
+# Monster XP (raw, before multiplier)
+write A42 'Monster XP
+write B42 =INDEX(B41, "TOTAL_MONSTER_XP")
+write D42 =INDEX(D41, "TOTAL_MONSTER_XP")
+write F42 =INDEX(F41, "TOTAL_MONSTER_XP")
+
+# Encounter multiplier (deterministic for 1/2/3 monsters per DMG)
+write A43 'Multiplier
+write B43 '× 1
+write D43 '× 1.5
+write F43 '× 2
+
+# Adjusted XP (after multiplier)
+write A44 'Adjusted XP
+write B44 =INDEX(B41, "ADJUSTED_XP")
+write D44 =INDEX(D41, "ADJUSTED_XP")
+write F44 =INDEX(F41, "ADJUSTED_XP")
+
+# Numeric difficulty (0-4)
+write A45 'Difficulty
+write B45 =INDEX(B41, "DIFFICULTY")
+write D45 =INDEX(D41, "DIFFICULTY")
+write F45 =INDEX(F41, "DIFFICULTY")
+
+# Human-readable rating — the highlighted payoff
+write A46 'Rating
+write B46 =IF(B45>=4,"DEADLY",IF(B45>=3,"HARD",IF(B45>=2,"MEDIUM",IF(B45>=1,"EASY","TRIVIAL"))))
+write D46 =IF(D45>=4,"DEADLY",IF(D45>=3,"HARD",IF(D45>=2,"MEDIUM",IF(D45>=1,"EASY","TRIVIAL"))))
+write F46 =IF(F45>=4,"DEADLY",IF(F45>=3,"HARD",IF(F45>=2,"MEDIUM",IF(F45>=1,"EASY","TRIVIAL"))))
+highlight B46 yellow
+highlight D46 yellow
+highlight F46 yellow
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 48-52: PARTY THRESHOLDS
+# Reference: what XP totals mean for your party
+# ═══════════════════════════════════════════════════════════════════
+write A48 '─── PARTY THRESHOLDS ───
+highlight A48 gray
+highlight B48 gray
+highlight C48 gray
+highlight D48 gray
+highlight E48 gray
+highlight F48 gray
+highlight G48 gray
+write A49 'Easy
+write B49 =INDEX(B41, "EASY_THRESHOLD")
+write C49 'A minor challenge — few if any resources used
+write A50 'Medium
+write B50 =INDEX(B41, "MEDIUM_THRESHOLD")
+write C50 'A fair fight — some hit points and spell slots spent
+write A51 'Hard
+write B51 =INDEX(B41, "HARD_THRESHOLD")
+write C51 'A tough fight — real risk of character death
+write A52 'Deadly
+write B52 =INDEX(B41, "DEADLY_THRESHOLD")
+write C52 'Could be lethal — potential total party kill
+
+# Formatting
+default-format number 0
+format B13 number 2
+format B14 number 2
+format B15 number 2
+
+save

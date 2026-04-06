@@ -1,0 +1,541 @@
+{
+  "type": "sc-language-pack",
+  "version": "1.0",
+  "meta": {
+    "name": "Python",
+    "description": "Example Python language pack — generates Python 3 code from standard and loop sheets. Does not support date operations.",
+    "fileExtension": ".py"
+  },
+  "syntax": "{\n\n  // ═══════════════════════════════════════════════════════════════\n  // CODEGEN API — Python\n  //\n  // Methods the generic codegen engine calls directly.\n  // Adapted from JavaScript for Python output.\n  // ═══════════════════════════════════════════════════════════════\n  //\n  // ── Values & identifiers ──────────────────────────────────────\n\n  constantValue(value, type) {\n    if (type === 'Text') {\n      const escaped = value.replace(/\\\\/g, '\\\\\\\\').replace(/'/g, \"\\\\'\");\n      return `'${escaped}'`;\n    }\n    if (type === 'Number') return String(value);\n    if (type === 'Boolean') return value.toLowerCase() === 'true' ? 'True' : 'False';\n    throw new Error(`Unsupported value type: ${type}`);\n  },\n  safeName(name) {\n    if (this.reservedWords.has(name.toLowerCase())) {\n      name = name + '_';\n    }\n    if (!/^[a-zA-Z_]/.test(name)) {\n      name = '_' + name;\n    }\n    let safe = '';\n    for (const ch of name) {\n      safe += /[a-zA-Z0-9_]/.test(ch) ? ch : '_';\n    }\n    return safe;\n  },\n  variableName(nodeId) {\n    return 'var_' + String(nodeId);\n  },\n\n  // ── Statements ──────────────────────────────────────────────\n  //\n  // Python uses no semicolons and no `let` keyword.\n  // Variables are assigned directly: name = value\n\n  persistConfig: {\n    \"stepCountTradeOff\": 5,\n    \"totalStepsThreshold\": 25,\n    \"prohibitedTypes\": []\n  },\n  declareVariable(name, value, _type) {\n    return `${name} = ${value}`;\n  },\n  returnValue(expr) {\n    return `return ${expr}`;\n  },\n  returnMultiple(entries) {\n    const parts = entries.map(({ name, expr }) => `'${name}': ${expr}`);\n    return `return {${parts.join(', ')}}`;\n  },\n  returnArray(exprs) {\n    return `return [${exprs.join(', ')}]`;\n  },\n\n  // ── Data structures ─────────────────────────────────────────\n\n  arrayLiteral(elements) {\n    return '[' + elements.join(', ') + ']';\n  },\n  objectPropertyAccess(objExpr, key) {\n    const escaped = key.replace(/\\\\/g, '\\\\\\\\').replace(/\"/g, '\\\\\"');\n    return `${objExpr}[\"${escaped}\"]`;\n  },\n  objectPositionAccess(objExpr, position) {\n    return `list(${objExpr}.values())[${position - 1}]`;\n  },\n  arrayIndexAccess(arrExpr, position) {\n    return `${arrExpr}[${position - 1}]`;\n  },\n  arrayDynamicAccess(arrExpr, indexExpr) {\n    return `${arrExpr}[int(${indexExpr}) - 1]`;\n  },\n\n  // ── Function structure ──────────────────────────────────────────\n  //\n  // Python uses `def name(args):` with indented body.\n  // Type hints are added when type information is available.\n  //\n  // renderLoop returns { preamble, expression } instead of a string.\n  // Python can't express loops as inline expressions (no IIFE), so\n  // the loop body is emitted as a nested `def` (preamble), and the\n  // expression is just the function call.\n\n  assembleFunction({ name, argNames, argTypes, bodyStatements, returnStatement, returnType, helpers }) {\n    // Build typed parameter list: \"a: float, b: str\"\n    const params = argNames.map((n, i) => {\n      const t = argTypes?.[i];\n      return t ? `${n}: ${this.formatType(t)}` : n;\n    });\n\n    // Build return type annotation\n    const retAnnotation = returnType ? ` -> ${this.formatType(returnType)}` : '';\n\n    const header = `def ${name}(${params.join(', ')})${retAnnotation}:`;\n    const indented = this._indentLines([...bodyStatements, returnStatement]);\n    const body = indented.join('\\n');\n\n    let code = '';\n    if (helpers.length > 0) {\n      code += helpers.join('\\n\\n') + '\\n\\n';\n    }\n    code += header + '\\n' + body + '\\n';\n    return code;\n  },\n  renderLoop(loop) {\n    // Python can't use an IIFE like JS. Instead, define a nested function\n    // and call it. The engine supports { preamble, expression } returns\n    // for exactly this pattern.\n    const bodyLines = [];\n\n    // Initialize registers\n    for (const reg of loop.registers) {\n      bodyLines.push(this.declareVariable(reg.name, reg.initExpr, reg.type));\n    }\n\n    // Initialize output-only columns\n    for (const col of loop.outputOnlyCols) {\n      bodyLines.push(col.initExpr\n        ? this.declareVariable(col.name, col.initExpr, col.type)\n        : this.declareUninitializedVariable(col.name, col.type));\n    }\n\n    // Initialize accumulators for \"all\" mode columns\n    const allModeCols = loop.outputCols.filter(c => c.isAllMode);\n    for (const col of allModeCols) {\n      bodyLines.push(this.declareVariable(col.accName, this.arrayLiteral([])));\n    }\n\n    // Early return if stop0 is true\n    if (loop.stop0Expr) {\n      bodyLines.push(this.ifReturn(loop.stop0Expr, this.loopReturnStatement(loop)));\n    }\n\n    // Build while-loop body\n    const whileBody = [];\n\n    const iterArgs = [\n      ...loop.registers.map(r => r.name),\n      ...loop.externalExprs\n    ];\n    const returnVars = [\n      ...loop.registers.map(r => r.newName),\n      ...loop.outputOnlyCols.map(c => c.newName),\n      'stop'\n    ];\n    whileBody.push(this.destructureArray(\n      returnVars,\n      this.functionCall(loop.iterationFuncName, iterArgs)\n    ));\n\n    for (const reg of loop.registers) {\n      whileBody.push(this.assignVariable(reg.name, reg.newName));\n    }\n    for (const col of loop.outputOnlyCols) {\n      whileBody.push(this.assignVariable(col.name, col.newName));\n    }\n    for (const col of allModeCols) {\n      whileBody.push(this.arrayPush(col.accName, col.name));\n    }\n    whileBody.push(this.ifBreak('stop'));\n\n    bodyLines.push(...this.wrapInfiniteLoop(whileBody));\n    bodyLines.push(this.loopReturnStatement(loop));\n\n    // Emit as a nested function def (preamble) + call (expression).\n    // Use a counter to ensure unique names when the same loop function\n    // is called multiple times (e.g. COMBIN calls FACTORIAL 3 times).\n    if (!this._loopCounter) this._loopCounter = 0;\n    this._loopCounter++;\n    const funcName = `_loop_${loop.iterationFuncName}_${this._loopCounter}`;\n    const preamble = [\n      `def ${funcName}():`,\n      ...this._indentLines(bodyLines)\n    ];\n\n    return { preamble, expression: `${funcName}()` };\n  },\n\n  // ── Engine hooks ────────────────────────────────────────────\n  //\n  // initContext returns { usedImports: new Set() } to track\n  // which Python imports are needed (e.g., math).\n  //\n  // afterCodeNode checks for _imports on function signatures\n  // and adds them to ctx.usedImports.\n  //\n  // wrapModule prepends `import math` (and others) based on\n  // what was actually used.\n\n  addCallMechanics(conversionRules) {\n    const signatures = conversionRules.signatures || {};\n    for (const funcName of Object.keys(signatures)) {\n      for (const s of signatures[funcName]) {\n        if (s.is_helper_function && !('code_before' in s)) {\n          s.code_before = `${funcName}(`;\n          s.code_after = ')';\n        }\n      }\n    }\n  },\n  afterCodeNode(ctx, _G, _nodeId, functionSignature) {\n    if (functionSignature.add_functions) {\n      ctx.usedFunctions = new Set([\n        ...ctx.usedFunctions,\n        ...functionSignature.add_functions\n      ]);\n    }\n    // Track imports needed by this function signature\n    if (functionSignature._imports) {\n      for (const imp of functionSignature._imports) {\n        ctx.usedImports.add(imp);\n      }\n    }\n  },\n  initContext() {\n    return { usedImports: new Set() };\n  },\n  wrapModule(code) {\n    // Scan the generated code for imports we need to add.\n    // This is reliable because we control what code is emitted.\n    const lines = [];\n    if (/\\bmath\\./.test(code)) {\n      lines.push('import math');\n    }\n    if (lines.length > 0) {\n      return lines.join('\\n') + '\\n\\n' + code;\n    }\n    return code;\n  },\n\n  // ═══════════════════════════════════════════════════════════════\n  // COMPOSABLE INTERNALS — Python\n  //\n  // Methods called by assembleFunction and renderLoop.\n  // ═══════════════════════════════════════════════════════════════\n  //\n  // ── Reserved words ──────────────────────────────────────────────\n\n  reservedWords: new Set([\"false\",\"none\",\"true\",\"and\",\"as\",\"assert\",\"async\",\"await\",\"break\",\"class\",\"continue\",\"def\",\"del\",\"elif\",\"else\",\"except\",\"finally\",\"for\",\"from\",\"global\",\"if\",\"import\",\"in\",\"is\",\"lambda\",\"nonlocal\",\"not\",\"or\",\"pass\",\"raise\",\"return\",\"try\",\"while\",\"with\",\"yield\"]),\n\n  // ── Used by assembleFunction ─────────────────────────────────\n\n  indent: \"    \",\n  functionHeader(name, argNames) {\n    return `def ${name}(${argNames.join(', ')}):`;\n  },\n  functionFooter() {\n    return '';\n  },\n\n  // ── Used by renderLoop ──────────────────────────────────────\n\n  declareUninitializedVariable(name, _type) {\n    return `${name} = None`;\n  },\n  assignVariable(name, value) {\n    return `${name} = ${value}`;\n  },\n  ifReturn(condExpr, returnStatement) {\n    return `if ${condExpr}:\\n    ${returnStatement}`;\n  },\n  ifBreak(condExpr) {\n    return `if ${condExpr}:\\n    break`;\n  },\n  functionCall(name, argExprs) {\n    return `${name}(${argExprs.join(', ')})`;\n  },\n  arrayPush(arrExpr, valExpr) {\n    return `${arrExpr}.append(${valExpr})`;\n  },\n  destructureArray(varNames, rhsExpr, _varTypes) {\n    return `${varNames.join(', ')} = ${rhsExpr}`;\n  },\n  wrapLoopExpression(_bodyLines) {\n    throw new Error('Python renderLoop uses { preamble, expression } — wrapLoopExpression should not be called');\n  },\n  wrapInfiniteLoop(bodyLines) {\n    const indented = this._indentLines(bodyLines);\n    return ['while True:', ...indented];\n  },\n  loopReturnStatement(loop) {\n    const entries = loop.outputCols.map(col => ({\n      name: col.outputName,\n      expr: col.isAllMode ? col.accName : col.name\n    }));\n    if (entries.length === 1) {\n      return this.returnValue(entries[0].expr);\n    }\n    return this.returnMultiple(entries);\n  },\n\n  // ── Type formatting ─────────────────────────────────────────\n  //\n  // Maps spreadsheet types to Python type hints:\n  //   Number → float, Text → str, Boolean → bool\n  //   ARRAY[Number] → list[float], etc.\n\n  formatType(type) {\n    if (!type) return type;\n    if (type === 'ARRAY') return 'list';\n    const arrayMatch = type.match(/^ARRAY\\[(.+)\\]$/);\n    if (arrayMatch) return `list[${this.formatType(arrayMatch[1])}]`;\n    const objectMatch = type.match(/^Object\\[(.+)\\]$/);\n    if (objectMatch) return 'dict';\n    const map = { Number: 'float', Text: 'str', Boolean: 'bool', Date: 'date' };\n    return map[type] || type;\n  },\n\n  // ── Shared internal helpers ──────────────────────────────────\n\n  _indentLines(lines) {\n    return lines\n      .flatMap(line => line.split('\\n'))\n      .map(line => line === '' ? '' : this.indent + line);\n  }\n}",
+  "functions": {
+    "signatures": {
+      "NEGATE": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "-(",
+          "code_after": ")"
+        }
+      ],
+      "NOT": [
+        {
+          "inputs": [
+            "Boolean"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "code_before": "not (",
+          "code_after": ")"
+        }
+      ],
+      "LEN": [
+        {
+          "inputs": [
+            "ARRAY[*]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "len(",
+          "code_after": ")"
+        }
+      ],
+      "SIN": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.sin(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "ASIN": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.asin(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "ACOS": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.acos(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "ATAN": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.atan(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "EXP": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.exp(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "LN": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.log(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "FLOOR": [
+        {
+          "inputs": [
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.floor(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "MOD": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "operator": "%",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "SUM": [
+        {
+          "inputs": [
+            "ARRAY[Number]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "sum(",
+          "code_after": ")"
+        }
+      ],
+      "MIN": [
+        {
+          "inputs": [
+            "ARRAY[Number]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "min(",
+          "code_after": ")"
+        }
+      ],
+      "MAX": [
+        {
+          "inputs": [
+            "ARRAY[Number]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "max(",
+          "code_after": ")"
+        }
+      ],
+      "AND": [
+        {
+          "inputs": [
+            "ARRAY[Boolean]"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "code_before": "all(",
+          "code_after": ")"
+        }
+      ],
+      "OR": [
+        {
+          "inputs": [
+            "ARRAY[Boolean]"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "code_before": "any(",
+          "code_after": ")"
+        }
+      ],
+      "PRODUCT": [
+        {
+          "inputs": [
+            "ARRAY[Number]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "math.prod(",
+          "code_after": ")",
+          "_imports": [
+            "math"
+          ]
+        }
+      ],
+      "ADD": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "operator": "+",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "SUBTRACT": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "operator": "-",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "MULTIPLY": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "operator": "*",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "DIVIDE": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "sc_safe_div(",
+          "code_after": ")",
+          "add_functions": [
+            "SC_SAFE_DIV"
+          ]
+        }
+      ],
+      "EXPONENT": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "operator": "**",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "GREATER": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": ">",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "LESS": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "<",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "GREATEREQUAL": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": ">=",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "LESSEQUAL": [
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "<=",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "&": [
+        {
+          "inputs": [
+            "Text",
+            "Text"
+          ],
+          "outputs": [
+            "Text"
+          ],
+          "operator": "+",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "EQUAL": [
+        {
+          "inputs": [
+            "Text",
+            "Text"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "==",
+          "code_before": "(",
+          "code_after": ")"
+        },
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "==",
+          "code_before": "(",
+          "code_after": ")"
+        },
+        {
+          "inputs": [
+            "Boolean",
+            "Boolean"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "==",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "NOTEQUAL": [
+        {
+          "inputs": [
+            "Text",
+            "Text"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "!=",
+          "code_before": "(",
+          "code_after": ")"
+        },
+        {
+          "inputs": [
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "!=",
+          "code_before": "(",
+          "code_after": ")"
+        },
+        {
+          "inputs": [
+            "Boolean",
+            "Boolean"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "operator": "!=",
+          "code_before": "(",
+          "code_after": ")"
+        }
+      ],
+      "IF": [
+        {
+          "inputs": [
+            "Boolean",
+            "Number",
+            "Number"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "template": "IF_TERNARY"
+        },
+        {
+          "inputs": [
+            "Boolean",
+            "Text",
+            "Text"
+          ],
+          "outputs": [
+            "Text"
+          ],
+          "template": "IF_TERNARY"
+        },
+        {
+          "inputs": [
+            "Boolean",
+            "Boolean",
+            "Boolean"
+          ],
+          "outputs": [
+            "Boolean"
+          ],
+          "template": "IF_TERNARY"
+        }
+      ],
+      "AVERAGE": [
+        {
+          "inputs": [
+            "ARRAY[Number]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "sc_average(",
+          "code_after": ")",
+          "add_functions": [
+            "SC_AVERAGE"
+          ]
+        }
+      ],
+      "COUNT": [
+        {
+          "inputs": [
+            "ARRAY[Number]"
+          ],
+          "outputs": [
+            "Number"
+          ],
+          "code_before": "len(",
+          "code_after": ")"
+        }
+      ]
+    },
+    "functions": {
+      "SC_AVERAGE": {
+        "text": "def sc_average(arr):\n    return sum(arr) / len(arr)"
+      },
+      "SC_SAFE_DIV": {
+        "text": "def sc_safe_div(a, b):\n    return float('inf') if b == 0 else (a / b)"
+      }
+    },
+    "templates": {
+      "IF_TERNARY": {
+        "force-persist": false,
+        "no-persist-template": "(<input2> if <input1> else <input3>)"
+      }
+    },
+    "transforms": {},
+    "function_logic_dags": {}
+  },
+  "overrides": "{\n  // Custom function overrides for Python.\n  //\n  // When a spreadsheet function has an override here, the transpiler\n  // emits a simple function call and prepends your hand-written\n  // Python implementation instead of expanding the DAG.\n  //\n  // Example:\n  //   \"CALCULATE_TAX\": \"def CALCULATE_TAX(income, rate):\\n    return income * rate\"\n}"
+}

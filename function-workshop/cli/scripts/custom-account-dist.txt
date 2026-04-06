@@ -1,0 +1,128 @@
+# CUSTOM_ACCOUNT_DIST - Distribution from a custom account
+# Determines how much to distribute from a custom account each year.
+# Default rule: spread evenly over a fixed period (10 years).
+# Change the period or formula to customize the distribution schedule.
+
+new CUSTOM_ACCOUNT_DIST
+
+input BALANCE 100000
+input YEAR 1
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'CUSTOM ACCOUNT DISTRIBUTION
+style A1 bold
+style A1 fontsize 24
+write A2 'Spreads a custom account balance evenly over a 10-year distribution period
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-6: YOUR SITUATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Account Balance
+write B5 =BALANCE
+write C5 'Current value of custom account
+
+write A6 'Retirement Year
+write B6 =YEAR
+write C6 'Year 1 = first year of retirement
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-11: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── THE CALCULATION ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+highlight E8 gray
+highlight F8 gray
+highlight G8 gray
+
+write A9 'Distribution Period
+write B9 10
+write C9 'Distribute evenly over this many years
+
+write A10 'In Distribution Phase?
+write B10 =AND(YEAR>=1, YEAR<=B9)
+write C10 'True if year is 1 through distribution period
+
+write A11 'Distribution Amount
+write B11 =IF(B10, BALANCE/(B9-YEAR+1), 0)
+write C11 'Balance / remaining years, or 0 if past period
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-14: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 '─── RESULT ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+
+write A14 'Distribution
+write B14 =B11
+write C14 '← OUTPUT: Amount to distribute this year
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B14 DISTRIBUTION
+output DISTRIBUTION
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format B6 number 0
+format B9 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# Independent verification: BALANCE / (PERIOD - YEAR) when YEAR < PERIOD, else 0
+# Hand-calculated: 100000/10=10000, 100000/5=20000, 100000/1=100000, etc.
+# ═══════════════════════════════════════════════════════════════════
+
+# Year 1: first year, distribute 1/10th
+test "100000, 1" "10000"
+
+# Year 6: halfway through, distribute 1/5th of remaining
+test "100000, 6" "20000"
+
+# Year 10: last year, distribute everything
+test "100000, 10" "100000"
+
+# Year 11: past distribution period, nothing
+test "100000, 11" "0"
+
+# Zero balance: nothing to distribute
+test "0, 1" "0"
+
+# Mid-period with different balance: 50000 / (10-4+1) = 7142.86
+test "50000, 4" "7142.857142857143"
+
+# Year 0: before distribution period, no distribution
+test "100000, 0" "0"
+
+# Negative balance: garbage in, garbage out (document behavior)
+test "-5000, 1" "-500"
+
+save

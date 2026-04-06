@@ -1,0 +1,175 @@
+# NPER - Number of Periods
+# How many periods needed to pay off a loan or reach a savings goal
+# Formula: LN(numerator/denominator) / LN(1+rate)
+
+new NPER
+input RATE 0.08
+input PMT 1490.29
+input PV -10000
+input FV 0
+input TYPE 0
+default-format currency 2
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'NUMBER OF PERIODS
+style A1 bold
+style A1 fontsize 24
+write A2 'Returns the number of periods for an investment.
+write A3 'Based on periodic payments and constant interest rate.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-10: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUTS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Interest Rate
+write B6 =RATE
+write C6 'Rate per period
+
+write A7 'Payment
+write B7 =PMT
+write C7 'Amount paid each period
+
+write A8 'Present Value
+write B8 =PV
+write C8 'Current value
+
+write A9 'Future Value
+write B9 =FV
+write C9 'Target balance
+
+write A10 'Payment Type
+write B10 =TYPE
+write C10 '0 = end, 1 = beginning
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 12-16: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A12 '─── THE CALCULATION ───
+highlight A12 gray
+highlight B12 gray
+highlight C12 gray
+highlight D12 gray
+highlight E12 gray
+highlight F12 gray
+highlight G12 gray
+
+write C12 'NPER = LN(num/denom) / LN(1+rate)
+
+write A13 'Timing Factor
+write B13 =IF(B10=1,1+B6,1)
+write C13 'Adjust for payment timing
+
+write A14 'Adjusted Payment
+write B14 =B7*B13
+write C14 'PMT × timing factor
+
+write A15 'FV×Rate
+write B15 =B9*B6
+write C15 'Future value component
+
+write A16 'PV×Rate
+write B16 =B8*B6
+write C16 'Present value component
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 18-23: LOGARITHM TERMS
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── LOGARITHM TERMS ───
+highlight A18 gray
+highlight B18 gray
+highlight C18 gray
+highlight D18 gray
+highlight E18 gray
+highlight F18 gray
+highlight G18 gray
+
+write A19 'Numerator
+write B19 =B14-B15
+write C19 'PMT adjusted - FV×rate
+
+write A20 'Denominator
+write B20 =B14+B16
+write C20 'PMT adjusted + PV×rate
+
+write A21 'Ratio
+write B21 =B19/B20
+write C21 'Numerator / Denominator
+
+write A22 'LN(Ratio)
+write B22 =LN(B21)
+write C22 'Natural log of ratio
+
+write A23 'LN(1+Rate)
+write B23 =LN(1+B6)
+write C23 'Natural log of growth factor
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 25-26: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A25 '─── RESULT ───
+highlight A25 gray
+highlight B25 gray
+highlight C25 gray
+highlight D25 gray
+highlight E25 gray
+highlight F25 gray
+highlight G25 gray
+
+write A26 'Number of Periods
+write B26 =IF(B6=0,-(B8+B9)/B7,B22/B23)
+write C26 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B26 NPER
+output NPER
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B6 percent 2
+format B10 number 0
+format B13 number 4
+format B21 number 6
+format B22 number 6
+format B23 number 6
+format B26 number 2
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Inverse of PMT test 1: ~10 periods (PMT was rounded)
+test "0.08, 1490.29, -10000, 0, 0" "10.000049380351165"
+
+# Inverse of PMT test 2: ~30 periods
+test "0.06, 14529.78, -200000, 0, 0" "30"
+
+# Savings with beginning-of-period
+test "0.05, 1723.57, 0, -10000, 1" "5"
+
+# Zero rate: simple division
+test "0, 100, -1000, 0, 0" "10"
+
+# Non-integer result
+test "0.05, 1000, -5000, -2000, 0" "7.849784045122306"
+
+save

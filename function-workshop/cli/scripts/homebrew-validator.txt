@@ -1,0 +1,422 @@
+# HOMEBREW_VALIDATOR — D&D 5e Homebrew Class Balance Tool
+# Front door display sheet for Phase 3.
+# No inputs, no outputs — editable values are blue-highlighted cells.
+# Composes: CLASS_BENCHMARK, HP_CALCULATOR, AC_CALCULATOR, DPR_CALCULATOR,
+#           PROFICIENCY_BONUS, INT.
+# Shows your homebrew's HP, AC, and DPR at all four tier levels compared
+# against official class benchmarks, with percentage deviations highlighted.
+
+new HOMEBREW_VALIDATOR
+
+use INT
+use PROFICIENCY_BONUS
+use HP_CALCULATOR
+use AC_CALCULATOR
+use DPR_CALCULATOR
+use CLASS_BENCHMARK
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'HOMEBREW VALIDATOR — D&D 5e
+write A2 'Compare your homebrew class against official archetypes across all four tiers.
+write A3 'Edit blue cells. Ctrl+D on any calculated value to see the full breakdown.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-16: YOUR HOMEBREW CLASS
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR HOMEBREW CLASS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+highlight H5 gray
+write A6 'Hit Die
+write B6 10
+highlight B6 blue
+write C6 '6=Wizard  8=Cleric/Rogue  10=Fighter/Ranger  12=Barbarian
+name B6 HIT_DIE
+write A7 'CON Modifier
+write B7 2
+highlight B7 blue
+write C7 'Constitution ability modifier
+name B7 CON_MOD
+write A8 'Primary Stat
+write B8 17
+highlight B8 blue
+write C8 'Starting value with racial bonus, before ASIs (e.g. 15+2=17)
+name B8 PRIMARY_STAT
+write A9 'Weapon Die
+write B9 8
+highlight B9 blue
+write C9 '4=Dagger  6=Shortsword  8=Longsword  10=Halberd  12=Greataxe
+name B9 WEAPON_DIE
+write A10 'Fighting Style Dmg
+write B10 2
+highlight B10 blue
+write C10 '0=None  2=Dueling (+2 with one-handed)
+name B10 FIGHTING_STYLE
+write A11 'Extra Dmg Per Hit
+write B11 0
+highlight B11 blue
+write C11 'Average bonus damage per hit (e.g. 4.5 for Improved Divine Smite 1d8)
+name B11 EXTRA_DMG
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 13-17: ARMOR
+# ═══════════════════════════════════════════════════════════════════
+write A13 '─── ARMOR ───
+highlight A13 gray
+highlight B13 gray
+highlight C13 gray
+highlight D13 gray
+highlight E13 gray
+highlight F13 gray
+highlight G13 gray
+highlight H13 gray
+write A14 'Armor Type
+write B14 3
+highlight B14 blue
+write C14 '0=None  1=Light  2=Medium  3=Heavy
+name B14 ARMOR_TYPE
+write A15 'Base AC
+write B15 16
+highlight B15 blue
+write C15 'Leather 11  Chain Shirt 13  Half Plate 15  Chain Mail 16  Plate 18
+name B15 ARMOR_BASE
+write A16 'DEX Modifier
+write B16 2
+highlight B16 blue
+write C16 'Dexterity modifier (capped by armor type for AC)
+name B16 DEX_MOD
+write A17 'Shield
+write B17 1
+highlight B17 blue
+write C17 '0=No  1=Yes (+2 AC)
+name B17 HAS_SHIELD
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 19-20: COMPARE AGAINST
+# ═══════════════════════════════════════════════════════════════════
+write A19 '─── COMPARE AGAINST ───
+highlight A19 gray
+highlight B19 gray
+highlight C19 gray
+highlight D19 gray
+highlight E19 gray
+highlight F19 gray
+highlight G19 gray
+highlight H19 gray
+write A20 'Archetype
+write B20 1
+highlight B20 blue
+write C20 '1=Martial (Fighter Champion)  2=Half-Caster (Paladin)  3=Full-Caster (Wizard)
+name B20 ARCHETYPE
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 22-27: TIER SETTINGS
+# Four tiers across columns B, D, F, H
+# ═══════════════════════════════════════════════════════════════════
+write A22 '─── TIER SETTINGS ───
+highlight A22 gray
+highlight B22 gray
+highlight C22 gray
+highlight D22 gray
+highlight E22 gray
+highlight F22 gray
+highlight G22 gray
+highlight H22 gray
+
+# Tier headers
+write B23 'Tier 1
+write D23 'Tier 2
+write F23 'Tier 3
+write H23 'Tier 4
+style B23 bold
+style D23 bold
+style F23 bold
+style H23 bold
+
+# Level (editable per tier)
+write A24 'Level
+write B24 1
+write D24 5
+write F24 11
+write H24 17
+highlight B24 blue
+highlight D24 blue
+highlight F24 blue
+highlight H24 blue
+
+# Number of attacks (editable per tier)
+write A25 'Attacks/Round
+write B25 1
+write D25 2
+write F25 3
+write H25 3
+highlight B25 blue
+highlight D25 blue
+highlight F25 blue
+highlight H25 blue
+
+# Crit range (editable per tier)
+write A26 'Crit Range
+write B26 20
+write D26 19
+write F26 19
+write H26 18
+highlight B26 blue
+highlight D26 blue
+highlight F26 blue
+highlight H26 blue
+
+# Target AC (editable per tier — from DMG monster stats)
+write A27 'Target AC
+write B27 13
+write D27 15
+write F27 17
+write H27 19
+highlight B27 blue
+highlight D27 blue
+highlight F27 blue
+highlight H27 blue
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 29-35: ABILITY PROGRESSION (computed)
+# ═══════════════════════════════════════════════════════════════════
+write A29 '─── ABILITY PROGRESSION ───
+highlight A29 gray
+highlight B29 gray
+highlight C29 gray
+highlight D29 gray
+highlight E29 gray
+highlight F29 gray
+highlight G29 gray
+highlight H29 gray
+
+# ASI count at each tier level
+write A30 'ASI Count
+write B30 =IF(B24>=4,1,0)+IF(B24>=8,1,0)+IF(B24>=12,1,0)+IF(B24>=16,1,0)+IF(B24>=19,1,0)
+write C30 'Standard ASIs at levels 4, 8, 12, 16, 19
+write D30 =IF(D24>=4,1,0)+IF(D24>=8,1,0)+IF(D24>=12,1,0)+IF(D24>=16,1,0)+IF(D24>=19,1,0)
+write F30 =IF(F24>=4,1,0)+IF(F24>=8,1,0)+IF(F24>=12,1,0)+IF(F24>=16,1,0)+IF(F24>=19,1,0)
+write H30 =IF(H24>=4,1,0)+IF(H24>=8,1,0)+IF(H24>=12,1,0)+IF(H24>=16,1,0)+IF(H24>=19,1,0)
+
+# Boosted primary stat (cap at 20)
+write A31 'Primary Stat
+write B31 =MIN(20,PRIMARY_STAT+2*B30)
+write C31 'Starting stat + 2 per ASI, capped at 20
+write D31 =MIN(20,PRIMARY_STAT+2*D30)
+write F31 =MIN(20,PRIMARY_STAT+2*F30)
+write H31 =MIN(20,PRIMARY_STAT+2*H30)
+
+# Ability modifier
+write A32 'Ability Mod
+write B32 =INT((B31-10)/2)
+write C32 '(stat - 10) / 2, rounded down
+write D32 =INT((D31-10)/2)
+write F32 =INT((F31-10)/2)
+write H32 =INT((H31-10)/2)
+
+# Proficiency bonus
+write A33 'Proficiency
+write B33 =PROFICIENCY_BONUS(B24)
+write C33 'Ctrl+D to see the level-to-bonus table
+write D33 =PROFICIENCY_BONUS(D24)
+write F33 =PROFICIENCY_BONUS(F24)
+write H33 =PROFICIENCY_BONUS(H24)
+
+# Attack bonus = ability mod + proficiency
+write A34 'Attack Bonus
+write B34 =B32+B33
+write C34 '= Ability mod + proficiency bonus
+write D34 =D32+D33
+write F34 =F32+F33
+write H34 =H32+H33
+
+# Damage bonus = ability mod + fighting style + extra dmg
+write A35 'Damage Bonus
+write B35 =B32+FIGHTING_STYLE+EXTRA_DMG
+write C35 '= Ability mod + fighting style + extra damage
+write D35 =D32+FIGHTING_STYLE+EXTRA_DMG
+write F35 =F32+FIGHTING_STYLE+EXTRA_DMG
+write H35 =H32+FIGHTING_STYLE+EXTRA_DMG
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 37-41: YOUR HOMEBREW STATS
+# ═══════════════════════════════════════════════════════════════════
+write A37 '─── YOUR HOMEBREW STATS ───
+highlight A37 gray
+highlight B37 gray
+highlight C37 gray
+highlight D37 gray
+highlight E37 gray
+highlight F37 gray
+highlight G37 gray
+highlight H37 gray
+
+write A38 'HP
+write B38 =HP_CALCULATOR(B24,HIT_DIE,CON_MOD)
+write D38 =HP_CALCULATOR(D24,HIT_DIE,CON_MOD)
+write F38 =HP_CALCULATOR(F24,HIT_DIE,CON_MOD)
+write H38 =HP_CALCULATOR(H24,HIT_DIE,CON_MOD)
+
+write A39 'AC
+write B39 =INDEX(AC_CALCULATOR(ARMOR_TYPE,ARMOR_BASE,DEX_MOD,HAS_SHIELD,0,0),"FINAL_AC")
+write D39 =B39
+write F39 =B39
+write H39 =B39
+write C39 'Same across tiers (no magic items in baseline)
+
+write A40 'Attack Bonus
+write B40 =B34
+write D40 =D34
+write F40 =F34
+write H40 =H34
+
+write A41 'DPR
+write B41 =INDEX(DPR_CALCULATOR(B34,B27,WEAPON_DIE,B35,B25,B26,0),"DPR")
+write D41 =INDEX(DPR_CALCULATOR(D34,D27,WEAPON_DIE,D35,D25,D26,0),"DPR")
+write F41 =INDEX(DPR_CALCULATOR(F34,F27,WEAPON_DIE,F35,F25,F26,0),"DPR")
+write H41 =INDEX(DPR_CALCULATOR(H34,H27,WEAPON_DIE,H35,H25,H26,0),"DPR")
+highlight B41 yellow
+highlight D41 yellow
+highlight F41 yellow
+highlight H41 yellow
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 43-48: BENCHMARK STATS
+# ═══════════════════════════════════════════════════════════════════
+write A43 '─── BENCHMARK ───
+highlight A43 gray
+highlight B43 gray
+highlight C43 gray
+highlight D43 gray
+highlight E43 gray
+highlight F43 gray
+highlight G43 gray
+highlight H43 gray
+
+# Call CLASS_BENCHMARK once per tier, then INDEX each stat (P11)
+write A44 'Analysis
+write B44 =CLASS_BENCHMARK(ARCHETYPE,B24)
+write C44 'Ctrl+D to see benchmark data and assumptions
+write D44 =CLASS_BENCHMARK(ARCHETYPE,D24)
+write F44 =CLASS_BENCHMARK(ARCHETYPE,F24)
+write H44 =CLASS_BENCHMARK(ARCHETYPE,H24)
+
+write A45 'HP
+write B45 =INDEX(B44,"HP")
+write D45 =INDEX(D44,"HP")
+write F45 =INDEX(F44,"HP")
+write H45 =INDEX(H44,"HP")
+
+write A46 'AC
+write B46 =INDEX(B44,"AC")
+write D46 =INDEX(D44,"AC")
+write F46 =INDEX(F44,"AC")
+write H46 =INDEX(H44,"AC")
+
+write A47 'Attack Bonus
+write B47 =INDEX(B44,"ATK_BONUS")
+write D47 =INDEX(D44,"ATK_BONUS")
+write F47 =INDEX(F44,"ATK_BONUS")
+write H47 =INDEX(H44,"ATK_BONUS")
+
+write A48 'DPR
+write B48 =INDEX(B44,"DPR")
+write D48 =INDEX(D44,"DPR")
+write F48 =INDEX(F44,"DPR")
+write H48 =INDEX(H44,"DPR")
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 50-55: DEVIATION (percentage difference from benchmark)
+# ═══════════════════════════════════════════════════════════════════
+write A50 '─── DEVIATION ───
+highlight A50 gray
+highlight B50 gray
+highlight C50 gray
+highlight D50 gray
+highlight E50 gray
+highlight F50 gray
+highlight G50 gray
+highlight H50 gray
+write C51 'Positive = stronger than benchmark, Negative = weaker
+
+write A52 'HP
+write B52 =IF(B45=0,0,(B38-B45)/B45)
+write D52 =IF(D45=0,0,(D38-D45)/D45)
+write F52 =IF(F45=0,0,(F38-F45)/F45)
+write H52 =IF(H45=0,0,(H38-H45)/H45)
+
+write A53 'AC
+write B53 =IF(B46=0,0,(B39-B46)/B46)
+write D53 =IF(D46=0,0,(D39-D46)/D46)
+write F53 =IF(F46=0,0,(F39-F46)/F46)
+write H53 =IF(H46=0,0,(H39-H46)/H46)
+
+write A54 'Attack Bonus
+write B54 =IF(B47=0,0,(B40-B47)/B47)
+write D54 =IF(D47=0,0,(D40-D47)/D47)
+write F54 =IF(F47=0,0,(F40-F47)/F47)
+write H54 =IF(H47=0,0,(H40-H47)/H47)
+
+write A55 'DPR
+write B55 =IF(B48=0,0,(B41-B48)/B48)
+write D55 =IF(D48=0,0,(D41-D48)/D48)
+write F55 =IF(F48=0,0,(F41-F48)/F48)
+write H55 =IF(H48=0,0,(H41-H48)/H48)
+highlight B55 yellow
+highlight D55 yellow
+highlight F55 yellow
+highlight H55 yellow
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+default-format number 0
+
+# DPR values
+format B41 number 2
+format D41 number 2
+format F41 number 2
+format H41 number 2
+format B48 number 2
+format D48 number 2
+format F48 number 2
+format H48 number 2
+
+# Deviation percentages
+format B52 percent 0
+format D52 percent 0
+format F52 percent 0
+format H52 percent 0
+format B53 percent 0
+format D53 percent 0
+format F53 percent 0
+format H53 percent 0
+format B54 percent 0
+format D54 percent 0
+format F54 percent 0
+format H54 percent 0
+format B55 percent 0
+format D55 percent 0
+format F55 percent 0
+format H55 percent 0
+
+# Ability progression decimals
+format B32 number 0
+format D32 number 0
+format F32 number 0
+format H32 number 0
+format B35 number 1
+format D35 number 1
+format F35 number 1
+format H35 number 1
+
+save

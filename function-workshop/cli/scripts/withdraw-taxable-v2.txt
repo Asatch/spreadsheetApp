@@ -1,0 +1,178 @@
+# WITHDRAW_TAXABLE - Withdraw from taxable account
+# Python signature: withdraw_from_taxable(balance, shortfall, basis)
+# Returns: withdrawal_amount, new_tax, remaining_shortfall, basis_reduction
+# Output names: WITHDRAWAL, TAX, REMAINING_SHORTFALL, BASIS_REDUCTION
+
+new WITHDRAW_TAXABLE
+input BALANCE 100000
+input SHORTFALL 10000
+input BASIS 80000
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'WITHDRAW FROM TAXABLE ACCOUNT
+style A1 bold
+style A1 fontsize 24
+write A2 'Calculates gross withdrawal, capital gains tax, remaining shortfall, and basis reduction for a taxable brokerage account
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-6: YOUR SITUATION (inputs)
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Account Balance
+write B5 =BALANCE
+write C5 'Current value of taxable account
+
+write A6 'Amount Needed
+write B6 =SHORTFALL
+write C6 'Net dollars you need after tax
+
+write A7 'Cost Basis
+write B7 =BASIS
+write C7 'What you originally paid
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-12: TAX CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── TAX CALCULATION ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+
+write A10 'Capital Gains Rate
+write B10 0.15
+write C10 'Long-term capital gains rate (assumed 15% for typical retiree)
+
+write A11 'Gains Proportion
+write B11 =IF(BALANCE=0,0,(BALANCE-BASIS)/BALANCE)
+write C11 'Unrealized gain as % of balance
+
+write A12 'Effective Tax Rate
+write B12 =B10*B11
+write C12 'Tax rate on each dollar withdrawn
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 14-20: WITHDRAWAL CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A14 '─── WITHDRAWAL CALCULATION ───
+highlight A14 gray
+highlight B14 gray
+highlight C14 gray
+highlight D14 gray
+highlight E14 gray
+highlight F14 gray
+highlight G14 gray
+
+write A15 'Gross Needed
+write B15 =IF(B12=1,SHORTFALL,SHORTFALL/(1-B12))
+write C15 'Gross-up: net / (1 - tax rate), guarded for 100% rate
+
+write A16 'Actual Withdrawal
+write B16 =IF(BALANCE=0,0,MIN(B15,BALANCE))
+write C16 'Capped at account balance
+
+write A17 'Tax on Withdrawal
+write B17 =B16*B12
+write C17 'Capital gains tax owed
+
+write A18 'Net Received
+write B18 =B16-B17
+write C18 'Cash after paying tax
+
+write A19 'Remaining Shortfall
+write B19 =MAX(0,SHORTFALL-B18)
+write C19 'Unmet need if account insufficient
+
+write A20 'Basis Reduction
+write B20 =IF(BALANCE=0,0,IF(B16=BALANCE,BASIS,B16*(BASIS/BALANCE)))
+write C20 'Pro-rata basis consumed by withdrawal
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 22-26: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A22 '─── RESULT ───
+highlight A22 gray
+highlight B22 gray
+highlight C22 gray
+highlight D22 gray
+highlight E22 gray
+highlight F22 gray
+highlight G22 gray
+
+write A23 'Withdrawal Amount
+write B23 =B16
+write C23 '← OUTPUT
+
+write A24 'Tax Paid
+write B24 =B17
+write C24 '← OUTPUT
+
+write A25 'Remaining Shortfall
+write B25 =B19
+write C25 '← OUTPUT (if account insufficient)
+
+write A26 'Basis Reduction
+write B26 =B20
+write C26 '← OUTPUT (for tracking cost basis)
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B23 WITHDRAWAL
+name B24 TAX
+name B25 REMAINING_SHORTFALL
+name B26 BASIS_REDUCTION
+
+output WITHDRAWAL
+output TAX
+output REMAINING_SHORTFALL
+output BASIS_REDUCTION
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format B10 percent 0
+format B11 percent 1
+format B12 percent 2
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Normal case: 20% gains, need $10k net
+test "100000, 10000, 80000" "10309.278350515464, 309.2783505154639, 0, 8247.422680412372"
+
+# Zero balance: can't withdraw anything
+test "0, 10000, 0" "0, 0, 10000, 0"
+
+# Shortfall exceeds balance: withdraw all, report remaining
+test "50000, 100000, 40000" "50000, 1500, 51500, 40000"
+
+# No gains: basis equals balance, no tax
+test "100000, 10000, 100000" "10000, 0, 0, 10000"
+
+# All gains: basis is zero
+test "100000, 10000, 0" "11764.705882352941, 1764.7058823529412, 0, 0"
+
+save

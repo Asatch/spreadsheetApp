@@ -1,0 +1,369 @@
+# ENCOUNTER_BALANCER — D&D 5e Encounter Difficulty Calculator
+# Calculates encounter difficulty using DMG rules (p. 81-83).
+# Looks up party XP thresholds by level, monster XP by CR, applies
+# encounter multiplier based on monster count, and rates difficulty.
+# Returns: DIFFICULTY, ADJUSTED_XP, TOTAL_MONSTER_XP, EASY_THRESHOLD,
+#          MEDIUM_THRESHOLD, HARD_THRESHOLD, DEADLY_THRESHOLD
+
+new ENCOUNTER_BALANCER
+
+input PARTY_SIZE 4
+input PARTY_LEVEL 5
+input MONSTER_CR_1 3
+input MONSTER_CR_2 3
+input MONSTER_CR_3 0
+input MONSTER_CR_4 0
+input MONSTER_CR_5 0
+input MONSTER_CR_6 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'ENCOUNTER BALANCER — D&D 5e
+write A2 'Rates encounter difficulty (Trivial to Deadly) using DMG rules.
+write A3 'Looks up party thresholds and monster XP, applies encounter multiplier.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-13: YOUR ENCOUNTER
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR ENCOUNTER ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'Party Size
+write B6 =PARTY_SIZE
+write C6 'Number of player characters
+write A7 'Party Level
+write B7 =PARTY_LEVEL
+write C7 'Character level (1-20)
+write A8 'Monster CR 1
+write B8 =MONSTER_CR_1
+write C8 'Challenge rating (0 = empty slot)
+write A9 'Monster CR 2
+write B9 =MONSTER_CR_2
+write C9 'Set to 0 for empty slot
+write A10 'Monster CR 3
+write B10 =MONSTER_CR_3
+write C10 'Set to 0 for empty slot
+write A11 'Monster CR 4
+write B11 =MONSTER_CR_4
+write C11 'Set to 0 for empty slot
+write A12 'Monster CR 5
+write B12 =MONSTER_CR_5
+write C12 'Set to 0 for empty slot
+write A13 'Monster CR 6
+write B13 =MONSTER_CR_6
+write C13 'Set to 0 for empty slot
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 15-37: WORKING (PARTY THRESHOLDS)
+# Table: level, easy, medium, hard, deadly (20 rows)
+# Match + 4 cascades (last match wins on PARTY_LEVEL)
+# ═══════════════════════════════════════════════════════════════════
+write A15 '─── WORKING (PARTY THRESHOLDS) ───
+highlight A15 gray
+highlight B15 gray
+highlight C15 gray
+highlight D15 gray
+highlight E15 gray
+highlight F15 gray
+highlight G15 gray
+highlight H15 gray
+highlight I15 gray
+highlight J15 gray
+highlight K15 gray
+highlight L15 gray
+
+# Column headers
+write E16 'Lvl
+write F16 'Easy
+write G16 'Med
+write H16 'Hard
+write I16 'Deadly
+write J16 'Match
+write K16 'E Casc
+write L16 'M Casc
+write M16 'H Casc
+write N16 'D Casc
+
+# Load threshold table into E17:I36 (20 rows)
+csv E17 cli/data/xp-thresholds.csv
+
+# Column J: Level match — does party level meet this row's level?
+# Last match wins: table is ascending, so the last row where level <= PARTY_LEVEL wins
+write J17 =PARTY_LEVEL>=E17
+fill J17:J36
+
+# Column K: Easy threshold cascade
+write K17 =IF(J17,F17,0)
+write K18 =IF(J18,F18,K17)
+fill K18:K36
+
+# Column L: Medium threshold cascade
+write L17 =IF(J17,G17,0)
+write L18 =IF(J18,G18,L17)
+fill L18:L36
+
+# Column M: Hard threshold cascade
+write M17 =IF(J17,H17,0)
+write M18 =IF(J18,H18,M17)
+fill M18:M36
+
+# Column N: Deadly threshold cascade
+write N17 =IF(J17,I17,0)
+write N18 =IF(J18,I18,N17)
+fill N18:N36
+
+# Row 38: Party thresholds (per-character × party size)
+write A38 'Easy (per char)
+write B38 =K36
+write C38 'From threshold table
+write A39 'Medium (per char)
+write B39 =L36
+write C39 'From threshold table
+write A40 'Hard (per char)
+write B40 =M36
+write C40 'From threshold table
+write A41 'Deadly (per char)
+write B41 =N36
+write C41 'From threshold table
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 43-79: WORKING (MONSTER XP LOOKUP)
+# Table: CR, XP (34 rows in E-F)
+# 6 monster slots: match + cascade columns per slot
+# ═══════════════════════════════════════════════════════════════════
+write A43 '─── WORKING (MONSTER XP) ───
+highlight A43 gray
+highlight B43 gray
+highlight C43 gray
+highlight D43 gray
+highlight E43 gray
+highlight F43 gray
+highlight G43 gray
+highlight H43 gray
+highlight I43 gray
+highlight J43 gray
+highlight K43 gray
+highlight L43 gray
+highlight M43 gray
+highlight N43 gray
+highlight O43 gray
+highlight P43 gray
+highlight Q43 gray
+highlight R43 gray
+
+# Column headers for table and lookups
+write E44 'CR
+write F44 'XP
+write G44 'M1?
+write H44 'M1 XP
+write I44 'M2?
+write J44 'M2 XP
+write K44 'M3?
+write L44 'M3 XP
+write M44 'M4?
+write N44 'M4 XP
+write O44 'M5?
+write P44 'M5 XP
+write Q44 'M6?
+write R44 'M6 XP
+
+# Load XP-by-CR table into E45:F78 (34 rows)
+csv E45 cli/data/xp-by-cr.csv
+
+# Monster 1 lookup (columns G-H)
+write G45 =MONSTER_CR_1>=E45
+fill G45:G78
+write H45 =IF(G45,F45,0)
+write H46 =IF(G46,F46,H45)
+fill H46:H78
+
+# Monster 2 lookup (columns I-J)
+write I45 =MONSTER_CR_2>=E45
+fill I45:I78
+write J45 =IF(I45,F45,0)
+write J46 =IF(I46,F46,J45)
+fill J46:J78
+
+# Monster 3 lookup (columns K-L)
+write K45 =MONSTER_CR_3>=E45
+fill K45:K78
+write L45 =IF(K45,F45,0)
+write L46 =IF(K46,F46,L45)
+fill L46:L78
+
+# Monster 4 lookup (columns M-N)
+write M45 =MONSTER_CR_4>=E45
+fill M45:M78
+write N45 =IF(M45,F45,0)
+write N46 =IF(M46,F46,N45)
+fill N46:N78
+
+# Monster 5 lookup (columns O-P)
+write O45 =MONSTER_CR_5>=E45
+fill O45:O78
+write P45 =IF(O45,F45,0)
+write P46 =IF(O46,F46,P45)
+fill P46:P78
+
+# Monster 6 lookup (columns Q-R)
+write Q45 =MONSTER_CR_6>=E45
+fill Q45:Q78
+write R45 =IF(Q45,F45,0)
+write R46 =IF(Q46,F46,R45)
+fill R46:R78
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 80-93: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+write A80 '─── THE CALCULATION ───
+highlight A80 gray
+highlight B80 gray
+highlight C80 gray
+highlight D80 gray
+highlight E80 gray
+highlight F80 gray
+highlight G80 gray
+
+# Individual monster XP results
+write A81 'Monster 1 XP
+write B81 =H78
+write C81 'XP for CR slot 1
+write A82 'Monster 2 XP
+write B82 =J78
+write C82 'XP for CR slot 2
+write A83 'Monster 3 XP
+write B83 =L78
+write C83 'XP for CR slot 3 (excluded if empty)
+write A84 'Monster 4 XP
+write B84 =N78
+write C84 'XP for CR slot 4 (excluded if empty)
+write A85 'Monster 5 XP
+write B85 =P78
+write C85 'XP for CR slot 5 (excluded if empty)
+write A86 'Monster 6 XP
+write B86 =R78
+write C86 'XP for CR slot 6 (excluded if empty)
+
+# Monster count: count slots with CR > 0
+write A88 'Monster Count
+write B88 =IF(MONSTER_CR_1>0,1,0)+IF(MONSTER_CR_2>0,1,0)+IF(MONSTER_CR_3>0,1,0)+IF(MONSTER_CR_4>0,1,0)+IF(MONSTER_CR_5>0,1,0)+IF(MONSTER_CR_6>0,1,0)
+write C88 'Number of non-empty monster slots
+
+# Total monster XP: only sum XP for non-empty slots
+write A89 'Total Monster XP
+write B89 =IF(MONSTER_CR_1>0,B81,0)+IF(MONSTER_CR_2>0,B82,0)+IF(MONSTER_CR_3>0,B83,0)+IF(MONSTER_CR_4>0,B84,0)+IF(MONSTER_CR_5>0,B85,0)+IF(MONSTER_CR_6>0,B86,0)
+write C89 'Sum of XP for non-empty slots only
+
+# Encounter multiplier based on monster count
+write A90 'Encounter Multiplier
+write B90 =IF(B88>=15,4,IF(B88>=11,3,IF(B88>=7,2.5,IF(B88>=3,2,IF(B88>=2,1.5,IF(B88>=1,1,0))))))
+write C90 '1/1.5/2/2.5/3/4 based on monster count
+
+# Adjusted XP
+write A91 'Adjusted XP
+write B91 =B89*B90
+write C91 'Total Monster XP x Encounter Multiplier
+
+# Party thresholds (per-character x party size)
+write A93 'Easy Threshold
+write B93 =B38*PARTY_SIZE
+write C93 'Per-character threshold x party size
+write A94 'Medium Threshold
+write B94 =B39*PARTY_SIZE
+write C94 'Per-character threshold x party size
+write A95 'Hard Threshold
+write B95 =B40*PARTY_SIZE
+write C95 'Per-character threshold x party size
+write A96 'Deadly Threshold
+write B96 =B41*PARTY_SIZE
+write C96 'Per-character threshold x party size
+
+# Difficulty rating
+write A98 'Difficulty
+write B98 =IF(B91>=B96,4,IF(B91>=B95,3,IF(B91>=B94,2,IF(B91>=B93,1,0))))
+write C98 '0=Trivial  1=Easy  2=Medium  3=Hard  4=Deadly
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 100-107: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A100 '─── RESULT ───
+highlight A100 gray
+highlight B100 gray
+highlight C100 gray
+highlight D100 gray
+highlight E100 gray
+highlight F100 gray
+highlight G100 gray
+write A101 'Difficulty
+write B101 =B98
+write C101 '← OUTPUT  0=Trivial 1=Easy 2=Medium 3=Hard 4=Deadly
+highlight B101 yellow
+write A102 'Rating
+write B102 =IF(B101=4,"Deadly",IF(B101=3,"Hard",IF(B101=2,"Medium",IF(B101=1,"Easy","Trivial"))))
+write C102 'Human-readable difficulty label
+write A103 'Adjusted XP
+write B103 =B91
+write C103 '← OUTPUT  XP after encounter multiplier
+write A104 'Total Monster XP
+write B104 =B89
+write C104 '← OUTPUT  Raw XP before multiplier
+write A105 'Easy Threshold
+write B105 =B93
+write C105 '← OUTPUT  Party XP threshold for Easy
+write A106 'Medium Threshold
+write B106 =B94
+write C106 '← OUTPUT  Party XP threshold for Medium
+write A107 'Hard Threshold
+write B107 =B95
+write C107 '← OUTPUT  Party XP threshold for Hard
+write A108 'Deadly Threshold
+write B108 =B96
+write C108 '← OUTPUT  Party XP threshold for Deadly
+
+# Named outputs
+name B101 DIFFICULTY
+name B103 ADJUSTED_XP
+name B104 TOTAL_MONSTER_XP
+name B105 EASY_THRESHOLD
+name B106 MEDIUM_THRESHOLD
+name B107 HARD_THRESHOLD
+name B108 DEADLY_THRESHOLD
+
+# Outputs
+output DIFFICULTY
+output ADJUSTED_XP
+output TOTAL_MONSTER_XP
+output EASY_THRESHOLD
+output MEDIUM_THRESHOLD
+output HARD_THRESHOLD
+output DEADLY_THRESHOLD
+
+# Formatting
+default-format number 0
+format B90 number 1
+
+# Test cases (7 outputs: DIFFICULTY, ADJUSTED_XP, TOTAL_MONSTER_XP, EASY, MEDIUM, HARD, DEADLY)
+# Medium encounter: 4 level-5 PCs vs 2 CR 3 monsters (default inputs)
+test "4, 5, 3, 3, 0, 0, 0, 0" "2, 2100, 1400, 1000, 2000, 3000, 4400"
+# Solo boss: 4 level-5 PCs vs 1 CR 8 monster
+test "4, 5, 8, 0, 0, 0, 0, 0" "3, 3900, 3900, 1000, 2000, 3000, 4400"
+# Mob of weak monsters: 4 level-5 PCs vs 6 CR 0.5 monsters
+test "4, 5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5" "1, 1200, 600, 1000, 2000, 3000, 4400"
+# Trivial: 4 level-10 PCs vs 1 CR 1 monster
+test "4, 10, 1, 0, 0, 0, 0, 0" "0, 200, 200, 2400, 4800, 7600, 11200"
+# Deadly: 4 level-3 PCs vs 3 CR 3 monsters
+test "4, 3, 3, 3, 3, 0, 0, 0" "4, 4200, 2100, 300, 600, 900, 1600"
+# Full party of 6 level-1 PCs vs 4 CR 0.25 monsters
+test "6, 1, 0.25, 0.25, 0.25, 0.25, 0, 0" "2, 400, 200, 150, 300, 450, 600"
+# Single level-20 PC vs 1 CR 30 monster
+test "1, 20, 30, 0, 0, 0, 0, 0" "4, 155000, 155000, 2800, 5700, 8500, 12700"
+
+save

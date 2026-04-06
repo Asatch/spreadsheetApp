@@ -1,0 +1,29 @@
+# SQRT - Square root via EXPONENT(NUMBER, 0.5)
+new SQRT
+input NUMBER 9
+
+write A1 'SQRT
+write A2 'Returns the square root of a number.
+write A3 'Equivalent to raising to the power of 0.5.
+
+write A5 'INPUT
+write A6 'Number
+write B6 =NUMBER
+write C6 'The value to find the square root of
+
+write A8 'RESULT
+write A9 'Square Root
+write B9 =NUMBER^0.5
+write C9 '= NUMBER ^ 0.5
+
+output B9
+default-format number 6
+
+test "9" "3"
+test "4" "2"
+test "0" "0"
+test "1" "1"
+test "2" "1.414214"
+test "100" "10"
+test "0.25" "0.5"
+save

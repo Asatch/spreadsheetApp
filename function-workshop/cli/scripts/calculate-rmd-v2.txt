@@ -1,0 +1,49 @@
+# CALCULATE_RMD - Required Minimum Distribution Amount
+# Matches Python: calculate_rmd(balance, age) -> RMD amount
+# Returns 0 if age < 75, otherwise balance / divisor
+
+new CALCULATE_RMD
+input BALANCE 100000
+input AGE 77
+
+# Row 1-2: Display inputs
+write A1 'Balance
+write B1 =BALANCE
+write C1 'Account balance
+
+write A2 'Age
+write B2 =AGE
+write C2 'Current age
+
+# Row 4: Table header
+write A4 'Age
+write B4 'Divisor
+write C4 'Match?
+write D4 'Result
+
+# Row 5+: Load the RMD table
+csv A5 cli/data/rmd-table.csv
+
+# Column C: Check if this row's age >= input AGE (first match wins)
+write C6 =A6>=AGE
+fill C6:C54
+
+# Column D: Cascade pattern - first match wins
+write D6 =IF(C6,B6,0)
+write D7 =IF(D6>0,D6,IF(C7,B7,0))
+fill D7:D54
+
+# Row 56: Get the divisor
+write A56 'Divisor
+write B56 =D54
+
+# Row 57: Check if age >= 75 (RMD starts at 75)
+write A57 'RMD Required?
+write B57 =AGE>=75
+
+# Row 58: Calculate RMD amount (0 if age < 75)
+write A58 'RMD Amount
+write B58 =IF(B57,BALANCE/B56,0)
+
+output B58
+save output/CALCULATE_RMD.xml

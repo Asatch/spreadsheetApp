@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeCalculation name="STOP0_BUG_REPRO" sheetType="loop">
+  <LangSpecs/>
+  <TestCases>
+    <test_case>
+      <!-- N=0 triggers _STOP0 early return. TOTAL should be 0 (from C0), not undefined -->
+      <input_value Value="100"/>
+      <input_value Value="0"/>
+      <output_value Value="100"/>
+      <output_value Value="0"/>
+    </test_case>
+    <test_case>
+      <!-- N=3: normal loop. A stays 100, C = A * counter = 100*3 = 300 -->
+      <input_value Value="100"/>
+      <input_value Value="3"/>
+      <output_value Value="100"/>
+      <output_value Value="300"/>
+    </test_case>
+  </TestCases>
+  <Nodes>
+    <!-- Inputs -->
+    <Node node_id="1" node_type="input" data_type="Number" key="START" canonical="100" input_order="0" input_name="START"/>
+    <Node node_id="2" node_type="input" data_type="Number" key="N" canonical="3" input_order="1" input_name="N"/>
+
+    <!-- Row 0: initial values -->
+    <Node node_id="10" node_type="function" data_type="Number" key="A0" canonical="=START" function_name="PROCEED"/>
+    <Node node_id="11" node_type="constant" data_type="Number" key="B0" canonical="0" value="0"/>
+    <Node node_id="12" node_type="constant" data_type="Number" key="C0" canonical="0" value="0"/>
+
+    <!-- _STOP0: skip loop entirely if N < 1 -->
+    <Node node_id="20" node_type="function" data_type="Boolean" key="_STOP0" canonical="=N&lt;1" function_name="LESS"/>
+
+    <!-- Row 1: template row -->
+    <!-- A1 = A0 (balance carried forward — loop-carried) -->
+    <Node node_id="30" node_type="function" data_type="Number" key="A1" canonical="=A0" function_name="PROCEED"/>
+    <!-- B1 = B0 + 1 (counter — loop-carried) -->
+    <Node node_id="31" node_type="function" data_type="Number" key="B1" canonical="=B0+1" function_name="ADD"/>
+    <!-- C1 = A1 * B1 (NOT loop-carried: doesn't reference C0) -->
+    <Node node_id="32" node_type="function" data_type="Number" key="C1" canonical="=A1*B1" function_name="MULTIPLY"/>
+
+    <!-- _STOP1: stop when counter reaches N -->
+    <Node node_id="40" node_type="function" data_type="Boolean" key="_STOP1" canonical="=B1&gt;=N" function_name="GREATEREQUAL"/>
+
+    <!-- Constants used in formulas -->
+    <Node node_id="50" node_type="constant" data_type="Number" value="1"/>
+  </Nodes>
+  <NamedNodes>
+    <NamedNode node_name="START" node_name_type="alias" node_id="1"/>
+    <NamedNode node_name="N" node_name_type="alias" node_id="2"/>
+    <NamedNode node_name="A0" node_name_type="address" node_id="10"/>
+    <NamedNode node_name="B0" node_name_type="address" node_id="11"/>
+    <NamedNode node_name="C0" node_name_type="address" node_id="12"/>
+    <NamedNode node_name="_STOP0" node_name_type="address" node_id="20"/>
+    <NamedNode node_name="A1" node_name_type="address" node_id="30"/>
+    <NamedNode node_name="B1" node_name_type="address" node_id="31"/>
+    <NamedNode node_name="C1" node_name_type="address" node_id="32"/>
+    <NamedNode node_name="_STOP1" node_name_type="address" node_id="40"/>
+  </NamedNodes>
+  <NodeComments/>
+  <Outputs>
+    <Output output_name="A" output_order="0" data_type="Number" key="A" output_mode="last"/>
+    <Output output_name="C" output_order="1" data_type="Number" key="C" output_mode="last"/>
+  </Outputs>
+  <NodeDependencies>
+    <NodeDependency child_node_id="10" parent_node_id="1" parent_position="0"/>
+    <NodeDependency child_node_id="20" parent_node_id="2" parent_position="0"/>
+    <NodeDependency child_node_id="20" parent_node_id="50" parent_position="1"/>
+    <NodeDependency child_node_id="30" parent_node_id="10" parent_position="0"/>
+    <NodeDependency child_node_id="31" parent_node_id="11" parent_position="0"/>
+    <NodeDependency child_node_id="31" parent_node_id="50" parent_position="1"/>
+    <NodeDependency child_node_id="32" parent_node_id="30" parent_position="0"/>
+    <NodeDependency child_node_id="32" parent_node_id="31" parent_position="1"/>
+    <NodeDependency child_node_id="40" parent_node_id="31" parent_position="0"/>
+    <NodeDependency child_node_id="40" parent_node_id="2" parent_position="1"/>
+  </NodeDependencies>
+  <CustomFunctions/>
+  <SpreadsheetMeta version="1.0" gridRows="2" gridCols="C"/>
+</CodeCalculation>

@@ -1,0 +1,221 @@
+# ARMOR_WORKSHOP — D&D 5e Armor Comparison
+# Front door display sheet for the AC Calculator.
+# No inputs, no outputs — editable values are blue-highlighted cells.
+# Shows 4 representative armors side by side, plus a full armor reference table.
+
+new ARMOR_WORKSHOP
+
+use AC_CALCULATOR
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'ARMOR WORKSHOP — D&D 5e
+write A2 'Set your stats (blue cells), then compare armor options. Ctrl+D on any AC to see the breakdown.
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-8: YOUR STATS
+# ═══════════════════════════════════════════════════════════════════
+write A4 '─── YOUR STATS ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+write A5 'Dexterity Modifier
+write B5 3
+highlight B5 blue
+write C5 '-1 to +5 (based on your DEX score)
+write A6 'Shield
+write B6 1
+highlight B6 blue
+write C6 '0=No  1=Yes (+2 AC)
+write A7 'Magic Bonus
+write B7 0
+highlight B7 blue
+write C7 '+1/+2/+3 armor enchantment
+write A8 'Other Bonus
+write B8 0
+highlight B8 blue
+write C8 'Defense fighting style, Ring of Protection, etc.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 10-18: COMPARE ARMOR
+# Side-by-side: Unarmored / Studded Leather / Half Plate / Plate
+# ═══════════════════════════════════════════════════════════════════
+write A10 '─── COMPARE ARMOR ───
+highlight A10 gray
+highlight B10 gray
+highlight C10 gray
+highlight D10 gray
+highlight E10 gray
+highlight F10 gray
+highlight G10 gray
+highlight H10 gray
+
+# Column headers
+write B11 'Unarmored
+write D11 'Studded Leather
+write F11 'Half Plate
+write H11 'Plate
+style B11 bold
+style D11 bold
+style F11 bold
+style H11 bold
+
+write A12 'Category
+write B12 'None
+write D12 'Light
+write F12 'Medium
+write H12 'Heavy
+
+write A13 'Base AC
+write B13 10
+write D13 12
+write F13 15
+write H13 18
+
+write A14 'AC Breakdown
+write B14 =AC_CALCULATOR(0, B13, B5, B6, B7, B8)
+write D14 =AC_CALCULATOR(1, D13, B5, B6, B7, B8)
+write F14 =AC_CALCULATOR(2, F13, B5, B6, B7, B8)
+write H14 =AC_CALCULATOR(3, H13, B5, B6, B7, B8)
+write C14 'Ctrl+D to drill in
+write E14 'Ctrl+D to drill in
+write G14 'Ctrl+D to drill in
+
+write A15 'Your AC
+write B15 =INDEX(B14, "FINAL_AC")
+write D15 =INDEX(D14, "FINAL_AC")
+write F15 =INDEX(F14, "FINAL_AC")
+write H15 =INDEX(H14, "FINAL_AC")
+highlight B15 yellow
+highlight D15 yellow
+highlight F15 yellow
+highlight H15 yellow
+
+write A16 'DEX Applied
+write B16 =INDEX(B14, "DEX_CONTRIBUTION")
+write D16 =INDEX(D14, "DEX_CONTRIBUTION")
+write F16 =INDEX(F14, "DEX_CONTRIBUTION")
+write H16 =INDEX(H14, "DEX_CONTRIBUTION")
+
+write A17 'Stealth
+write B17 'Normal
+write D17 'Normal
+write F17 'Disadv.
+write H17 'Disadv.
+
+write A18 'Cost
+write B18 '—
+write D18 '45 gp
+write F18 '750 gp
+write H18 '1,500 gp
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 20-34: ALL ARMOR REFERENCE
+# ═══════════════════════════════════════════════════════════════════
+write A20 '─── ALL ARMOR ───
+highlight A20 gray
+highlight B20 gray
+highlight C20 gray
+highlight D20 gray
+highlight E20 gray
+highlight F20 gray
+highlight G20 gray
+highlight H20 gray
+
+write A21 'Armor
+write B21 'Type
+write C21 'Base AC
+write D21 'Cost
+write E21 'Stealth
+style A21 bold
+style B21 bold
+style C21 bold
+style D21 bold
+style E21 bold
+
+# Light armor
+write A22 'Padded
+write B22 'Light
+write C22 11
+write D22 '5 gp
+write E22 'Disadvantage
+
+write A23 'Leather
+write B23 'Light
+write C23 11
+write D23 '10 gp
+write E23 '—
+
+write A24 'Studded Leather
+write B24 'Light
+write C24 12
+write D24 '45 gp
+write E24 '—
+
+# Medium armor
+write A25 'Hide
+write B25 'Medium
+write C25 12
+write D25 '10 gp
+write E25 '—
+
+write A26 'Chain Shirt
+write B26 'Medium
+write C26 13
+write D26 '50 gp
+write E26 '—
+
+write A27 'Scale Mail
+write B27 'Medium
+write C27 14
+write D27 '50 gp
+write E27 'Disadvantage
+
+write A28 'Breastplate
+write B28 'Medium
+write C28 14
+write D28 '400 gp
+write E28 '—
+
+write A29 'Half Plate
+write B29 'Medium
+write C29 15
+write D29 '750 gp
+write E29 'Disadvantage
+
+# Heavy armor
+write A30 'Ring Mail
+write B30 'Heavy
+write C30 14
+write D30 '30 gp
+write E30 'Disadvantage
+
+write A31 'Chain Mail
+write B31 'Heavy
+write C31 16
+write D31 '75 gp
+write E31 'Disadvantage
+
+write A32 'Splint
+write B32 'Heavy
+write C32 17
+write D32 '200 gp
+write E32 'Disadvantage
+
+write A33 'Plate
+write B33 'Heavy
+write C33 18
+write D33 '1,500 gp
+write E33 'Disadvantage
+
+# Formatting
+default-format number 0
+
+save

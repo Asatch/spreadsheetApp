@@ -1,0 +1,163 @@
+# NORMSDIST - Standard Normal Cumulative Distribution
+# Uses Abramowitz & Stegun polynomial approximation
+# P(z) = 1 - pdf(z) * polynomial(t) where t = 1/(1 + p*z)
+
+new NORMSDIST
+use ABS
+input Z 1.5
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'STANDARD NORMAL DISTRIBUTION
+style A1 bold
+style A1 fontsize 24
+write A2 'Cumulative probability for standard normal distribution.
+write A3 'Uses Abramowitz & Stegun polynomial approximation.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-6: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUT ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Z-Score
+write B6 =Z
+write C6 'Standard deviations from mean
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: POLYNOMIAL COEFFICIENTS (columns E-F)
+# ═══════════════════════════════════════════════════════════════════
+
+write E5 '─── CONSTANTS ───
+write E6 'p (scaling)
+write F6 0.2316419
+
+write E7 'b1
+write F7 0.319381530
+write E8 'b2
+write F8 -0.356563782
+write E9 'b3
+write F9 1.781477937
+write E10 'b4
+write F10 -1.821255978
+write E11 'b5
+write F11 1.330274429
+
+write E13 'sqrt(2*pi)
+write F13 2.506628274631
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-15: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── THE CALCULATION ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+highlight E8 gray
+highlight F8 gray
+highlight G8 gray
+
+write A9 'Absolute Z
+write B9 =ABS(B6)
+write C9 'Always work with positive value
+
+write A10 'Scaling Factor (t)
+write B10 =1/(1+F6*B9)
+write C10 't = 1/(1 + p*|z|)
+
+write A11 'PDF Value
+write B11 =EXP(-B9*B9/2)/F13
+write C11 'exp(-z^2/2) / sqrt(2*pi)
+
+# Polynomial: b1*t + b2*t^2 + b3*t^3 + b4*t^4 + b5*t^5
+# Using Horner's method: t*(b1 + t*(b2 + t*(b3 + t*(b4 + t*b5))))
+
+write A12 'Inner Horner
+write B12 =F10+B10*F11
+write C12 'b4 + t*b5
+
+write A13 'Middle Horner
+write B13 =F9+B10*B12
+write C13 'b3 + t*(b4 + t*b5)
+
+write A14 'Outer Horner
+write B14 =F8+B10*B13
+write C14 'b2 + t*(...)
+
+write A15 'Polynomial
+write B15 =B10*(F7+B10*B14)
+write C15 't*(b1 + t*(...))
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 17-19: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A17 '─── RESULT ───
+highlight A17 gray
+highlight B17 gray
+highlight C17 gray
+highlight D17 gray
+highlight E17 gray
+highlight F17 gray
+highlight G17 gray
+
+write A18 'P(|Z|)
+write B18 =1-B11*B15
+write C18 '1 - pdf * polynomial (for positive z)
+
+write A19 'Probability
+write B19 =IF(B6<0,1-B18,B18)
+write C19 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B19 NORMSDIST
+output NORMSDIST
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B6 number 4
+format B9 number 4
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Mean: P(Z=0) = 0.5
+test "0" "0.5000000005248085"
+
+# One standard deviation above
+test "1" "0.8413447404368685"
+
+# One standard deviation below (symmetric)
+test "-1" "0.15865525956313153"
+
+# 95% confidence (z=1.96)
+test "1.96" "0.9750021748433644"
+
+# Lower 95% tail
+test "-1.96" "0.024997825156635622"
+
+# Far right tail (z=2.5)
+test "2.5" "0.9937903201465051"
+
+# Far left tail (z=-2.5)
+test "-2.5" "0.006209679853494854"
+
+save

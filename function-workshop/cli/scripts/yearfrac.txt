@@ -1,0 +1,168 @@
+# YEARFRAC - Year fraction between two dates
+# Basis: 0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=EU 30/360
+
+new YEARFRAC
+use INT
+input START_DATE 45292
+input END_DATE 45474
+input BASIS 0
+default-format number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'YEAR FRACTION
+style A1 bold
+style A1 fontsize 24
+write A2 'Calculates the fraction of a year between two dates.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-7: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUTS ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Start Date
+write B5 =START_DATE
+write C5 'Serial date
+
+write A6 'End Date
+write B6 =END_DATE
+write C6 'Serial date
+
+write A7 'Basis
+write B7 =BASIS
+write C7 '0=US 30/360, 1=Act/act, 2=Act/360, 3=Act/365, 4=EU 30/360
+
+# ═══════════════════════════════════════════════════════════════════
+# EXTRACT START YEAR (for actual/actual calculation)
+# ═══════════════════════════════════════════════════════════════════
+
+write E4 '─── START YEAR ───
+
+write E5 'Est Year
+write F5 =INT((B5+109571.75)/365.2425-300+1900)
+
+write E6 'Jan 1
+write F6 =(F5-1900)*365+IF(F5<=1900,0,INT((F5-1)/4)-INT((F5-1)/100)+INT((F5-1)/400)-459)+1
+
+write E7 'Start Year
+write F7 =IF(B5-F6+1<1,F5-1,F5)
+
+write E8 'Leap?
+write F8 =IF(F7=1900,1,IF(MOD(F7,400)=0,1,IF(MOD(F7,100)=0,0,IF(MOD(F7,4)=0,1,0))))
+
+write E9 'Days in Year
+write F9 =365+F8
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-15: CALCULATE DAYS BY BASIS
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── CALCULATIONS ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+
+# Actual days
+write A10 'Actual Days
+write B10 =B6-B5
+write C10 'End - Start serial
+
+# Extract months for start date
+write A11 'Start DOY
+write B11 =B5-((F7-1900)*365+IF(F7<=1900,0,INT((F7-1)/4)-INT((F7-1)/100)+INT((F7-1)/400)-459)+1)+1
+
+write A12 'Start Month
+write B12 =IF(B11-IF(B11>59,F8,0)<=31,1,IF(B11-IF(B11>59,F8,0)<=59,2,IF(B11-IF(B11>59,F8,0)<=90,3,IF(B11-IF(B11>59,F8,0)<=120,4,IF(B11-IF(B11>59,F8,0)<=151,5,IF(B11-IF(B11>59,F8,0)<=181,6,IF(B11-IF(B11>59,F8,0)<=212,7,IF(B11-IF(B11>59,F8,0)<=243,8,IF(B11-IF(B11>59,F8,0)<=273,9,IF(B11-IF(B11>59,F8,0)<=304,10,IF(B11-IF(B11>59,F8,0)<=334,11,12)))))))))))
+
+# End date year extraction
+write H5 'End Year
+write I5 =INT((B6+109571.75)/365.2425-300+1900)
+
+write H6 'Jan 1
+write I6 =(I5-1900)*365+IF(I5<=1900,0,INT((I5-1)/4)-INT((I5-1)/100)+INT((I5-1)/400)-459)+1
+
+write H7 'End Year
+write I7 =IF(B6-I6+1<1,I5-1,I5)
+
+write H8 'Leap?
+write I8 =IF(I7=1900,1,IF(MOD(I7,400)=0,1,IF(MOD(I7,100)=0,0,IF(MOD(I7,4)=0,1,0))))
+
+write A13 'End DOY
+write B13 =B6-((I7-1900)*365+IF(I7<=1900,0,INT((I7-1)/4)-INT((I7-1)/100)+INT((I7-1)/400)-459)+1)+1
+
+write A14 'End Month
+write B14 =IF(B13-IF(B13>59,I8,0)<=31,1,IF(B13-IF(B13>59,I8,0)<=59,2,IF(B13-IF(B13>59,I8,0)<=90,3,IF(B13-IF(B13>59,I8,0)<=120,4,IF(B13-IF(B13>59,I8,0)<=151,5,IF(B13-IF(B13>59,I8,0)<=181,6,IF(B13-IF(B13>59,I8,0)<=212,7,IF(B13-IF(B13>59,I8,0)<=243,8,IF(B13-IF(B13>59,I8,0)<=273,9,IF(B13-IF(B13>59,I8,0)<=304,10,IF(B13-IF(B13>59,I8,0)<=334,11,12)))))))))))
+
+# Simplified 30/360
+write A15 'Days 30/360
+write B15 =(I7-F7)*360+(B14-B12)*30
+write C15 'Simplified (year*360 + month*30)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 17-18: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A17 '─── RESULT ───
+highlight A17 gray
+highlight B17 gray
+highlight C17 gray
+highlight D17 gray
+highlight E17 gray
+highlight F17 gray
+highlight G17 gray
+
+write A18 'Year Fraction
+write B18 =IF(B7=0,B15/360,IF(B7=1,B10/F9,IF(B7=2,B10/360,IF(B7=3,B10/365,B15/360))))
+write C18 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B18 YEARFRAC_RESULT
+output YEARFRAC_RESULT
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B18 number 6
+format F5 number 0 period-only
+format F7 number 0 period-only
+format I5 number 0 period-only
+format I7 number 0 period-only
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# 6 months, basis 0 (US 30/360): Jan 1 to Jul 1, 2024
+test "45292, 45474, 0" "0.5"
+
+# 6 months, basis 2 (Actual/360)
+test "45292, 45474, 2" "0.5055555555555555"
+
+# 6 months, basis 3 (Actual/365)
+test "45292, 45474, 3" "0.4986301369863014"
+
+# Full year, basis 0 (US 30/360): Jan 1, 2024 to Jan 1, 2025
+test "45292, 45658, 0" "1"
+
+# Full year, basis 1 (Actual/actual, leap year 2024 = 366 days)
+test "45292, 45658, 1" "1"
+
+save

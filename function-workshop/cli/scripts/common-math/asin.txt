@@ -1,0 +1,56 @@
+# ASIN - Inverse sine via Newton's method
+# Finds x where SIN(x) = TARGET
+# Newton step: x_next = x - (SIN(x) - TARGET) / COS(x)
+
+new ASIN loop
+input TARGET 0.5
+
+use COS
+
+# Row 0: initial guess (TARGET itself is a reasonable starting point for small values)
+# A = current estimate
+# B = iteration counter
+write A0 =TARGET
+write B0 0
+
+# Row 1: Newton iteration
+# error = SIN(x) - TARGET
+# derivative = COS(x)
+# x_next = x - error / derivative
+write A1 =A0-(SIN(A0)-TARGET)/COS(A0)
+write B1 =B0+1
+
+# Stop conditions
+# Stop when converged (change < 1e-12) or max iterations
+write _STOP1 =AND(B1>=2,(A1-A0)*(A1-A0)<0.000000000001)
+
+# Column headers
+header A estimate
+header B iteration
+
+# Output
+output A last
+
+# Formatting
+default-format number 10
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# asin(0) = 0
+test "0" "0"
+
+# asin(0.5) = pi/6
+test "0.5" "0.5235987756"
+
+# asin(1) = pi/2
+test "1" "1.5707963268"
+
+# asin(-0.5) = -pi/6
+test "-0.5" "-0.5235987756"
+
+# asin(sqrt(2)/2) = pi/4
+test "0.7071067812" "0.7853981634"
+
+save

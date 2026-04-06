@@ -1,0 +1,53 @@
+# ACOS - Inverse cosine via Newton's method
+# Finds x where COS(x) = TARGET
+# Newton step: x_next = x - (COS(x) - TARGET) / (-SIN(x))
+#            = x + (COS(x) - TARGET) / SIN(x)
+
+new ACOS loop
+input TARGET 0.5
+
+use COS
+
+# Row 0: initial guess (pi/2 is middle of [0, pi] range)
+# A = current estimate
+# B = iteration counter
+write A0 1.5707963267948966
+write B0 0
+
+# Row 1: Newton iteration
+write A1 =A0+(COS(A0)-TARGET)/SIN(A0)
+write B1 =B0+1
+
+# Stop conditions
+write _STOP1 =AND(B1>=2,(A1-A0)*(A1-A0)<0.000000000001)
+
+# Column headers
+header A estimate
+header B iteration
+
+# Output
+output A last
+
+# Formatting
+default-format number 10
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# acos(1) = 0
+test "1" "0"
+
+# acos(0.5) = pi/3
+test "0.5" "1.0471975512"
+
+# acos(0) = pi/2
+test "0" "1.5707963268"
+
+# acos(-1) = pi
+test "-1" "3.1415926536"
+
+# acos(sqrt(2)/2) = pi/4
+test "0.7071067812" "0.7853981634"
+
+save

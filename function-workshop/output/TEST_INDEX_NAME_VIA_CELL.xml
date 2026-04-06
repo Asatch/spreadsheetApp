@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeCalculation name="TEST_INDEX_NAME_VIA_CELL">
+  <LangSpecs/>
+  <TestCases>
+    <test_case>
+      <input_value Value="10"/>
+      <output_value Value="5"/>
+    </test_case>
+  </TestCases>
+
+  <Nodes>
+    <Node node_id="1" node_type="input" data_type="Number" key="X" canonical="10" input_order="0" input_name="X"/>
+
+    <Node node_id="2" node_type="constant" data_type="Text" key="A1" canonical="'Multi result" value="Multi result"/>
+    <Node node_id="3" node_type="function" data_type="Number" key="B1" canonical="=TEST_MULTI_OUTPUT(X)" function_name="TEST_MULTI_OUTPUT"/>
+
+    <Node node_id="4" node_type="constant" data_type="Text" key="A2" canonical="'Key name" value="Key name"/>
+    <Node node_id="5" node_type="constant" data_type="Text" key="B2" canonical="'HALF" value="HALF"/>
+
+    <Node node_id="6" node_type="constant" data_type="Text" key="A3" canonical="'By name via cell" value="By name via cell"/>
+    <Node node_id="7" node_type="function" data_type="Number" key="B3" canonical="=INDEX(B1,B2)" function_name="INDEX"/>
+  </Nodes>
+
+  <NamedNodes>
+    <NamedNode node_name="X" node_name_type="alias" node_id="1"/>
+    <NamedNode node_name="A1" node_name_type="address" node_id="2"/>
+    <NamedNode node_name="B1" node_name_type="address" node_id="3"/>
+    <NamedNode node_name="A2" node_name_type="address" node_id="4"/>
+    <NamedNode node_name="B2" node_name_type="address" node_id="5"/>
+    <NamedNode node_name="A3" node_name_type="address" node_id="6"/>
+    <NamedNode node_name="B3" node_name_type="address" node_id="7"/>
+  </NamedNodes>
+
+  <NodeComments/>
+
+  <Outputs>
+    <Output output_name="RESULT" node_id="7" output_order="0" data_type="Number" key="B3" output_mode="last"/>
+  </Outputs>
+
+  <NodeDependencies>
+    <NodeDependency child_node_id="3" parent_node_id="1" parent_position="0"/>
+    <NodeDependency child_node_id="7" parent_node_id="3" parent_position="0"/>
+    <NodeDependency child_node_id="7" parent_node_id="5" parent_position="1"/>
+  </NodeDependencies>
+
+  <CustomFunctions>
+    <Function name="TEST_MULTI_OUTPUT" id="66b33836-df3f-481a-a7d3-7058b664f7fa" version="1.0.0"/>
+  </CustomFunctions>
+
+  <SpreadsheetMeta version="1.0" gridRows="5" gridCols="C"/>
+</CodeCalculation>

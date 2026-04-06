@@ -1,0 +1,159 @@
+# NORMSINV - Inverse of standard normal cumulative distribution
+# Given probability p, returns z such that P(Z <= z) = p
+# Uses Abramowitz & Stegun rational approximation (26.2.23)
+
+new NORMSINV
+input P 0.975
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'INVERSE NORMAL DISTRIBUTION
+style A1 bold
+style A1 fontsize 24
+write A2 'Returns the inverse of the standard normal cumulative distribution.
+write A3 'Given probability p, returns z such that P(Z <= z) = p.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-6: INPUT
+# ═══════════════════════════════════════════════════════════════════
+
+write A5 '─── INPUT ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+write A6 'Probability
+write B6 =P
+write C6 'Between 0 and 1
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: CONSTANTS (Abramowitz & Stegun coefficients)
+# ═══════════════════════════════════════════════════════════════════
+
+write E5 '─── CONSTANTS ───
+
+write E6 'c0
+write F6 2.515517
+
+write E7 'c1
+write F7 0.802853
+
+write E8 'c2
+write F8 0.010328
+
+write E9 'd1
+write F9 1.432788
+
+write E10 'd2
+write F10 0.189269
+
+write E11 'd3
+write F11 0.001308
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 8-13: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A8 '─── THE CALCULATION ───
+highlight A8 gray
+highlight B8 gray
+highlight C8 gray
+highlight D8 gray
+highlight E8 gray
+highlight F8 gray
+highlight G8 gray
+
+# Work with p or 1-p depending on which tail
+write A9 'Working P
+write B9 =IF(B6<=0.5,B6,1-B6)
+write C9 'Use smaller tail for precision
+
+write A10 't
+write B10 =(-2*LN(B9))^0.5
+write C10 'Transformation variable
+
+# Numerator: c0 + c1*t + c2*t^2
+write A11 'Numerator
+write B11 =F6+F7*B10+F8*B10^2
+write C11 'c0 + c1*t + c2*t^2
+
+# Denominator: 1 + d1*t + d2*t^2 + d3*t^3
+write A12 'Denominator
+write B12 =1+F9*B10+F10*B10^2+F11*B10^3
+write C12 '1 + d1*t + d2*t^2 + d3*t^3
+
+# Raw z-score (for lower tail)
+write A13 'Raw Z (lower)
+write B13 =B10-B11/B12
+write C13 't - numerator/denominator
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 15-16: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A15 '─── RESULT ───
+highlight A15 gray
+highlight B15 gray
+highlight C15 gray
+highlight D15 gray
+highlight E15 gray
+highlight F15 gray
+highlight G15 gray
+
+write A16 'Z-Score
+write B16 =IF(B6<=0.5,-B13,B13)
+write C16 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B16 NORMSINV
+output NORMSINV
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+format B6 number 4
+format B9 number 4
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Median: P(0.5) ≈ 0 (approximation artifact)
+test "0.5" "1.0100667546808495e-7"
+
+# 95% confidence lower bound
+test "0.025" "-1.96039491692534"
+
+# 95% confidence upper bound
+test "0.975" "1.9603949169253396"
+
+# 10th percentile
+test "0.1" "-1.281728756502709"
+
+# 90th percentile
+test "0.9" "1.281728756502709"
+
+# 5th percentile
+test "0.05" "-1.6452114401438158"
+
+# 95th percentile
+test "0.95" "1.645211440143815"
+
+# 1st percentile
+test "0.01" "-2.326785332558966"
+
+# 99th percentile
+test "0.99" "2.326785332558966"
+
+save

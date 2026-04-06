@@ -1,0 +1,542 @@
+# RETIREMENT_SCENARIOS — Display Sheet
+# Scenario comparison dashboard for retirement planning
+# Scenarios show only overrides; all other inputs reference named base-case cells.
+
+new RETIREMENT_SCENARIOS
+
+use RETIREMENT_SCENARIO
+
+# ═══════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════
+
+write A1 'RETIREMENT SCENARIO COMPARISON
+style A1 bold
+style A1 fontsize 24
+write A2 'Define your base case (blue cells) and then see how different assumptions affect outcomes.
+write A3 'All dollar amounts are in today's dollars.
+
+# ═══════════════════════════════════════════════════════
+# ROW 5-38: BASE CASE
+# ═══════════════════════════════════════════════════════
+
+write A5 '═══════ BASE CASE  ═══════
+style A5 bold
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+
+# ─── YOUR SITUATION ───
+
+write A7 'Your Situation
+write A8 'Current Age
+write B8 55
+highlight B8 blue
+write C8 'How old you are now
+name B8 BASE_CASE_AGE
+write A9 'Retirement Age
+write B9 65
+highlight B9 blue
+write C9 'When you stop working
+name B9 BASE_CASE_RETIRE_AGE
+write A10 'Planning Horizon
+write B10 95
+highlight B10 blue
+write C10 'Plan finances through this age
+name B10 BASE_CASE_HORIZON_AGE
+
+# ─── CURRENT BALANCES ───
+
+write A12 '─── CURRENT BALANCES ───
+highlight A12 gray
+highlight B12 gray
+highlight C12 gray
+highlight D12 gray
+highlight E12 gray
+highlight F12 gray
+highlight G12 gray
+write A13 'Custom
+write B13 0
+highlight B13 blue
+write C13 'Example account with unique rules. This one distributes 10% of value as income over 10 years.
+name B13 BASE_CASE_CUSTOM_BALANCE
+write A14 'Taxable Account
+write B14 40000
+highlight B14 blue
+name B14 BASE_CASE_TAXABLE_BALANCE
+write A15 'Taxable Basis
+write B15 30000
+highlight B15 blue
+write C15 'Cost basis for capital gains
+name B15 BASE_CASE_TAXABLE_BASIS
+write A16 'Tax-Deferred (401k/IRA)
+write B16 250000
+highlight B16 blue
+name B16 BASE_CASE_TAX_DEFERRED
+write A17 'Tax-Free (Roth)
+write B17 20000
+highlight B17 blue
+name B17 BASE_CASE_TAX_FREE
+
+# ─── ANNUAL SAVINGS ───
+
+write A19 '─── ANNUAL SAVINGS ───
+highlight A19 gray
+highlight B19 gray
+highlight C19 gray
+highlight D19 gray
+highlight E19 gray
+highlight F19 gray
+highlight G19 gray
+write A20 'Amount saved each year from current age to retirement age.
+write A21 'Custom Savings
+write B21 0
+highlight B21 blue
+name B21 BASE_CASE_CUSTOM_SAVINGS
+write A22 'Taxable Savings
+write B22 3000
+highlight B22 blue
+name B22 BASE_CASE_TAXABLE_SAVINGS
+write A23 'Tax-Deferred Savings
+write B23 10000
+highlight B23 blue
+name B23 BASE_CASE_TAX_DEFERRED_SAVINGS
+write A24 'Tax-Free Savings
+write B24 2000
+highlight B24 blue
+name B24 BASE_CASE_TAX_FREE_SAVINGS
+
+# ─── RETIREMENT PARAMETERS ───
+
+write A26 '─── RETIREMENT PARAMETERS ───
+highlight A26 gray
+highlight B26 gray
+highlight C26 gray
+highlight D26 gray
+highlight E26 gray
+highlight F26 gray
+highlight G26 gray
+write A27 'Social Security Age
+write B27 67
+highlight B27 blue
+name B27 BASE_CASE_SS_AGE
+write A28 'Social Security Income
+write B28 24000
+highlight B28 blue
+write C28 'Annual income. Estimate yours at ssa.gov/myaccount
+name B28 BASE_CASE_SS_INCOME
+write A29 'Annual Spending
+write B29 50000
+highlight B29 blue
+name B29 BASE_CASE_SPENDING
+write A30 'Return Rate
+write B30 0.05
+highlight B30 blue
+name B30 BASE_CASE_RETURN_RATE
+write A31 'Inflation Rate
+write B31 0.025
+highlight B31 blue
+name B31 BASE_CASE_INFLATION_RATE
+write A32 'Terminal Tax Rate
+write B32 0.22
+highlight B32 blue
+name B32 BASE_CASE_TERMINAL_TAX_RATE
+write A33 'Withdrawal Strategy
+write B33 1
+highlight B33 blue
+write C33 '1=Taxable, 2=Tax-Def, 3=Tax-Free first
+name B33 BASE_CASE_STRATEGY
+
+# ─── BASE CASE RESULTS ───
+
+write A35 '─── BASE CASE RESULTS ───
+highlight A35 gray
+highlight B35 gray
+highlight C35 gray
+highlight D35 gray
+highlight E35 gray
+highlight F35 gray
+highlight G35 gray
+write A36 'Projection
+write B36 =RETIREMENT_SCENARIO(BASE_CASE_AGE, BASE_CASE_RETIRE_AGE, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, BASE_CASE_SPENDING, BASE_CASE_RETURN_RATE, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, BASE_CASE_STRATEGY)
+write C36 'Ctrl+D to drill down into this projection
+write A37 'Terminal Value
+write B37 =INDEX(B36, "TERMINAL_VALUE")
+highlight B37 yellow
+write C37 'Tax-adjusted net worth at planning horizon
+write A38 'Total Taxes
+write B38 =INDEX(B36, "TOTAL_TAXES")
+write C38 'Lifetime taxes during retirement
+write A39 'Net Position
+write B39 =INDEX(B36, "NET_POSITION")
+highlight B39 yellow
+write C39 'Terminal Value minus any shortfall
+
+# ═══════════════════════════════════════════════════════
+# ROW 40-51: SCENARIO COMPARISON TABLE
+# ═══════════════════════════════════════════════════════
+
+write A40 '═══════ SCENARIO COMPARISON ═══════
+style A40 bold
+highlight A40 gray
+highlight B40 gray
+highlight C40 gray
+highlight D40 gray
+highlight E40 gray
+highlight F40 gray
+highlight G40 gray
+write A41 'Each scenario uses the base case inputs with specific changes noted below.
+
+write B43 '#
+style B43 align right
+write C43 'Scenario
+write D43 'Net Position
+write E43 'Total Taxes
+write F43 'vs Base
+write G43 'Go Broke Age
+highlight B43 gray
+highlight C43 gray
+highlight D43 gray
+highlight E43 gray
+highlight F43 gray
+highlight G43 gray
+
+write C44 'Base Case
+write D44 =B39
+write E44 =B38
+write G44 =INDEX(B36, "BROKE_AGE")
+
+write B45 1
+write C45 =A54
+write D45 =INDEX(B57, "NET_POSITION")
+write E45 =INDEX(B57, "TOTAL_TAXES")
+write F45 =D45-D44
+write G45 =INDEX(B57, "BROKE_AGE")
+write B46 2
+write C46 =A62
+write D46 =INDEX(B65, "NET_POSITION")
+write E46 =INDEX(B65, "TOTAL_TAXES")
+write F46 =D46-D44
+write G46 =INDEX(B65, "BROKE_AGE")
+write B47 3
+write C47 =A70
+write D47 =INDEX(B73, "NET_POSITION")
+write E47 =INDEX(B73, "TOTAL_TAXES")
+write F47 =D47-D44
+write G47 =INDEX(B73, "BROKE_AGE")
+write B48 4
+write C48 =A78
+write D48 =INDEX(B81, "NET_POSITION")
+write E48 =INDEX(B81, "TOTAL_TAXES")
+write F48 =D48-D44
+write G48 =INDEX(B81, "BROKE_AGE")
+write B49 5
+write C49 =A86
+write D49 =INDEX(B89, "NET_POSITION")
+write E49 =INDEX(B89, "TOTAL_TAXES")
+write F49 =D49-D44
+write G49 =INDEX(B89, "BROKE_AGE")
+write B50 6
+write C50 =A94
+write D50 =INDEX(B97, "NET_POSITION")
+write E50 =INDEX(B97, "TOTAL_TAXES")
+write F50 =D50-D44
+write G50 =INDEX(B97, "BROKE_AGE")
+write B51 7
+write C51 =A102
+write D51 =INDEX(B127, "NET_POSITION")
+write E51 =INDEX(B127, "TOTAL_TAXES")
+write F51 =D51-D44
+write G51 =INDEX(B127, "BROKE_AGE")
+
+# ═══════════════════════════════════════════════════════
+# ROW 53-99: SCENARIO DEFINITIONS (1-6)
+# Each scenario: 7 rows (header, name, override, blank, projection, TV, taxes)
+# Stride: 8 rows (7 content + 1 blank separator)
+# ═══════════════════════════════════════════════════════
+
+# ─── SCENARIO 1: Tax-Deferred First ───
+# Override: Withdrawal Strategy = 2
+
+write A53 '─── SCENARIO 1 ───
+highlight A53 green
+highlight B53 green
+highlight C53 green
+highlight D53 green
+write A54 'Tax-Deferred First
+style A54 bold
+write A55 'Withdrawal Strategy
+write B55 2
+write C55 '← Tax-Deferred first (base case uses Taxable first)
+
+write A57 'Projection
+write B57 =RETIREMENT_SCENARIO(BASE_CASE_AGE, BASE_CASE_RETIRE_AGE, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, BASE_CASE_SPENDING, BASE_CASE_RETURN_RATE, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, B55)
+write C57 'Ctrl+D to see year-by-year projection
+write A58 'Terminal Value
+write B58 =INDEX(B57, "TERMINAL_VALUE")
+highlight B58 yellow
+write A59 'Total Taxes
+write B59 =INDEX(B57, "TOTAL_TAXES")
+
+# ─── SCENARIO 2: Tax-Free First ───
+# Override: Withdrawal Strategy = 3
+
+write A61 '─── SCENARIO 2 ───
+highlight A61 green
+highlight B61 green
+highlight C61 green
+highlight D61 green
+write A62 'Tax-Free First
+style A62 bold
+write A63 'Withdrawal Strategy
+write B63 3
+write C63 '← Tax-Free first (base case uses Taxable first)
+
+write A65 'Projection
+write B65 =RETIREMENT_SCENARIO(BASE_CASE_AGE, BASE_CASE_RETIRE_AGE, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, BASE_CASE_SPENDING, BASE_CASE_RETURN_RATE, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, B63)
+write C65 'Ctrl+D to see year-by-year projection
+write A66 'Terminal Value
+write B66 =INDEX(B65, "TERMINAL_VALUE")
+highlight B66 yellow
+write A67 'Total Taxes
+write B67 =INDEX(B65, "TOTAL_TAXES")
+
+# ─── SCENARIO 3: Higher Return (7%) ───
+# Override: Return Rate = BASE_CASE_RETURN_RATE + 0.02
+
+write A69 '─── SCENARIO 3 ───
+highlight A69 green
+highlight B69 green
+highlight C69 green
+highlight D69 green
+write A70 'Higher Return (7%)
+style A70 bold
+write A71 'Return Rate
+write B71 =BASE_CASE_RETURN_RATE+0.02
+write C71 '← +2 percentage points above base case
+
+write A73 'Projection
+write B73 =RETIREMENT_SCENARIO(BASE_CASE_AGE, BASE_CASE_RETIRE_AGE, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, BASE_CASE_SPENDING, B71, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, BASE_CASE_STRATEGY)
+write C73 'Ctrl+D to see year-by-year projection
+write A74 'Terminal Value
+write B74 =INDEX(B73, "TERMINAL_VALUE")
+highlight B74 yellow
+write A75 'Total Taxes
+write B75 =INDEX(B73, "TOTAL_TAXES")
+
+# ─── SCENARIO 4: Lower Spending (Less $10K) ───
+# Override: Spending = BASE_CASE_SPENDING - 10000
+
+write A77 '─── SCENARIO 4 ───
+highlight A77 green
+highlight B77 green
+highlight C77 green
+highlight D77 green
+write A78 'Lower Spending (Less $10K)
+style A78 bold
+write A79 'Annual Spending
+write B79 =BASE_CASE_SPENDING-10000
+write C79 '← Spend $10K less than base case
+
+write A81 'Projection
+write B81 =RETIREMENT_SCENARIO(BASE_CASE_AGE, BASE_CASE_RETIRE_AGE, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, B79, BASE_CASE_RETURN_RATE, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, BASE_CASE_STRATEGY)
+write C81 'Ctrl+D to see year-by-year projection
+write A82 'Terminal Value
+write B82 =INDEX(B81, "TERMINAL_VALUE")
+highlight B82 yellow
+write A83 'Total Taxes
+write B83 =INDEX(B81, "TOTAL_TAXES")
+
+# ─── SCENARIO 5: Retire in 5 Years ───
+# Override: Retirement Age = BASE_CASE_AGE + 5
+
+write A85 '─── SCENARIO 5 ───
+highlight A85 green
+highlight B85 green
+highlight C85 green
+highlight D85 green
+write A86 'Retire in 5 Years
+style A86 bold
+write A87 'Retirement Age
+write B87 =BASE_CASE_AGE+5
+write C87 '← 5 years from now
+
+write A89 'Projection
+write B89 =RETIREMENT_SCENARIO(BASE_CASE_AGE, B87, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, BASE_CASE_SPENDING, BASE_CASE_RETURN_RATE, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, BASE_CASE_STRATEGY)
+write C89 'Ctrl+D to see year-by-year projection
+write A90 'Terminal Value
+write B90 =INDEX(B89, "TERMINAL_VALUE")
+highlight B90 yellow
+write A91 'Total Taxes
+write B91 =INDEX(B89, "TOTAL_TAXES")
+
+# ─── SCENARIO 6: Retire Now ───
+# Override: Retirement Age = BASE_CASE_AGE
+
+write A93 '─── SCENARIO 6 ───
+highlight A93 green
+highlight B93 green
+highlight C93 green
+highlight D93 green
+write A94 'Retire Now
+style A94 bold
+write A95 'Retirement Age
+write B95 =BASE_CASE_AGE
+write C95 '← Retire immediately
+
+write A97 'Projection
+write B97 =RETIREMENT_SCENARIO(BASE_CASE_AGE, B95, BASE_CASE_HORIZON_AGE, BASE_CASE_CUSTOM_BALANCE, BASE_CASE_TAXABLE_BALANCE, BASE_CASE_TAXABLE_BASIS, BASE_CASE_TAX_DEFERRED, BASE_CASE_TAX_FREE, BASE_CASE_CUSTOM_SAVINGS, BASE_CASE_TAXABLE_SAVINGS, BASE_CASE_TAX_DEFERRED_SAVINGS, BASE_CASE_TAX_FREE_SAVINGS, BASE_CASE_SS_AGE, BASE_CASE_SS_INCOME, BASE_CASE_SPENDING, BASE_CASE_RETURN_RATE, BASE_CASE_INFLATION_RATE, BASE_CASE_TERMINAL_TAX_RATE, BASE_CASE_STRATEGY)
+write C97 'Ctrl+D to see year-by-year projection
+write A98 'Terminal Value
+write B98 =INDEX(B97, "TERMINAL_VALUE")
+highlight B98 yellow
+write A99 'Total Taxes
+write B99 =INDEX(B97, "TOTAL_TAXES")
+
+# ═══════════════════════════════════════════════════════
+# ROW 101-129: SCENARIO 7 — CUSTOM
+# ═══════════════════════════════════════════════════════
+
+write A101 '═══════ CUSTOM SCENARIO ═══════
+style A101 bold
+highlight A101 gray
+highlight B101 gray
+highlight C101 gray
+highlight D101 gray
+highlight E101 gray
+highlight F101 gray
+highlight G101 gray
+write A102 'Custom Scenario
+style A102 bold
+highlight A102 blue
+write A103 'Define your own scenario by changing any blue cell below to override the base case.
+
+write A104 'Current Age
+write B104 =BASE_CASE_AGE
+highlight B104 blue
+write C104 'Change to override base case
+write A105 'Retirement Age
+write B105 =BASE_CASE_RETIRE_AGE
+highlight B105 blue
+write A106 'Planning Horizon
+write B106 =BASE_CASE_HORIZON_AGE
+highlight B106 blue
+
+write A108 'Custom Balance
+write B108 =BASE_CASE_CUSTOM_BALANCE
+highlight B108 blue
+write A109 'Taxable Balance
+write B109 =BASE_CASE_TAXABLE_BALANCE
+highlight B109 blue
+write A110 'Taxable Basis
+write B110 =BASE_CASE_TAXABLE_BASIS
+highlight B110 blue
+write A111 'Tax-Deferred (401k/IRA)
+write B111 =BASE_CASE_TAX_DEFERRED
+highlight B111 blue
+write A112 'Tax-Free (Roth)
+write B112 =BASE_CASE_TAX_FREE
+highlight B112 blue
+
+write A114 'Custom Savings
+write B114 =BASE_CASE_CUSTOM_SAVINGS
+highlight B114 blue
+write A115 'Taxable Savings
+write B115 =BASE_CASE_TAXABLE_SAVINGS
+highlight B115 blue
+write A116 'Tax-Deferred Savings
+write B116 =BASE_CASE_TAX_DEFERRED_SAVINGS
+highlight B116 blue
+write A117 'Tax-Free Savings
+write B117 =BASE_CASE_TAX_FREE_SAVINGS
+highlight B117 blue
+
+write A119 'Social Security Age
+write B119 =BASE_CASE_SS_AGE
+highlight B119 blue
+write A120 'Social Security Income
+write B120 =BASE_CASE_SS_INCOME
+highlight B120 blue
+write A121 'Annual Spending
+write B121 =BASE_CASE_SPENDING
+highlight B121 blue
+write A122 'Return Rate
+write B122 =BASE_CASE_RETURN_RATE
+highlight B122 blue
+write A123 'Inflation Rate
+write B123 =BASE_CASE_INFLATION_RATE
+highlight B123 blue
+write A124 'Terminal Tax Rate
+write B124 =BASE_CASE_TERMINAL_TAX_RATE
+highlight B124 blue
+write A125 'Withdrawal Strategy
+write B125 =BASE_CASE_STRATEGY
+highlight B125 blue
+write C125 '1=Taxable, 2=Tax-Def, 3=Tax-Free first
+
+write A127 'Projection
+write B127 =RETIREMENT_SCENARIO(B104, B105, B106, B108, B109, B110, B111, B112, B114, B115, B116, B117, B119, B120, B121, B122, B123, B124, B125)
+write C127 'Ctrl+D to see year-by-year projection
+write A128 'Terminal Value
+write B128 =INDEX(B127, "TERMINAL_VALUE")
+highlight B128 yellow
+write A129 'Total Taxes
+write B129 =INDEX(B127, "TOTAL_TAXES")
+
+# ═══════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════
+
+default-format currency 0
+
+# Base case formats
+format B8 number 0
+format B9 number 0
+format B10 number 0
+format B27 number 0
+format B30 percent 1
+format B31 percent 1
+format B32 percent 0
+format B33 number 0
+
+# Comparison table scenario numbers
+format B45 number 0
+format B46 number 0
+format B47 number 0
+format B48 number 0
+format B49 number 0
+format B50 number 0
+format B51 number 0
+
+# Comparison table broke age (show as plain number, 0 = never)
+format G44 number 0
+format G45 number 0
+format G46 number 0
+format G47 number 0
+format G48 number 0
+format G49 number 0
+format G50 number 0
+format G51 number 0
+
+# Scenario override formats
+format B55 number 0
+format B63 number 0
+format B71 percent 1
+format B87 number 0
+format B95 number 0
+
+# Custom scenario formats
+format B104 number 0
+format B105 number 0
+format B106 number 0
+format B119 number 0
+format B122 percent 1
+format B123 percent 1
+format B124 percent 0
+format B125 number 0
+
+save

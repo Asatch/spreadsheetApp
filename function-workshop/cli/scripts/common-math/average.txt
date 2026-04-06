@@ -1,0 +1,54 @@
+# AVERAGE - Mean of all values in an array
+# Loop sheet: iterates over array elements, accumulating sum, then divides by count
+
+new AVERAGE loop
+input VALUES {1,2,3}
+
+# Row 0: initial values
+# A = running sum (start at 0)
+# B = index counter (start at 0)
+# C = running average
+write A0 0
+write B0 0
+write C0 0
+
+# Row 1: iteration body
+write B1 =B0+1
+write A1 =A0+INDEX(VALUES,B1)
+write C1 =A1/LEN(VALUES)
+
+# Stop conditions
+write _STOP0 =LEN(VALUES)<=0
+write _STOP1 =B1>=LEN(VALUES)
+
+# Column headers
+header A running_sum
+header B index
+header C average
+
+# Output
+output C last
+
+# Formatting
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Simple average
+test "{1,2,3}" "2"
+
+# Single element
+test "{5}" "5"
+
+# Larger set
+test "{10,20,30,40}" "25"
+
+# Decimals
+test "{1.5,2.5}" "2"
+
+# All same
+test "{7,7,7,7,7}" "7"
+
+save

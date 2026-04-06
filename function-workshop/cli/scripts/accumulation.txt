@@ -1,0 +1,115 @@
+# ACCUMULATION - Single Year Account Growth
+# Python logic: balance * (1 + return) + contribution * (1 + return)^0.5
+# Shows how savings grow over one year with contributions
+
+new ACCUMULATION
+input BALANCE 100000
+input CONTRIBUTION 10000
+input RETURN_RATE 0.05
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'ANNUAL ACCUMULATION
+write A2 'Calculates one year of investment growth plus contribution with half-year timing.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-6: YOUR SITUATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+
+write A5 'Starting Balance
+write B5 =BALANCE
+write C5 'Beginning of year
+
+write A6 'Annual Contribution
+write B6 =CONTRIBUTION
+write C6 'Added mid-year (on average)
+
+write A7 'Expected Return
+write B7 =RETURN_RATE
+write C7 'Annual rate of return
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-14: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── INVESTMENT GROWTH ───
+
+write A10 'Balance × (1 + Rate)
+write B10 =BALANCE*(1+RETURN_RATE)
+write C10 'Full year growth on starting balance
+
+write A11 'Growth on Balance
+write B11 =B10-BALANCE
+write C11 'Your money earned this much
+
+write A13 '─── CONTRIBUTION GROWTH ───
+
+write A14 'Half-Year Factor
+write B14 =(1+RETURN_RATE)^0.5
+write C14 'Contribution arrives mid-year on average
+
+write A15 'Contribution × Factor
+write B15 =CONTRIBUTION*B14
+write C15 'Contribution with partial year growth
+
+write A16 'Growth on Contribution
+write B16 =B15-CONTRIBUTION
+write C16 'Your contribution earned this much
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 18-20: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── RESULT ───
+
+write A19 'Total Growth
+write B19 =B11+B16
+write C19 'Investment returns for the year
+
+write A20 'Ending Balance
+write B20 =B10+B15
+write C20 '← Balance at end of year
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+output B20
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+format B7 percent 1
+format B14 number 4
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Basic case: 100k balance, 10k contribution, 5% return
+# Expected: 100000*1.05 + 10000*1.05^0.5 = 105000 + 10246.95 = 115246.95
+test "100000, 10000, 0.05" "115246.9508"
+
+# No contribution: just balance growth
+# Expected: 50000 * 1.07 = 53500
+test "50000, 0, 0.07" "53500"
+
+# No balance: just contribution with half-year growth
+# Expected: 0 + 20000 * 1.04^0.5 = 20000 * 1.0198 = 20396.08
+test "0, 20000, 0.04" "20396.0784"
+
+# Zero return: just addition
+# Expected: 100000 + 5000 = 105000
+test "100000, 5000, 0" "105000"
+
+# Higher return scenario
+# Expected: 200000*1.10 + 25000*1.10^0.5 = 220000 + 26207.41 = 246207.41
+test "200000, 25000, 0.10" "246207.4132"
+
+save output/ACCUMULATION.xml

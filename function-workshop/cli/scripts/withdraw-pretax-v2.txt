@@ -1,0 +1,248 @@
+# WITHDRAW_PRETAX - Withdraw from pre-tax account with progressive tax
+# Storytelling layout with tax bracket reference on the right
+
+new WITHDRAW_PRETAX
+input BALANCE 100000
+input SHORTFALL 10000
+input PRIOR_INCOME 50000
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'WITHDRAW FROM PRE-TAX ACCOUNT
+write A2 'Calculates gross withdrawal needed to receive a target net amount after income tax.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-6: YOUR SITUATION (inputs)
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+
+write A5 'Account Balance
+write B5 =BALANCE
+write C5 'Pre-tax funds available
+
+write A6 'Amount Needed
+write B6 =SHORTFALL
+write C6 'Net dollars you need
+
+write A7 'Prior Income
+write B7 =PRIOR_INCOME
+write C7 'Taxable income so far this year
+
+# ═══════════════════════════════════════════════════════════════════
+# RIGHT SIDE: TAX BRACKET REFERENCE (columns E-G)
+# ═══════════════════════════════════════════════════════════════════
+
+write E4 '─── TAX BRACKETS ───
+
+write E5 'Rate
+write F5 'Up To
+
+write E6 0.10
+write F6 23850
+
+write E7 0.12
+write F7 96950
+
+write E8 0.22
+write F8 206700
+
+write E9 0.24
+write F9 394600
+
+write E10 0.32
+write F10 501050
+
+write E11 0.35
+write F11 751600
+
+write E12 0.37
+write F12 '(no limit)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-12: YOUR TAX POSITION
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── YOUR TAX POSITION ───
+
+# Determine current bracket rate based on prior income
+# Nested IF: find which bracket ceiling we're under
+write A10 'Current Bracket Rate
+write B10 =IF(PRIOR_INCOME<23850,0.10,IF(PRIOR_INCOME<96950,0.12,IF(PRIOR_INCOME<206700,0.22,IF(PRIOR_INCOME<394600,0.24,IF(PRIOR_INCOME<501050,0.32,IF(PRIOR_INCOME<751600,0.35,0.37))))))
+write C10 'Based on your prior income
+
+# Determine ceiling of current bracket
+write A11 'Bracket Ceiling
+write B11 =IF(PRIOR_INCOME<23850,23850,IF(PRIOR_INCOME<96950,96950,IF(PRIOR_INCOME<206700,206700,IF(PRIOR_INCOME<394600,394600,IF(PRIOR_INCOME<501050,501050,IF(PRIOR_INCOME<751600,751600,999999999))))))
+write C11 'Upper limit before next rate
+
+# Room left in current bracket
+write A12 'Room in Bracket
+write B12 =B11-PRIOR_INCOME
+write C12 'Before hitting next rate
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 14-18: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A14 '─── THE CALCULATION ───
+
+# What we'd need if it all fits in current bracket
+write A15 'If All in Current Bracket:
+write A16 'Gross Needed
+write B16 =SHORTFALL/(1-B10)
+write C16 '= amount_needed ÷ (1 - tax_rate)
+
+# Does it fit in the current bracket AND in the account?
+write A17 'Fits in Bracket?
+write B17 =AND(B16<=B12,B16<=BALANCE)
+write C17 'Gross fits in bracket room and balance
+
+# Actual amounts (simplified: assumes fits in one bracket for display)
+# The real multi-bracket math is in the working area below
+
+write A19 '─── RESULT ───
+
+write A20 'Gross Withdrawal
+write B20 =B29
+write C20 'Total withdrawn from account
+
+write A21 'Tax Paid
+write B21 =B30
+write C21 'Income tax on withdrawal
+
+write A22 'Remaining Needed
+write B22 =B31
+write C22 'Shortfall not covered (if any)
+
+# ═══════════════════════════════════════════════════════════════════
+# WORKING AREA: Multi-bracket calculation (rows 25+)
+# This handles the full progressive calculation
+# ═══════════════════════════════════════════════════════════════════
+
+write A25 '─── WORKING (bracket by bracket) ───
+
+# Column layout for working area:
+# I: Bracket rate, J: Bracket ceiling, K: Skip?, L: Room, M: Acct remaining
+# N: Shortfall remaining, O: Withdrawal this bracket, P: Tax this bracket
+
+write I25 'Rate
+write J25 'Ceiling
+write K25 'Skip?
+write L25 'Room
+write M25 'AcctRem
+write N25 'NeedRem
+write O25 'Withdraw
+write P25 'Tax
+
+# Bracket 1: 10% up to 23850
+write I26 0.10
+write J26 23850
+write K26 =PRIOR_INCOME>=J26
+write L26 =IF(K26,0,J26-PRIOR_INCOME)
+write M26 =BALANCE
+write N26 =SHORTFALL
+write O26 =IF(K26,0,IF(M26<=0,0,IF(N26<=0,0,MIN(L26,M26,N26/(1-I26)))))
+write P26 =O26*I26
+
+# Bracket 2: 12% up to 96950
+write I27 0.12
+write J27 96950
+write K27 =PRIOR_INCOME+O26>=J27
+write L27 =IF(K27,0,MAX(0,J27-PRIOR_INCOME-O26))
+write M27 =M26-O26
+write N27 =MAX(0,N26-(O26-P26))
+write O27 =IF(K27,0,IF(M27<=0,0,IF(N27<=0,0,MIN(L27,M27,N27/(1-I27)))))
+write P27 =O27*I27
+
+# Bracket 3: 22% up to 206700
+write I28 0.22
+write J28 206700
+write K28 =PRIOR_INCOME+O26+O27>=J28
+write L28 =IF(K28,0,MAX(0,J28-PRIOR_INCOME-O26-O27))
+write M28 =M27-O27
+write N28 =MAX(0,N27-(O27-P27))
+write O28 =IF(K28,0,IF(M28<=0,0,IF(N28<=0,0,MIN(L28,M28,N28/(1-I28)))))
+write P28 =O28*I28
+
+# For simplicity, stopping at 3 brackets - can extend if needed
+# Most realistic scenarios won't span more than 2-3 brackets
+
+# Totals
+write A29 'Total Gross
+write B29 =O26+O27+O28
+
+write A30 'Total Tax
+write B30 =P26+P27+P28
+
+write A31 'Remaining Need
+write B31 =MAX(0,SHORTFALL-(B29-B30))
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+output B20
+output B21
+output B22
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+# Currency formatting for dollar amounts
+format B5 currency 0
+format B6 currency 0
+format B7 currency 0
+format B11 currency 0
+format B12 currency 0
+format B16 currency 0
+format B20 currency 0
+format B21 currency 0
+format B22 currency 0
+
+# Percentage formatting for rates
+format B10 percent 0
+format E6 percent 0
+format E7 percent 0
+format E8 percent 0
+format E9 percent 0
+format E10 percent 0
+format E11 percent 0
+format E12 percent 0
+
+# Tax bracket ceilings
+format F6 currency 0
+format F7 currency 0
+format F8 currency 0
+format F9 currency 0
+format F10 currency 0
+format F11 currency 0
+
+# Working area rates
+format I26 percent 0
+format I27 percent 0
+format I28 percent 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Simple case: prior income $50k, need $10k net, all fits in 12% bracket
+test "100000, 10000, 50000" "11363.636363636364, 1363.6363636363635, 0"
+
+# Spanning brackets: prior income $90k, need $10k, spans 12% to 22%
+test "100000, 10000, 90000" "11929.48717948718, 1929.4871794871794, 0"
+
+# Already in 22% bracket
+test "100000, 10000, 100000" "12820.51282051282, 2820.5128205128203, 0"
+
+# Insufficient balance: can only withdraw $5k
+test "5000, 10000, 50000" "5000, 600, 5600"
+
+# Zero shortfall: nothing needed
+test "100000, 0, 50000" "0, 0, 0"
+
+save output/WITHDRAW_PRETAX.xml

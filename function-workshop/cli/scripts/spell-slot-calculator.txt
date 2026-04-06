@@ -1,0 +1,242 @@
+# SPELL_SLOT_CALCULATOR — D&D 5e Multiclass Spell Slots
+# Computes spell slots for any multiclass combination using the SRD Multiclass Spellcasting table.
+# Full casters contribute level × 1, half casters × ½ (rounded down), third casters × ⅓ (rounded down).
+# Returns: CASTER_LEVEL, SLOT_1 through SLOT_9
+# Output names: CASTER_LEVEL, SLOT_1, SLOT_2, SLOT_3, SLOT_4, SLOT_5, SLOT_6, SLOT_7, SLOT_8, SLOT_9
+
+new SPELL_SLOT_CALCULATOR
+
+use INT
+
+input FULL_CASTER_LEVELS 5
+input HALF_CASTER_LEVELS 4
+input THIRD_CASTER_LEVELS 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-3: TITLE
+# ═══════════════════════════════════════════════════════════════════
+write A1 'SPELL SLOT CALCULATOR — D&D 5e
+write A2 'Computes spell slots for any multiclass combination.
+write A3 'Full casters contribute level x1, half casters x1/2, third casters x1/3 (rounded down).
+style A1 bold
+style A1 fontsize 24
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 5-8: YOUR MULTICLASS
+# ═══════════════════════════════════════════════════════════════════
+write A5 '─── YOUR MULTICLASS ───
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+highlight D5 gray
+highlight E5 gray
+highlight F5 gray
+highlight G5 gray
+write A6 'Full Caster Levels
+write B6 =FULL_CASTER_LEVELS
+write C6 'Bard, Cleric, Druid, Sorcerer, Wizard
+write A7 'Half Caster Levels
+write B7 =HALF_CASTER_LEVELS
+write C7 'Paladin, Ranger
+write A8 'Third Caster Levels
+write B8 =THIRD_CASTER_LEVELS
+write C8 'Eldritch Knight (Fighter), Arcane Trickster (Rogue)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 10-14: THE CALCULATION
+# ═══════════════════════════════════════════════════════════════════
+write A10 '─── THE CALCULATION ───
+highlight A10 gray
+highlight B10 gray
+highlight C10 gray
+highlight D10 gray
+highlight E10 gray
+highlight F10 gray
+highlight G10 gray
+write A11 'Full Contribution
+write B11 =FULL_CASTER_LEVELS
+write C11 'Full caster levels count as-is
+write A12 'Half Contribution
+write B12 =INT(HALF_CASTER_LEVELS/2)
+write C12 'INT(half caster levels / 2)
+write A13 'Third Contribution
+write B13 =INT(THIRD_CASTER_LEVELS/3)
+write C13 'INT(third caster levels / 3)
+write A14 'Effective Caster Level
+write B14 =B11+B12+B13
+write C14 '= Full + Half contribution + Third contribution
+name B14 EFFECTIVE_LEVEL
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 16-37: WORKING (SPELL SLOT TABLE)
+# ═══════════════════════════════════════════════════════════════════
+write A16 '─── WORKING (SPELL SLOT TABLE) ───
+highlight A16 gray
+highlight B16 gray
+highlight C16 gray
+highlight D16 gray
+highlight E16 gray
+highlight F16 gray
+highlight G16 gray
+
+# Table headers
+write E17 'Lvl
+write F17 '1st
+write G17 '2nd
+write H17 '3rd
+write I17 '4th
+write J17 '5th
+write K17 '6th
+write L17 '7th
+write M17 '8th
+write N17 '9th
+write O17 'Match?
+
+# Load CSV: caster_level in E, slot_1-slot_9 in F-N
+csv E18 cli/data/multiclass-spell-slots.csv
+
+# Column O: Check if this row's caster level matches our effective level
+write O18 =E18=EFFECTIVE_LEVEL
+fill O18:O37
+
+# Column P: Cascade for slot 1 — first match wins
+write P18 =IF(O18,F18,0)
+write P19 =IF(P18>0,P18,IF(O19,F19,0))
+fill P19:P37
+
+# Column Q: Cascade for slot 2
+write Q18 =IF(O18,G18,0)
+write Q19 =IF(Q18>0,Q18,IF(O19,G19,0))
+fill Q19:Q37
+
+# Column R: Cascade for slot 3
+write R18 =IF(O18,H18,0)
+write R19 =IF(R18>0,R18,IF(O19,H19,0))
+fill R19:R37
+
+# Column S: Cascade for slot 4
+write S18 =IF(O18,I18,0)
+write S19 =IF(S18>0,S18,IF(O19,I19,0))
+fill S19:S37
+
+# Column T: Cascade for slot 5
+write T18 =IF(O18,J18,0)
+write T19 =IF(T18>0,T18,IF(O19,J19,0))
+fill T19:T37
+
+# Column U: Cascade for slot 6
+write U18 =IF(O18,K18,0)
+write U19 =IF(U18>0,U18,IF(O19,K19,0))
+fill U19:U37
+
+# Column V: Cascade for slot 7
+write V18 =IF(O18,L18,0)
+write V19 =IF(V18>0,V18,IF(O19,L19,0))
+fill V19:V37
+
+# Column W: Cascade for slot 8
+write W18 =IF(O18,M18,0)
+write W19 =IF(W18>0,W18,IF(O19,M19,0))
+fill W19:W37
+
+# Column X: Cascade for slot 9
+write X18 =IF(O18,N18,0)
+write X19 =IF(X18>0,X18,IF(O19,N19,0))
+fill X19:X37
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 39-50: RESULT
+# ═══════════════════════════════════════════════════════════════════
+write A39 '─── RESULT ───
+highlight A39 gray
+highlight B39 gray
+highlight C39 gray
+highlight D39 gray
+highlight E39 gray
+highlight F39 gray
+highlight G39 gray
+write A40 'Effective Caster Level
+write B40 =B14
+write C40 '← OUTPUT  Full + half + third caster contributions
+highlight B40 yellow
+write A41 '1st Level Slots
+write B41 =P37
+write C41 '← OUTPUT  Number of 1st level spell slots
+highlight B41 yellow
+write A42 '2nd Level Slots
+write B42 =Q37
+write C42 '← OUTPUT  Number of 2nd level spell slots
+highlight B42 yellow
+write A43 '3rd Level Slots
+write B43 =R37
+write C43 '← OUTPUT  Number of 3rd level spell slots
+highlight B43 yellow
+write A44 '4th Level Slots
+write B44 =S37
+write C44 '← OUTPUT  Number of 4th level spell slots
+highlight B44 yellow
+write A45 '5th Level Slots
+write B45 =T37
+write C45 '← OUTPUT  Number of 5th level spell slots
+highlight B45 yellow
+write A46 '6th Level Slots
+write B46 =U37
+write C46 '← OUTPUT  Number of 6th level spell slots
+highlight B46 yellow
+write A47 '7th Level Slots
+write B47 =V37
+write C47 '← OUTPUT  Number of 7th level spell slots
+highlight B47 yellow
+write A48 '8th Level Slots
+write B48 =W37
+write C48 '← OUTPUT  Number of 8th level spell slots
+highlight B48 yellow
+write A49 '9th Level Slots
+write B49 =X37
+write C49 '← OUTPUT  Number of 9th level spell slots
+highlight B49 yellow
+
+# Named outputs
+name B40 CASTER_LEVEL
+name B41 SLOT_1
+name B42 SLOT_2
+name B43 SLOT_3
+name B44 SLOT_4
+name B45 SLOT_5
+name B46 SLOT_6
+name B47 SLOT_7
+name B48 SLOT_8
+name B49 SLOT_9
+
+# Outputs
+output CASTER_LEVEL
+output SLOT_1
+output SLOT_2
+output SLOT_3
+output SLOT_4
+output SLOT_5
+output SLOT_6
+output SLOT_7
+output SLOT_8
+output SLOT_9
+
+# Formatting
+default-format number 0
+
+# Test cases
+# Pure wizard level 5: caster level 5, slots 4,3,2,0,0,0,0,0,0
+test "5, 0, 0" "5, 4, 3, 2, 0, 0, 0, 0, 0, 0"
+# Wizard 5 + Paladin 4: caster level 5+2=7, slots 4,3,3,1,0,0,0,0,0
+test "5, 4, 0" "7, 4, 3, 3, 1, 0, 0, 0, 0, 0"
+# Pure cleric level 20: caster level 20, slots 4,3,3,3,3,2,2,1,1
+test "20, 0, 0" "20, 4, 3, 3, 3, 3, 2, 2, 1, 1"
+# No caster levels: caster level 0, all slots 0
+test "0, 0, 0" "0, 0, 0, 0, 0, 0, 0, 0, 0, 0"
+# Ranger 3 + EK Fighter 6: caster level 1+2=3, slots 4,2,0,0,0,0,0,0,0
+test "0, 3, 6" "3, 4, 2, 0, 0, 0, 0, 0, 0, 0"
+# Sorcerer 8 + Paladin 2: caster level 8+1=9, slots 4,3,3,3,1,0,0,0,0
+test "8, 2, 0" "9, 4, 3, 3, 3, 1, 0, 0, 0, 0"
+# Level 1 half caster alone: caster level 0, all slots 0
+test "0, 1, 0" "0, 0, 0, 0, 0, 0, 0, 0, 0, 0"
+
+save

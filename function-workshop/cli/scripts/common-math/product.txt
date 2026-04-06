@@ -1,0 +1,55 @@
+# PRODUCT - Multiply all values in an array
+# Loop sheet: iterates over array elements, accumulating the product
+
+new PRODUCT loop
+input VALUES {1,2,3}
+
+# Row 0: initial values
+# A = accumulator (start at 1, multiplicative identity)
+# B = index counter (start at 0)
+# C = array length (computed once)
+write A0 1
+write B0 0
+write C0 =LEN(VALUES)
+
+# Row 1: iteration body
+# Increment index, then multiply current element into accumulator
+write B1 =B0+1
+write A1 =A0*INDEX(VALUES,B1)
+write C1 =C0
+
+# Stop conditions
+write _STOP0 =C0<=0
+write _STOP1 =B1>=C1
+
+# Column headers
+header A result
+header B index
+header C count
+
+# Output
+output A last
+
+# Formatting
+default-format number 6
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Simple product
+test "{1,2,3}" "6"
+
+# Single element
+test "{5}" "5"
+
+# Product with zero
+test "{1,2,0,4}" "0"
+
+# Larger set (5! = 120)
+test "{1,2,3,4,5}" "120"
+
+# Decimals
+test "{2,3.5}" "7"
+
+save

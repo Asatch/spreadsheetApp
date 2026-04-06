@@ -1,0 +1,214 @@
+# DAYS360 - Days between dates using 30/360 convention
+# Used for financial calculations
+# Method: 0=US/NASD, 1=European
+
+new DAYS360
+use INT
+input START_DATE 45292
+input END_DATE 45382
+input METHOD 0
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 1-2: DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'DAYS BETWEEN DATES (30/360)
+style A1 bold
+style A1 fontsize 24
+write A2 'Calculates days between dates using 30/360 day count convention.
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 4-7: INPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── INPUTS ───
+highlight A4 gray
+highlight B4 gray
+highlight C4 gray
+highlight D4 gray
+highlight E4 gray
+highlight F4 gray
+highlight G4 gray
+
+write A5 'Start Date
+write B5 =START_DATE
+write C5 'Serial date
+
+write A6 'End Date
+write B6 =END_DATE
+write C6 'Serial date
+
+write A7 'Method
+write B7 =METHOD
+write C7 '0=US, 1=European
+
+# ═══════════════════════════════════════════════════════════════════
+# EXTRACT START DATE COMPONENTS (columns E-G)
+# ═══════════════════════════════════════════════════════════════════
+
+write E4 '─── START DATE ───
+
+write E5 'Year
+write F5 =INT((B5+109571.75)/365.2425-300+1900)
+write G5 'Est year
+
+write E6 'Jan 1 (Est)
+write F6 =(F5-1900)*365+IF(F5<=1900,0,INT((F5-1)/4)-INT((F5-1)/100)+INT((F5-1)/400)-459)+1
+
+write E7 'Year (Adj)
+write F7 =IF(B5-F6+1<1,F5-1,F5)
+
+write E8 'Jan 1 (Final)
+write F8 =(F7-1900)*365+IF(F7<=1900,0,INT((F7-1)/4)-INT((F7-1)/100)+INT((F7-1)/400)-459)+1
+
+write E9 'Day of Year
+write F9 =B5-F8+1
+
+write E10 'Leap?
+write F10 =IF(F7=1900,1,IF(MOD(F7,400)=0,1,IF(MOD(F7,100)=0,0,IF(MOD(F7,4)=0,1,0))))
+
+write E11 'Adj DOY
+write F11 =F9-IF(F9>59,F10,0)
+
+write E12 'Month
+write F12 =IF(F11<=31,1,IF(F11<=59,2,IF(F11<=90,3,IF(F11<=120,4,IF(F11<=151,5,IF(F11<=181,6,IF(F11<=212,7,IF(F11<=243,8,IF(F11<=273,9,IF(F11<=304,10,IF(F11<=334,11,12)))))))))))
+
+write E13 'Days Before
+write F13 =IF(F12=1,0,IF(F12=2,31,IF(F12=3,59,IF(F12=4,90,IF(F12=5,120,IF(F12=6,151,IF(F12=7,181,IF(F12=8,212,IF(F12=9,243,IF(F12=10,273,IF(F12=11,304,334)))))))))))
+
+write E14 'Day
+write F14 =F9-F13-IF(F12>2,F10,0)
+
+# ═══════════════════════════════════════════════════════════════════
+# EXTRACT END DATE COMPONENTS (columns H-J)
+# ═══════════════════════════════════════════════════════════════════
+
+write H4 '─── END DATE ───
+
+write H5 'Year
+write I5 =INT((B6+109571.75)/365.2425-300+1900)
+
+write H6 'Jan 1 (Est)
+write I6 =(I5-1900)*365+IF(I5<=1900,0,INT((I5-1)/4)-INT((I5-1)/100)+INT((I5-1)/400)-459)+1
+
+write H7 'Year (Adj)
+write I7 =IF(B6-I6+1<1,I5-1,I5)
+
+write H8 'Jan 1 (Final)
+write I8 =(I7-1900)*365+IF(I7<=1900,0,INT((I7-1)/4)-INT((I7-1)/100)+INT((I7-1)/400)-459)+1
+
+write H9 'Day of Year
+write I9 =B6-I8+1
+
+write H10 'Leap?
+write I10 =IF(I7=1900,1,IF(MOD(I7,400)=0,1,IF(MOD(I7,100)=0,0,IF(MOD(I7,4)=0,1,0))))
+
+write H11 'Adj DOY
+write I11 =I9-IF(I9>59,I10,0)
+
+write H12 'Month
+write I12 =IF(I11<=31,1,IF(I11<=59,2,IF(I11<=90,3,IF(I11<=120,4,IF(I11<=151,5,IF(I11<=181,6,IF(I11<=212,7,IF(I11<=243,8,IF(I11<=273,9,IF(I11<=304,10,IF(I11<=334,11,12)))))))))))
+
+write H13 'Days Before
+write I13 =IF(I12=1,0,IF(I12=2,31,IF(I12=3,59,IF(I12=4,90,IF(I12=5,120,IF(I12=6,151,IF(I12=7,181,IF(I12=8,212,IF(I12=9,243,IF(I12=10,273,IF(I12=11,304,334)))))))))))
+
+write H14 'Day
+write I14 =I9-I13-IF(I12>2,I10,0)
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 9-13: 30/360 ADJUSTMENT
+# ═══════════════════════════════════════════════════════════════════
+
+write A9 '─── 30/360 ADJUSTMENT ───
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+highlight D9 gray
+highlight E9 gray
+highlight F9 gray
+highlight G9 gray
+
+# Start day adjustment
+write A10 'Start Day (Raw)
+write B10 =F14
+write C10 'Original day
+
+write A11 'Start Day (30/360)
+write B11 =IF(B10=31,30,B10)
+write C11 'Cap at 30
+
+# End day adjustment (depends on method and start day)
+write A12 'End Day (Raw)
+write B12 =I14
+write C12 'Original day
+
+write A13 'End Day (30/360)
+write B13 =IF(B7=1,IF(B12=31,30,B12),IF(B12=31,IF(B11>=30,30,B12),B12))
+write C13 'US: 31→30 if start>=30; EU: always
+
+# ═══════════════════════════════════════════════════════════════════
+# ROW 15-19: RESULT
+# ═══════════════════════════════════════════════════════════════════
+
+write A15 '─── RESULT ───
+highlight A15 gray
+highlight B15 gray
+highlight C15 gray
+highlight D15 gray
+highlight E15 gray
+highlight F15 gray
+highlight G15 gray
+
+write A16 'Year Diff
+write B16 =I7-F7
+write C16 'End year - start year
+
+write A17 'Month Diff
+write B17 =I12-F12
+write C17 'End month - start month
+
+write A18 'Day Diff
+write B18 =B13-B11
+write C18 'Adjusted end - start day
+
+write A19 'Days 360
+write B19 =B16*360+B17*30+B18
+write C19 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B19 DAYS360_RESULT
+output DAYS360_RESULT
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format number 0
+format F5 number 0 period-only
+format F7 number 0 period-only
+format I5 number 0 period-only
+format I7 number 0 period-only
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# ═══════════════════════════════════════════════════════════════════
+
+# Quarter year, US method: Jan 1 to Apr 1, 2024
+test "45292, 45383, 0" "90"
+
+# Quarter year, EU method
+test "45292, 45383, 1" "90"
+
+# End-of-month: Jan 31 to Mar 31, 2024 (US)
+test "45322, 45382, 0" "60"
+
+# End-of-month: Jan 31 to Mar 31, 2024 (EU)
+test "45322, 45382, 1" "60"
+
+# Full year: Jan 1, 2024 to Jan 1, 2025
+test "45292, 45658, 0" "360"
+
+save

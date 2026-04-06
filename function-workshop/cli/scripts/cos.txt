@@ -1,0 +1,26 @@
+# COS - Cosine via SIN(X + pi/2)
+new COS
+input X 0
+
+write A1 'COS
+write A2 'Returns the cosine of an angle in radians.
+write A3 'Computed as SIN(X + pi/2).
+
+write A5 'INPUT
+write A6 'X
+write B6 =X
+write C6 'Angle in radians
+
+write A8 'RESULT
+write A9 'Cosine
+write B9 =SIN(X+1.5707963267948966)
+write C9 '= SIN(X + pi/2)
+
+output B9
+default-format number 6
+
+test "0" "1"
+test "1.5707963267948966" "0"
+test "3.141592653589793" "-1"
+test "0.7853981633974483" "0.707107"
+save
