@@ -41,13 +41,20 @@ import { resolve, relative, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { execFileSync } from 'child_process';
 
-// Import from frontend utilities
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const frontendUtils = resolve(__dirname, '../../frontend/src/utils');
+const frontendUtils = resolve(__dirname, '../../src/utils');
 
 const { generateXml } = await import(pathToFileURL(resolve(frontendUtils, 'xmlSerializer.js')).href);
-const { adjustFormulaByOffset } = await import(pathToFileURL(resolve(frontendUtils, 'clipboardUtils.js')).href);
+const { adjustTokensByOffset } = await import(pathToFileURL(resolve(frontendUtils, 'clipboardUtils.js')).href);
+const { tokenize, serializeTokens } = await import(pathToFileURL(resolve(frontendUtils, 'formulaTokenizer.js')).href);
+const { normalizeName, isValidNameSyntax } = await import(pathToFileURL(resolve(frontendUtils, 'nameValidation.js')).href);
+
+function adjustFormulaByOffset(formula, rowOffset, colOffset) {
+  const tokens = tokenize(formula);
+  const adjusted = adjustTokensByOffset(tokens, rowOffset, colOffset);
+  return serializeTokens(adjusted);
+}
 const {
   parseCellReference,
   columnToNumber,
@@ -62,7 +69,7 @@ const {
   inferReturnType: inferBuiltInReturnType
 } = await import(pathToFileURL(resolve(frontendUtils, 'functions.js')).href);
 
-const frontendEngines = resolve(__dirname, '../../frontend/src/Engines');
+const frontendEngines = resolve(__dirname, '../../src/Engines');
 const { createCanonicalValuesEngine } = await import(pathToFileURL(resolve(frontendEngines, 'canonicalValuesEngine.js')).href);
 const { parseXML } = await import(pathToFileURL(resolve(__dirname, '..', 'xml-parser.mjs')).href);
 
@@ -126,11 +133,11 @@ function createEngineWithCalcData() {
     },
     singleArrayFunctions: deriveSingleArrayFunctions(),
     dateInputFormat: 'US',
-    normalizeName: null,
-    isValidNameSyntax: null,
-    onCheckIfFunction: null,
-    recordChanges: null,
-    onRegisterHistoryMap: null
+    normalizeName,
+    isValidNameSyntax,
+    onCheckIfFunction: () => false,
+    recordChanges: () => {},
+    onRegisterHistoryMap: Object.assign(() => {}, { registerSnapshotProvider: () => {} })
   });
 
   return { canonicalEngine, nodeCalcData };

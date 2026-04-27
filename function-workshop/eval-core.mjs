@@ -15,7 +15,7 @@ import { dirname, resolve } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const FRONTEND_PATH = resolve(__dirname, '../frontend/src');
+const FRONTEND_PATH = resolve(__dirname, '../src');
 
 const { createCalculationEngine } = await import(
   resolve(FRONTEND_PATH, 'Engines/calculationEngine.js')
@@ -23,14 +23,26 @@ const { createCalculationEngine } = await import(
 const { createCanonicalValuesEngine } = await import(
   resolve(FRONTEND_PATH, 'Engines/canonicalValuesEngine.js')
 );
-const { adjustFormulaByOffset } = await import(
+const { adjustTokensByOffset } = await import(
   resolve(FRONTEND_PATH, 'utils/clipboardUtils.js')
 );
+const { tokenize, serializeTokens } = await import(
+  resolve(FRONTEND_PATH, 'utils/formulaTokenizer.js')
+);
+
+function adjustFormulaByOffset(formula, rowOffset, colOffset) {
+  const tokens = tokenize(formula);
+  const adjusted = adjustTokensByOffset(tokens, rowOffset, colOffset);
+  return serializeTokens(adjusted);
+}
 const { parseCellKey } = await import(
   resolve(FRONTEND_PATH, 'utils/cellUtils.js')
 );
 const { getBuiltInFunctions } = await import(
   resolve(FRONTEND_PATH, 'utils/functions.js')
+);
+const { normalizeName, isValidNameSyntax } = await import(
+  resolve(FRONTEND_PATH, 'utils/nameValidation.js')
 );
 
 const MAX_ITERATIONS = 1000;
@@ -73,11 +85,11 @@ export function createEngines() {
     onValueChange: (changedInfo) => calcEngine.processInputs(changedInfo),
     singleArrayFunctions: deriveSingleArrayFunctions(),
     dateInputFormat: 'US',
-    normalizeName: null,
-    isValidNameSyntax: null,
-    onCheckIfFunction: null,
-    recordChanges: null,
-    onRegisterHistoryMap: null
+    normalizeName,
+    isValidNameSyntax,
+    onCheckIfFunction: () => false,
+    recordChanges: () => {},
+    onRegisterHistoryMap: Object.assign(() => {}, { registerSnapshotProvider: () => {} })
   });
 
   return { calcEngine, canonicalEngine };

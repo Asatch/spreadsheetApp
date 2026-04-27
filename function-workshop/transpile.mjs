@@ -22,7 +22,7 @@ import './dom-polyfill.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const FRONTEND_SRC = resolve(__dirname, '../frontend/src');
+const FRONTEND_SRC = resolve(__dirname, '../src');
 const { transpile } = await import(resolve(FRONTEND_SRC, 'transpiler/index.js'));
 
 // ── Registry I/O ──────────────────────────────────────────────────────

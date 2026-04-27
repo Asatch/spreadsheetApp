@@ -9,14 +9,23 @@ import { dirname, resolve } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const FRONTEND_PATH = resolve(__dirname, '../frontend/src');
+const FRONTEND_PATH = resolve(__dirname, '../src');
 
 const { createFormattingEngine } = await import(
   resolve(FRONTEND_PATH, 'Engines/formattingEngine.js')
 );
-const { adjustFormulaByOffset } = await import(
+const { adjustTokensByOffset } = await import(
   resolve(FRONTEND_PATH, 'utils/clipboardUtils.js')
 );
+const { tokenize, serializeTokens } = await import(
+  resolve(FRONTEND_PATH, 'utils/formulaTokenizer.js')
+);
+
+function adjustFormulaByOffset(formula, rowOffset, colOffset) {
+  const tokens = tokenize(formula);
+  const adjusted = adjustTokensByOffset(tokens, rowOffset, colOffset);
+  return serializeTokens(adjusted);
+}
 
 import { parseXML } from './xml-parser.mjs';
 import { loadAndRegisterCustomFunctions } from './function-loader.mjs';

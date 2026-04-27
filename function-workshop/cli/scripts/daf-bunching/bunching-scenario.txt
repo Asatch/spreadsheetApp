@@ -1,0 +1,185 @@
+# BUNCHING_SCENARIO
+# Wraps BUNCHING_PROJECTION for a single cycle length and computes:
+#   Avg annual tax, cumulative conversion room, upfront conversion tax,
+#   future-value benefit of the 24% vs future-rate arbitrage, cumulative
+#   cap-gains avoided by donating appreciated stock, and net value.
+#
+# FV benefit uses a midpoint-adjusted horizon: conversion room accrues
+# roughly evenly across PROJECTION_YEARS, so the average year of accrual
+# has (PROJECTION_YEARS - 1) / 2 less growth than year 0. Effective horizon =
+# YEARS_UNTIL_WITHDRAWAL - (PROJECTION_YEARS - 1) / 2.
+#
+# Net-value derivation: for $C converted at r_now vs later at r_future, the
+# net wealth gain at withdrawal is C*g^n*(r_future - r_now), already net of
+# upfront cost. Net value nets 12-yr tax against FV conversion benefit and
+# cap-gains-avoided (positive benefit of donating stock).
+
+new BUNCHING_SCENARIO
+
+use BUNCHING_PROJECTION
+
+input CYCLE_LEN 3
+input AGI 450000
+input ANNUAL_GIVING 40000
+input FUTURE_RATE 0.32
+input NOW_RATE 0.2455
+input GROWTH_RATE 0.07
+input YEARS_UNTIL_WITHDRAWAL 20
+input SALT 40000
+input STD_DED 31500
+input STOCK_CAP_PCT 0.30
+input UT_RATE 0.0455
+input BRACKET_24_TOP 394600
+input BASIS_RATIO 0.30
+input LTCG_RATE 0.2835
+input PROJECTION_YEARS 12
+
+write A1 'BUNCHING SCENARIO
+style A1 bold
+style A1 fontsize 14
+
+# -------- STRATEGY --------
+write A3 'STRATEGY
+highlight A3 gray
+write A4 'Cycle Length (N)
+write B4 =CYCLE_LEN
+write C4 'Years between bunches (1 = annual, 3 = bunch every 3 years)
+write A5 'AGI
+write B5 =AGI
+write C5 'Projected ordinary income
+write A6 'Annual Giving
+write B6 =ANNUAL_GIVING
+write C6 'Tithing rate
+
+# -------- CONVERSION ASSUMPTIONS --------
+write A8 'CONVERSION ASSUMPTIONS
+highlight A8 gray
+write A9 'Future Marginal Rate
+write B9 =FUTURE_RATE
+write C9 'Expected bracket at withdrawal
+write A10 'Current Marginal Rate
+write B10 =NOW_RATE
+write C10 'Fed 24% + UT 4.55% during conversion window
+write A11 'Growth Rate
+write B11 =GROWTH_RATE
+write C11 'Post-inflation annual growth
+write A12 'Years Until Withdrawal
+write B12 =YEARS_UNTIL_WITHDRAWAL
+write C12 'Horizon from today to when Roth is withdrawn
+
+# -------- TAX-SYSTEM PARAMETERS --------
+write A14 'TAX-SYSTEM PARAMETERS
+highlight A14 gray
+write A15 'SALT Cap
+write B15 =SALT
+write C15 'OBBBA 2025 cap ($40k under $500k AGI)
+write A16 'Standard Deduction
+write B16 =STD_DED
+write C16 '2026 MFJ projected
+write A17 'Stock AGI Cap
+write B17 =STOCK_CAP_PCT
+write C17 'IRS limit for appreciated-stock gifts (30% of AGI)
+write A18 'Utah Rate
+write B18 =UT_RATE
+write C18 'UT flat income-tax rate
+write A19 '24% Bracket Top
+write B19 =BRACKET_24_TOP
+write C19 '2026 MFJ top of 24% bracket
+write A20 'Basis Ratio
+write B20 =BASIS_RATIO
+write C20 'Cost basis as fraction of current value (lower = more appreciated)
+write A21 'LTCG Rate
+write B21 =LTCG_RATE
+write C21 'Fed LTCG + NIIT + state on avoided cap gains
+write A22 'Projection Years
+write B22 =PROJECTION_YEARS
+write C22 'Years the bunching loop simulates
+
+# -------- PROJECTION --------
+write A24 'PROJECTION
+highlight A24 gray
+write A25 'Projection Result
+write B25 =BUNCHING_PROJECTION(CYCLE_LEN, AGI, ANNUAL_GIVING, SALT, STD_DED, STOCK_CAP_PCT, UT_RATE, BRACKET_24_TOP, BASIS_RATIO, LTCG_RATE, PROJECTION_YEARS)
+write C25 'Multi-output: CUM_TAX, CUM_CONV_ROOM, CUM_CONV_TAX, CUM_CAP_GAINS_AVOIDED
+
+write A26 'Cumulative Tax
+write B26 =INDEX(B25, "CUM_TAX")
+write C26 'Sum of fed + UT tax across projection years
+write A27 'Conversion Room
+write B27 =INDEX(B25, "CUM_CONV_ROOM")
+write C27 'Total $ of Roth conversion headroom at 24%
+write A28 'Upfront Conversion Tax
+write B28 =INDEX(B25, "CUM_CONV_TAX")
+write C28 'Tax cost if every year of headroom is exercised
+write A29 'Cap-Gains Avoided
+write B29 =INDEX(B25, "CUM_CAP_GAINS_AVOIDED")
+write C29 'LTCG tax avoided by donating appreciated stock
+
+# -------- RESULTS --------
+write A31 'RESULTS
+highlight A31 gray
+
+write A32 'Avg Annual Tax
+write B32 =B26/PROJECTION_YEARS
+write C32 '← OUTPUT: projection tax / years (lower = better)
+
+write A33 'Conversion Tax Now
+write B33 =B28
+write C33 '← OUTPUT: cost today to execute all conversions
+
+# Midpoint-adjusted horizon: room accrues roughly evenly across
+# PROJECTION_YEARS, so average year has (PROJECTION_YEARS-1)/2 less growth.
+write A34 'Effective FV Horizon
+write B34 =YEARS_UNTIL_WITHDRAWAL-(PROJECTION_YEARS-1)/2
+write C34 'YEARS_UNTIL_WITHDRAWAL - (PROJECTION_YEARS-1)/2
+
+write A35 'FV Benefit of Conversion
+write B35 =B27*(FUTURE_RATE-NOW_RATE)*(1+GROWTH_RATE)^B34
+write C35 '← OUTPUT: C*(r_future-r_now)*(1+g)^effective_n
+
+write A36 'Net Value
+write B36 =-(B26-B35-B29)
+write C36 '← OUTPUT: -(tax - FV benefit - cap-gains avoided); higher = better
+
+name B32 AVG_ANNUAL_TAX
+name B27 CUM_CONV_ROOM
+name B33 CONV_TAX_NOW
+name B35 FV_BENEFIT
+name B29 CAP_GAINS_AVOIDED
+name B36 NET_VALUE
+
+output AVG_ANNUAL_TAX
+output CUM_CONV_ROOM
+output CONV_TAX_NOW
+output FV_BENEFIT
+output CAP_GAINS_AVOIDED
+output NET_VALUE
+
+default-format currency 0
+format B4 number 0
+format B9 percentage 2
+format B10 percentage 2
+format B11 percentage 1
+format B12 number 0
+format B17 percentage 0
+format B18 percentage 2
+format B20 percentage 0
+format B21 percentage 2
+format B22 number 0
+format B34 number 1
+
+# Test cases — inputs:
+# CYCLE_LEN, AGI, ANNUAL_GIVING, FUTURE_RATE, NOW_RATE, GROWTH_RATE,
+# YEARS_UNTIL_WITHDRAWAL, SALT, STD_DED, STOCK_CAP_PCT, UT_RATE, BRACKET_24_TOP,
+# BASIS_RATIO, LTCG_RATE, PROJECTION_YEARS
+# Outputs: AVG_ANNUAL_TAX, CUM_CONV_ROOM, CONV_TAX_NOW, FV_BENEFIT,
+# CAP_GAINS_AVOIDED, NET_VALUE
+test "1, 450000, 40000, 0.32, 0.2455, 0.07, 20, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "91329, 295200, 84279.6, 58659.371077, 95256, -942032.628923"
+test "3, 450000, 40000, 0.32, 0.2455, 0.07, 20, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "92150.333333, 418400, 119453.2, 83140.517814, 95256, -927407.482186"
+test "4, 450000, 40000, 0.32, 0.2455, 0.07, 20, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "91945, 387600, 110659.8, 77020.23113, 95256, -931063.76887"
+# Future rate below current: FV benefit goes negative
+test "3, 450000, 40000, 0.22, 0.2455, 0.07, 20, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "92150.333333, 418400, 119453.2, -28457.492675, 95256, -1039005.492675"
+# Short withdrawal horizon: FV benefit shrinks
+test "3, 450000, 40000, 0.32, 0.2455, 0.07, 10, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "92150.333333, 418400, 119453.2, 42264.423379, 95256, -968283.576621"
+
+save

@@ -1,0 +1,52 @@
+{
+  "name": "sc-spreadsheet",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate-html": "node scripts/generate-html.js",
+    "dev": "npm run build && bash -c \"trap 'kill 0' SIGINT; node scripts/generate-html.js --watch & vite --host 0.0.0.0\"",
+    "build": "npm run build:index && npm run build:loop && npm run build:scenario && npm run build:export && npm run build:examples",
+    "build:export": "SINGLE_FILE=true vite build",
+    "build:examples": "mkdir -p dist/examples && cp function-workshop/examples/catalog.json function-workshop/examples/*.zip dist/examples/ && (test -d function-workshop/personal && cp function-workshop/personal/*.zip dist/examples/ && cp function-workshop/personal/catalog.json dist/examples/catalog-personal.json) || true",
+    "build:index": "npm run generate-html && vite build",
+    "build:loop": "npm run generate-html && BUILD_ENTRY=loop.html vite build",
+    "build:scenario": "npm run generate-html && BUILD_ENTRY=scenario.html vite build",
+    "preview": "vite preview --host",
+    "lint": "eslint \"src/**/*.js\"",
+    "lint:docs": "markdown-link-check README.md docs/*.md guides/*.md requirements/*.md",
+    "test": "vitest run",
+    "test:debug": "TEST_VERBOSITY=verbose vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "dev:test": "vite --mode test --host 0.0.0.0",
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:ci": "npm run lint && npm run test && npm run test:e2e",
+    "test:mutate:targeted": "bash scripts/run-mutation-tests.sh",
+    "test:transpiler": "node scripts/test-transpiler.mjs"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.59.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
+    "@vitest/ui": "^4.0.12",
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0",
+    "jsdom": "^29.0.2",
+    "vite": "^8.0.8",
+    "vite-plugin-singlefile": "^2.2.0",
+    "vitest": "^4.0.12"
+  },
+  "description": "",
+  "main": "index.html",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

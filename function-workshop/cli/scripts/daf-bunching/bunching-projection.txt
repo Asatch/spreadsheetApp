@@ -1,0 +1,144 @@
+# BUNCHING_PROJECTION (loop)
+# 12-year simulation of an N-year bunching cycle.
+# Each year: determine bunch/off, apply stock-cap deduction, age carry-forward
+# with FIFO 5-year expiration, compute tax and Roth-conversion headroom (room
+# up to top of 24% bracket), and track cap-gains avoided by donating appreciated
+# stock. Accumulates totals; outputs cumulative tax, conversion room,
+# conversion tax, and cumulative cap-gains avoided.
+#
+# Carry-forward model: 4 vintage buckets (W/X/Y/Z) hold end-of-year balances by
+# age 1..4. At the start of each year, last year's age-k is now age (k+1);
+# anything that would become age 5 expires. Consumption is FIFO oldest-first.
+#
+# Donations modeled as appreciated stock (30% AGI cap — the realistic DAF
+# vehicle). Cap-gains avoided = GIVING * (1 - BASIS_RATIO) * LTCG_RATE each year.
+
+new BUNCHING_PROJECTION loop
+
+use PROGRESSIVE_TAX_2026_MFJ
+use INT
+
+input CYCLE_LEN 3
+input AGI 450000
+input ANNUAL_GIVING 40000
+input SALT 40000
+input STD_DED 31500
+input STOCK_CAP_PCT 0.30
+input UT_RATE 0.0455
+input BRACKET_24_TOP 394600
+input BASIS_RATIO 0.30
+input LTCG_RATE 0.2835
+input YEARS 12
+
+# ---- Row 0: initial state ----
+write A0 -1
+write W0 0
+write X0 0
+write Y0 0
+write Z0 0
+write T0 0
+write U0 0
+write V0 0
+write AE0 0
+
+# ---- Row 1: per-year iteration ----
+write A1 =A0+1
+write B1 =A1-CYCLE_LEN*INT(A1/CYCLE_LEN)
+write C1 =B1=0
+write D1 =IF(CYCLE_LEN<YEARS-A1, CYCLE_LEN, YEARS-A1)
+write E1 =IF(C1, D1*ANNUAL_GIVING, 0)
+write F1 =IF(AGI*STOCK_CAP_PCT<E1, AGI*STOCK_CAP_PCT, E1)
+write G1 =E1-F1
+write H1 =IF(AGI*STOCK_CAP_PCT-F1>0, AGI*STOCK_CAP_PCT-F1, 0)
+
+# Usable carry = min(H1, total prior-year vintage balances)
+write I1 =IF(W0+X0+Y0+Z0<H1, W0+X0+Y0+Z0, H1)
+
+write J1 =SALT+F1+I1
+write K1 =IF(J1>STD_DED, J1, STD_DED)
+write L1 =AGI-K1
+write M1 =PROGRESSIVE_TAX_2026_MFJ(L1)
+write N1 =L1*UT_RATE
+write O1 =IF(BRACKET_24_TOP-L1>0, BRACKET_24_TOP-L1, 0)
+write P1 =PROGRESSIVE_TAX_2026_MFJ(L1+O1)-M1
+write Q1 =O1*UT_RATE
+write R1 =P1+Q1
+
+# ---- FIFO carry consumption (oldest first: Z0 age 4 -> W0 age 1) ----
+write AA1 =IF(Z0<I1, Z0, I1)
+write AB1 =IF(Y0<I1-AA1, Y0, IF(I1-AA1>0, I1-AA1, 0))
+write AC1 =IF(X0<I1-AA1-AB1, X0, IF(I1-AA1-AB1>0, I1-AA1-AB1, 0))
+
+# ---- End-of-year vintage balances (shift ages forward by 1) ----
+write W1 =G1
+write X1 =W0-(I1-AA1-AB1-AC1)
+write Y1 =X0-AC1
+write Z1 =Y0-AB1
+
+# ---- Cap-gains avoidance this year ----
+write AD1 =E1*(1-BASIS_RATIO)*LTCG_RATE
+
+# ---- Cumulative accumulators ----
+write T1 =T0+M1+N1
+write U1 =U0+O1
+write V1 =V0+R1
+write AE1 =AE0+AD1
+
+write _STOP1 =A1>=YEARS-1
+
+# Column headers
+header A YEAR_INDEX
+header B YEAR_MOD_N
+header C IS_BUNCH
+header D YEARS_REMAINING
+header E GIVING
+header F DEDUCTED_THIS_YEAR
+header G EXCESS_TO_CARRY
+header H CARRY_ROOM
+header I USABLE_CARRY
+header J ITEMIZED_TOTAL
+header K DEDUCTION
+header L TAXABLE_INCOME
+header M FED_TAX
+header N STATE_TAX
+header O CONV_ROOM
+header P CONV_TAX_FED
+header Q CONV_TAX_STATE
+header R CONV_TAX_TOTAL
+header T CUM_TAX
+header U CUM_CONV_ROOM
+header V CUM_CONV_TAX
+header W CARRY_AGE_1
+header X CARRY_AGE_2
+header Y CARRY_AGE_3
+header Z CARRY_AGE_4
+header AA USED_FROM_AGE_4
+header AB USED_FROM_AGE_3
+header AC USED_FROM_AGE_2
+header AD CAP_GAINS_AVOIDED
+header AE CUM_CAP_GAINS_AVOIDED
+
+default-format currency 0
+format A0 number 0
+format A1 number 0
+format B1 number 0
+format D1 number 0
+
+# Outputs: CUM_TAX, CUM_CONV_ROOM, CUM_CONV_TAX, CUM_CAP_GAINS_AVOIDED
+output T last
+output U last
+output V last
+output AE last
+
+# Test cases — inputs:
+# CYCLE_LEN, AGI, ANNUAL_GIVING, SALT, STD_DED, STOCK_CAP_PCT, UT_RATE,
+# BRACKET_24_TOP, BASIS_RATIO, LTCG_RATE, YEARS
+# Outputs: CUM_TAX, CUM_CONV_ROOM, CUM_CONV_TAX, CUM_CAP_GAINS_AVOIDED
+test "1, 450000, 40000, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "1095948, 295200, 84279.6, 95256"
+test "2, 450000, 40000, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "1103340, 387600, 110659.8, 95256"
+test "3, 450000, 40000, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "1105804, 418400, 119453.2, 95256"
+test "4, 450000, 40000, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "1103340, 387600, 110659.8, 95256"
+test "5, 450000, 40000, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "1104572, 403000, 115056.5, 95256"
+test "6, 450000, 40000, 40000, 31500, 0.30, 0.0455, 394600, 0.30, 0.2835, 12" "1105804, 418400, 119453.2, 95256"
+
+save

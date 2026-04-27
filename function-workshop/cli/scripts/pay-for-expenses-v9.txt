@@ -1,0 +1,406 @@
+# PAY_FOR_EXPENSES - Withdrawal cascade with strategy selection
+# Covers spending shortfall by withdrawing from accounts in the chosen order.
+# Strategy: 1 = Taxable first, 2 = Tax-Deferred first, 3 = Tax-Free first
+#
+# v9: For each step, evaluate ALL three accounts hypothetically with the
+# remaining shortfall, then gate by strategy to pick the actual withdrawer.
+# Hypothetical/Actual columns make the cascade transparent.
+
+new PAY_FOR_EXPENSES
+
+use WITHDRAW_TAXABLE
+use WITHDRAW_PRETAX
+
+input TAXABLE_BALANCE 100000
+input TAXABLE_BASIS 80000
+input TAX_DEFERRED_BALANCE 200000
+input TAX_FREE_BALANCE 50000
+input SHORTFALL 30000
+input PRIOR_INCOME 40000
+input STRATEGY 1
+
+# ═══════════════════════════════════════════════════════════════════
+# DOCSTRING
+# ═══════════════════════════════════════════════════════════════════
+
+write A1 'PAY FOR EXPENSES
+style A1 bold
+style A1 fontsize 24
+write A2 'Withdraw from accounts to cover spending shortfall. Strategy selects the withdrawal order.
+
+# ═══════════════════════════════════════════════════════════════════
+# YOUR SITUATION
+# ═══════════════════════════════════════════════════════════════════
+
+write A4 '─── YOUR SITUATION ───
+highlight A4 gray
+
+write A5 'Taxable Balance
+write B5 =TAXABLE_BALANCE
+write C5 'Brokerage account balance
+
+write A6 'Taxable Basis
+write B6 =TAXABLE_BASIS
+write C6 'Cost basis for capital gains
+
+write A7 'Tax-Deferred Balance
+write B7 =TAX_DEFERRED_BALANCE
+write C7 'Traditional IRA / 401(k) balance
+
+write A8 'Tax-Free Balance
+write B8 =TAX_FREE_BALANCE
+write C8 'Roth IRA balance
+
+write A9 'Shortfall to Cover
+write B9 =SHORTFALL
+write C9 'Spending gap to fill from investments
+
+write A10 'Prior Income
+write B10 =PRIOR_INCOME
+write C10 'Taxable income so far this year
+
+write A11 'Strategy
+write B11 =STRATEGY
+write C11 'Which withdrawal order to use (see below)
+format B11 number 0
+
+# ═══════════════════════════════════════════════════════════════════
+# WITHDRAWAL ORDER LEGEND
+# ═══════════════════════════════════════════════════════════════════
+
+write A13 'Withdrawal Order:
+write A14 '  Strategy 1:
+write B14 'Taxable → Tax-Deferred → Tax-Free
+write A15 '  Strategy 2:
+write B15 'Tax-Deferred → Taxable → Tax-Free
+write A16 '  Strategy 3:
+write B16 'Tax-Free → Taxable → Tax-Deferred
+
+# ═══════════════════════════════════════════════════════════════════
+# STEP 1: FIRST ACCOUNT (rows 18-31)
+# All three accounts evaluated with the full shortfall.
+# Active = whichever account is 1st under the chosen strategy.
+# ═══════════════════════════════════════════════════════════════════
+
+write A18 '─── STEP 1: FIRST ACCOUNT ───
+highlight A18 gray
+write A19 'All three account types are evaluated hypothetically and then the result from the
+write A20 'active strategy is used. Remaining = the remaining expense shortfall after this step.
+
+write B22 'Hypothetical
+write G22 'Actual
+
+write B23 'Fn Result
+write C23 'Withdrawal
+write D23 'Tax
+write E23 'Basis
+write F23 'Remaining
+write G23 'Withdrawal
+write H23 'Tax
+write I23 'Basis
+write J23 'Remaining
+
+# Taxable (active when STRATEGY=1)
+write A24 'Taxable
+write B24 =WITHDRAW_TAXABLE(TAXABLE_BALANCE, SHORTFALL, TAXABLE_BASIS)
+write C24 =INDEX(B24, "WITHDRAWAL")
+write D24 =INDEX(B24, "TAX")
+write E24 =INDEX(B24, "BASIS_REDUCTION")
+write F24 =INDEX(B24, "REMAINING_SHORTFALL")
+write G24 =IF(STRATEGY=1, C24, 0)
+write H24 =IF(STRATEGY=1, D24, 0)
+write I24 =IF(STRATEGY=1, E24, 0)
+write J24 =IF(STRATEGY=1, F24, 0)
+
+# Tax-Deferred (active when STRATEGY=2; no basis for pretax)
+write A25 'Tax-Deferred
+write B25 =WITHDRAW_PRETAX(TAX_DEFERRED_BALANCE, SHORTFALL, PRIOR_INCOME)
+write C25 =INDEX(B25, "WITHDRAWAL")
+write D25 =INDEX(B25, "TAX")
+write E25 'na
+justify E25 right
+write F25 =INDEX(B25, "REMAINING_SHORTFALL")
+write G25 =IF(STRATEGY=2, C25, 0)
+write H25 =IF(STRATEGY=2, D25, 0)
+write I25 0
+write J25 =IF(STRATEGY=2, F25, 0)
+
+# Tax-Free (active when STRATEGY=3; no function call, no tax, no basis)
+write A26 'Tax-Free
+write B26 'na
+justify B26 right
+write C26 =MIN(TAX_FREE_BALANCE, SHORTFALL)
+write D26 'na
+justify D26 right
+write E26 'na
+justify E26 right
+write F26 =MAX(0, SHORTFALL-C26)
+write G26 =IF(STRATEGY=3, C26, 0)
+write H26 0
+write I26 0
+write J26 =IF(STRATEGY=3, F26, 0)
+
+# Step 1 aggregates (sum the Actual columns — only one row contributes)
+write A28 'Step 1 Results
+write A29 'Tax
+write B29 =H24+H25+H26
+write A30 'Basis Reduction
+write B30 =I24+I25+I26
+write A31 'Remaining Shortfall
+write B31 =J24+J25+J26
+
+# ═══════════════════════════════════════════════════════════════════
+# STEP 2: SECOND ACCOUNT (rows 33-45)
+# Inputs use B31 (remaining after Step 1) instead of SHORTFALL.
+# Strategy 1: TD is 2nd. Strategy 2 or 3: Taxable is 2nd. Tax-Free: never.
+# ═══════════════════════════════════════════════════════════════════
+
+write A33 '─── STEP 2: SECOND ACCOUNT ───
+highlight A33 gray
+write A34 'Next we look to withdraw the remaining shortfall from the second account.
+
+write B36 'Hypothetical
+write G36 'Actual
+
+write B37 'Fn Result
+write C37 'Withdrawal
+write D37 'Tax
+write E37 'Basis
+write F37 'Remaining
+write G37 'Withdrawal
+write H37 'Tax
+write I37 'Basis
+write J37 'Remaining
+
+# Taxable (active when STRATEGY=2 or 3)
+write A38 'Taxable
+write B38 =WITHDRAW_TAXABLE(TAXABLE_BALANCE, B31, TAXABLE_BASIS)
+write C38 =INDEX(B38, "WITHDRAWAL")
+write D38 =INDEX(B38, "TAX")
+write E38 =INDEX(B38, "BASIS_REDUCTION")
+write F38 =INDEX(B38, "REMAINING_SHORTFALL")
+write G38 =IF(OR(STRATEGY=2, STRATEGY=3), C38, 0)
+write H38 =IF(OR(STRATEGY=2, STRATEGY=3), D38, 0)
+write I38 =IF(OR(STRATEGY=2, STRATEGY=3), E38, 0)
+write J38 =IF(OR(STRATEGY=2, STRATEGY=3), F38, 0)
+
+# Tax-Deferred (active when STRATEGY=1)
+write A39 'Tax-Deferred
+write B39 =WITHDRAW_PRETAX(TAX_DEFERRED_BALANCE, B31, PRIOR_INCOME)
+write C39 =INDEX(B39, "WITHDRAWAL")
+write D39 =INDEX(B39, "TAX")
+write E39 'na
+justify E39 right
+write F39 =INDEX(B39, "REMAINING_SHORTFALL")
+write G39 =IF(STRATEGY=1, C39, 0)
+write H39 =IF(STRATEGY=1, D39, 0)
+write I39 0
+write J39 =IF(STRATEGY=1, F39, 0)
+
+# Tax-Free (never active in step 2; computed hypothetically anyway)
+write A40 'Tax-Free
+write B40 'na
+justify B40 right
+write C40 =MIN(TAX_FREE_BALANCE, B31)
+write D40 'na
+justify D40 right
+write E40 'na
+justify E40 right
+write F40 =MAX(0, B31-C40)
+write G40 0
+write H40 0
+write I40 0
+write J40 0
+
+write A42 'Step 2 Results
+write A43 'Tax
+write B43 =H38+H39+H40
+write A44 'Basis Reduction
+write B44 =I38+I39+I40
+write A45 'Remaining Shortfall
+write B45 =J38+J39+J40
+
+# ═══════════════════════════════════════════════════════════════════
+# STEP 3: THIRD ACCOUNT (rows 47-60)
+# Inputs use B45 (remaining after Step 2).
+# Strategy 1 or 2: Tax-Free is 3rd. Strategy 3: TD is 3rd. Taxable: never.
+# ═══════════════════════════════════════════════════════════════════
+
+write A47 '─── STEP 3: THIRD ACCOUNT ───
+highlight A47 gray
+write A48 'If there is still a remaining shortfall after the first two accounts have
+write A49 'contributed what they could, the third account covers the rest.
+
+write B51 'Hypothetical
+write G51 'Actual
+
+write B52 'Fn Result
+write C52 'Withdrawal
+write D52 'Tax
+write E52 'Basis
+write F52 'Remaining
+write G52 'Withdrawal
+write H52 'Tax
+write I52 'Basis
+write J52 'Remaining
+
+# Taxable (never active in step 3 — left as zeros for layout clarity)
+write A53 'Taxable
+write B53 'na
+justify B53 right
+write C53 0
+write D53 'na
+justify D53 right
+write E53 'na
+justify E53 right
+write F53 0
+write G53 0
+write H53 0
+write I53 0
+write J53 0
+
+# Tax-Deferred (active when STRATEGY=3)
+write A54 'Tax-Deferred
+write B54 =WITHDRAW_PRETAX(TAX_DEFERRED_BALANCE, B45, PRIOR_INCOME)
+write C54 =INDEX(B54, "WITHDRAWAL")
+write D54 =INDEX(B54, "TAX")
+write E54 'na
+justify E54 right
+write F54 =INDEX(B54, "REMAINING_SHORTFALL")
+write G54 =IF(STRATEGY=3, C54, 0)
+write H54 =IF(STRATEGY=3, D54, 0)
+write I54 0
+write J54 =IF(STRATEGY=3, F54, 0)
+
+# Tax-Free (active when STRATEGY=1 or 2)
+write A55 'Tax-Free
+write B55 'na
+justify B55 right
+write C55 =MIN(TAX_FREE_BALANCE, B45)
+write D55 'na
+justify D55 right
+write E55 'na
+justify E55 right
+write F55 =MAX(0, B45-C55)
+write G55 =IF(OR(STRATEGY=1, STRATEGY=2), C55, 0)
+write H55 0
+write I55 0
+write J55 =IF(OR(STRATEGY=1, STRATEGY=2), F55, 0)
+
+write A57 'Step 3 Results
+write A58 'Tax
+write B58 =H53+H54+H55
+write A59 'Basis Reduction
+write B59 =I53+I54+I55
+write A60 'Remaining Shortfall
+write B60 =J53+J54+J55
+
+# ═══════════════════════════════════════════════════════════════════
+# WITHDRAWALS PER ACCOUNT (rows 62-67)
+# ═══════════════════════════════════════════════════════════════════
+
+write A62 '─── WITHDRAWALS PER ACCOUNT ───
+highlight A62 gray
+write A63 'Taxable Withdrawal
+write B63 =G24+G38+G53
+write A64 'Basis Reduction
+write B64 =B30+B44+B59
+write A65 'Tax-Deferred Withdrawal
+write B65 =G25+G39+G54
+write A66 'Tax-Free Withdrawal
+write B66 =G26+G40+G55
+write A67 'Withdrawal Tax
+write B67 =B29+B43+B58
+
+# ═══════════════════════════════════════════════════════════════════
+# RESULT (rows 69-75)
+# ═══════════════════════════════════════════════════════════════════
+
+write A69 '─── RESULT ───
+highlight A69 gray
+
+write A70 'Ending Taxable
+write B70 =TAXABLE_BALANCE-B63
+write C70 '← OUTPUT
+
+write A71 'Ending Basis
+write B71 =TAXABLE_BASIS-B64
+write C71 '← OUTPUT
+
+write A72 'Ending Tax-Deferred
+write B72 =TAX_DEFERRED_BALANCE-B65
+write C72 '← OUTPUT
+
+write A73 'Ending Tax-Free
+write B73 =TAX_FREE_BALANCE-B66
+write C73 '← OUTPUT
+
+write A74 'Withdrawal Tax
+write B74 =B67
+write C74 '← OUTPUT
+
+write A75 'Remaining Shortfall
+write B75 =B60
+write C75 '← OUTPUT
+
+# ═══════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ═══════════════════════════════════════════════════════════════════
+
+name B70 ENDING_TAXABLE
+name B71 ENDING_BASIS
+name B72 ENDING_TAX_DEFERRED
+name B73 ENDING_TAX_FREE
+name B74 WITHDRAWAL_TAX
+name B75 REMAINING_SHORTFALL
+
+output ENDING_TAXABLE
+output ENDING_BASIS
+output ENDING_TAX_DEFERRED
+output ENDING_TAX_FREE
+output WITHDRAWAL_TAX
+output REMAINING_SHORTFALL
+
+# ═══════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════
+
+default-format currency 0
+
+# ═══════════════════════════════════════════════════════════════════
+# TEST CASES
+# Inputs: taxable_bal, taxable_basis, tax_def_bal, tax_free_bal, shortfall, prior_income, strategy
+# Outputs: ending_taxable, ending_basis, ending_tax_def, ending_tax_free, withdrawal_tax, remaining_shortfall
+# ═══════════════════════════════════════════════════════════════════
+
+# 1. Baseline, strategy 1 (taxable first)
+test "100000, 80000, 200000, 50000, 30000, 40000, 1" "69072.1649484536, 55257.73195876289, 200000, 50000, 927.8350515463918, 0.0"
+
+# 2. Baseline, strategy 2 (tax-deferred first)
+test "100000, 80000, 200000, 50000, 30000, 40000, 2" "100000, 80000, 165909.0909090909, 50000, 4090.9090909090905, 0"
+
+# 3. Baseline, strategy 3 (tax-free first)
+test "100000, 80000, 200000, 50000, 30000, 40000, 3" "100000, 80000, 200000, 20000, 0, 0"
+
+# 4. Large shortfall, strategy 1
+test "20000, 15000, 100000, 30000, 80000, 50000, 1" "0, 0, 28134.61538461539, 30000, 11865.384615384615, 0"
+
+# 5. Large shortfall, strategy 2
+test "20000, 15000, 100000, 30000, 80000, 50000, 2" "20000, 15000, 3455.1282051282033, 30000, 16544.871794871797, 0"
+
+# 6. Large shortfall, strategy 3
+test "20000, 15000, 100000, 30000, 80000, 50000, 3" "0, 0, 65056.818181818184, 0, 4943.181818181818, 0"
+
+# 7. Zero shortfall
+test "100000, 80000, 200000, 50000, 0, 40000, 1" "100000.0, 80000.0, 200000, 50000, 0.0, 0.0"
+
+# 8. Exhaustion (shortfall > all), s1
+test "5000, 4000, 3000, 2000, 50000, 20000, 1" "0, 0, 0.0, 0, 450.0, 40450.0"
+
+# 9. Exhaustion, s2
+test "5000, 4000, 3000, 2000, 50000, 20000, 2" "0, 0, 0.0, 0, 450.0, 40450.0"
+
+# 10. Exhaustion, s3
+test "5000, 4000, 3000, 2000, 50000, 20000, 3" "0, 0, 0.0, 0, 450.0, 40450.0"
+
+save

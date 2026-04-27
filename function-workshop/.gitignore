@@ -1,0 +1,9 @@
+# Personal workfolder/zips that should never reach origin.
+# Mirrors the layout of examples/ but is local-only.
+personal/
+
+# Disposable working directories (regenerated from cli/scripts + examples/*.zip)
+workfolders/
+
+# CLI `save` command exports (regenerated)
+output/

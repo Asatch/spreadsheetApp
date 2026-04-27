@@ -1,0 +1,248 @@
+# BUNCHING_COMPARISON — Display Sheet (front door)
+# Side-by-side comparison of cycle lengths 1-6.
+# Edit the blue cells (AGI, giving, tax params, etc.) and the table updates.
+
+new BUNCHING_COMPARISON
+
+use BUNCHING_SCENARIO
+
+# -------- TITLE --------
+write A1 'DAF BUNCHING — CYCLE COMPARISON
+style A1 bold
+style A1 fontsize 18
+write A2 'Edit the blue cells below. The scenarios table recomputes for cycle lengths N=1..6.
+write A3 'Higher (less negative) Net Value is better. "vs Annual" shows gain vs the N=1 baseline.
+
+# -------- STRATEGY INPUTS --------
+write A5 'STRATEGY (edit blue cells)
+highlight A5 gray
+highlight B5 gray
+highlight C5 gray
+
+write A6 'AGI
+write B6 450000
+highlight B6 blue
+name B6 IN_AGI
+write C6 'Projected ordinary income
+
+write A7 'Annual Giving
+write B7 40000
+highlight B7 blue
+name B7 IN_GIVING
+write C7 'Tithing rate (~10% of AGI)
+
+# -------- CONVERSION ASSUMPTIONS --------
+write A9 'CONVERSION ASSUMPTIONS
+highlight A9 gray
+highlight B9 gray
+highlight C9 gray
+
+write A10 'Future Marginal Rate
+write B10 0.32
+highlight B10 blue
+name B10 IN_FUTURE
+write C10 'Bracket expected at withdrawal
+
+write A11 'Current Marginal Rate
+write B11 0.2455
+highlight B11 blue
+name B11 IN_NOW
+write C11 'Fed 24% + UT 4.55% during conversion window
+
+write A12 'Growth Rate
+write B12 0.07
+highlight B12 blue
+name B12 IN_GROWTH
+write C12 'Post-inflation annual growth on Roth
+
+write A13 'Years Until Withdrawal
+write B13 20
+highlight B13 blue
+name B13 IN_YEARS_WD
+write C13 'Horizon for FV-of-conversion compounding
+
+# -------- TAX-SYSTEM PARAMETERS --------
+write A15 'TAX-SYSTEM PARAMETERS
+highlight A15 gray
+highlight B15 gray
+highlight C15 gray
+
+write A16 'SALT Cap
+write B16 40000
+highlight B16 blue
+name B16 IN_SALT
+write C16 'OBBBA 2025: $40k cap under $500k AGI
+
+write A17 'Standard Deduction
+write B17 31500
+highlight B17 blue
+name B17 IN_STD_DED
+write C17 '2026 MFJ projected
+
+write A18 'Stock AGI Cap
+write B18 0.30
+highlight B18 blue
+name B18 IN_STOCK_CAP
+write C18 '30% AGI limit for appreciated-stock gifts
+
+write A19 'Utah Rate
+write B19 0.0455
+highlight B19 blue
+name B19 IN_UT
+write C19 'UT flat income-tax rate
+
+write A20 '24% Bracket Top
+write B20 394600
+highlight B20 blue
+name B20 IN_BRACKET
+write C20 '2026 MFJ top of 24% bracket
+
+write A21 'Basis Ratio
+write B21 0.30
+highlight B21 blue
+name B21 IN_BASIS
+write C21 'Cost basis as fraction of value (lower = more appreciated)
+
+write A22 'LTCG Rate
+write B22 0.2835
+highlight B22 blue
+name B22 IN_LTCG
+write C22 'Combined fed LTCG + NIIT + state
+
+write A23 'Projection Years
+write B23 12
+highlight B23 blue
+name B23 IN_PROJ
+write C23 'Years the bunching loop simulates
+
+# -------- SCENARIO TABLE HEADER --------
+write A26 'SCENARIO COMPARISON
+highlight A26 gray
+highlight B26 gray
+highlight C26 gray
+highlight D26 gray
+highlight E26 gray
+highlight F26 gray
+highlight G26 gray
+highlight H26 gray
+
+write A27 'Cycle
+write B27 'Avg Annual Tax
+write C27 'Conv Room
+write D27 'Conv Tax Now
+write E27 'FV Benefit
+write F27 'Cap-Gains Avoided
+write G27 'Net Value
+write H27 'vs Annual
+style A27 bold
+style B27 bold
+style C27 bold
+style D27 bold
+style E27 bold
+style F27 bold
+style G27 bold
+style H27 bold
+
+# -------- N=1 (annual baseline) --------
+write A28 '1-yr (annual)
+write I28 =BUNCHING_SCENARIO(1, IN_AGI, IN_GIVING, IN_FUTURE, IN_NOW, IN_GROWTH, IN_YEARS_WD, IN_SALT, IN_STD_DED, IN_STOCK_CAP, IN_UT, IN_BRACKET, IN_BASIS, IN_LTCG, IN_PROJ)
+write B28 =INDEX(I28, 1)
+write C28 =INDEX(I28, 2)
+write D28 =INDEX(I28, 3)
+write E28 =INDEX(I28, 4)
+write F28 =INDEX(I28, 5)
+write G28 =INDEX(I28, 6)
+write H28 0
+name G28 NET_BASELINE
+
+# -------- N=2 --------
+write A29 '2-yr
+write I29 =BUNCHING_SCENARIO(2, IN_AGI, IN_GIVING, IN_FUTURE, IN_NOW, IN_GROWTH, IN_YEARS_WD, IN_SALT, IN_STD_DED, IN_STOCK_CAP, IN_UT, IN_BRACKET, IN_BASIS, IN_LTCG, IN_PROJ)
+write B29 =INDEX(I29, 1)
+write C29 =INDEX(I29, 2)
+write D29 =INDEX(I29, 3)
+write E29 =INDEX(I29, 4)
+write F29 =INDEX(I29, 5)
+write G29 =INDEX(I29, 6)
+write H29 =G29-NET_BASELINE
+
+# -------- N=3 --------
+write A30 '3-yr
+write I30 =BUNCHING_SCENARIO(3, IN_AGI, IN_GIVING, IN_FUTURE, IN_NOW, IN_GROWTH, IN_YEARS_WD, IN_SALT, IN_STD_DED, IN_STOCK_CAP, IN_UT, IN_BRACKET, IN_BASIS, IN_LTCG, IN_PROJ)
+write B30 =INDEX(I30, 1)
+write C30 =INDEX(I30, 2)
+write D30 =INDEX(I30, 3)
+write E30 =INDEX(I30, 4)
+write F30 =INDEX(I30, 5)
+write G30 =INDEX(I30, 6)
+write H30 =G30-NET_BASELINE
+
+# -------- N=4 --------
+write A31 '4-yr
+write I31 =BUNCHING_SCENARIO(4, IN_AGI, IN_GIVING, IN_FUTURE, IN_NOW, IN_GROWTH, IN_YEARS_WD, IN_SALT, IN_STD_DED, IN_STOCK_CAP, IN_UT, IN_BRACKET, IN_BASIS, IN_LTCG, IN_PROJ)
+write B31 =INDEX(I31, 1)
+write C31 =INDEX(I31, 2)
+write D31 =INDEX(I31, 3)
+write E31 =INDEX(I31, 4)
+write F31 =INDEX(I31, 5)
+write G31 =INDEX(I31, 6)
+write H31 =G31-NET_BASELINE
+
+# -------- N=5 --------
+write A32 '5-yr
+write I32 =BUNCHING_SCENARIO(5, IN_AGI, IN_GIVING, IN_FUTURE, IN_NOW, IN_GROWTH, IN_YEARS_WD, IN_SALT, IN_STD_DED, IN_STOCK_CAP, IN_UT, IN_BRACKET, IN_BASIS, IN_LTCG, IN_PROJ)
+write B32 =INDEX(I32, 1)
+write C32 =INDEX(I32, 2)
+write D32 =INDEX(I32, 3)
+write E32 =INDEX(I32, 4)
+write F32 =INDEX(I32, 5)
+write G32 =INDEX(I32, 6)
+write H32 =G32-NET_BASELINE
+
+# -------- N=6 --------
+write A33 '6-yr
+write I33 =BUNCHING_SCENARIO(6, IN_AGI, IN_GIVING, IN_FUTURE, IN_NOW, IN_GROWTH, IN_YEARS_WD, IN_SALT, IN_STD_DED, IN_STOCK_CAP, IN_UT, IN_BRACKET, IN_BASIS, IN_LTCG, IN_PROJ)
+write B33 =INDEX(I33, 1)
+write C33 =INDEX(I33, 2)
+write D33 =INDEX(I33, 3)
+write E33 =INDEX(I33, 4)
+write F33 =INDEX(I33, 5)
+write G33 =INDEX(I33, 6)
+write H33 =G33-NET_BASELINE
+
+# -------- READING NOTES --------
+write A35 'HOW TO READ THIS
+highlight A35 gray
+write A36 'Avg Annual Tax
+write B36 'Projection-period fed+UT tax averaged per year (lower = better)
+write A37 'Conv Room
+write B37 'Roth-conversion headroom up to top of 24% bracket, summed across projection
+write A38 'Conv Tax Now
+write B38 'Upfront tax owed if every year of conversion room is exercised
+write A39 'FV Benefit
+write B39 'FV advantage of converting at NOW_RATE vs FUTURE_RATE (midpoint-adjusted)
+write A40 'Cap-Gains Avoided
+write B40 'LTCG tax avoided by donating appreciated stock — same across cycles
+write A41 'Net Value
+write B41 '-(tax - FV benefit - cap-gains avoided); higher = better strategy
+write A42 'vs Annual
+write B42 'How much better than the 1-yr baseline; positive = bunching wins
+
+# -------- FORMATTING --------
+default-format currency 0
+format B6 currency 0
+format B7 currency 0
+format B10 percentage 2
+format B11 percentage 2
+format B12 percentage 1
+format B13 number 0
+format B16 currency 0
+format B17 currency 0
+format B18 percentage 0
+format B19 percentage 2
+format B20 currency 0
+format B21 percentage 0
+format B22 percentage 2
+format B23 number 0
+
+save

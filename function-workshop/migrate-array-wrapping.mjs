@@ -15,8 +15,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Import shared infrastructure
-const frontendUtils = resolve(__dirname, '../frontend/src/utils');
-const frontendEngines = resolve(__dirname, '../frontend/src/Engines');
+const frontendUtils = resolve(__dirname, '../src/utils');
+const frontendEngines = resolve(__dirname, '../src/Engines');
 
 const { generateXml } = await import(pathToFileURL(resolve(frontendUtils, 'xmlSerializer.js')).href);
 const { parseFormula } = await import(pathToFileURL(resolve(frontendUtils, 'formulaParser.js')).href);

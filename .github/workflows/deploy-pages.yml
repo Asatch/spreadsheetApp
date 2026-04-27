@@ -26,15 +26,13 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: frontend
 
       - name: Build
         run: npm run build
-        working-directory: frontend
         env:
           BASE_PATH: /spreadsheetApp/
 
@@ -42,7 +40,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: dist
 
       - name: Deploy
         id: deployment

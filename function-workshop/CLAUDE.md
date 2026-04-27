@@ -288,7 +288,7 @@ node transpile.mjs --workfolder workfolders/my-suite --register --xml FUNC.xml F
 
 ### `export_zip.mjs` — Package workfolder → zip
 
-Exports both functions and display sheets. Functions get XML + JS in `functions/` and `spreadsheets/`. Display sheets (no outputs) get XML in `spreadsheets/` only — they're viewable but not callable.
+Exports functions, display sheets, and scenario analyses. Functions get XML + JS in `functions/` and `spreadsheets/`. Display sheets (no outputs) get XML in `spreadsheets/` only — they're viewable but not callable. Scenario files in `<workfolder>/scenarios/*.json` ship as `scenarios/<id>.json` plus a `scenarios` section in `manifest.json`. Output is manifest **v2.1**.
 
 ```bash
 node export_zip.mjs --workfolder workfolders/my-suite
@@ -300,6 +300,57 @@ node export_zip.mjs --workfolder workfolders/my-suite FUNC1 FUNC2  # specific fu
 ```bash
 node import_zip.mjs --workfolder workfolders/my-suite path/to/package.zip
 ```
+
+## Scenario Analyses
+
+A **scenario analysis** is a saved Scenario Analysis configuration — input categorizations (`fixed` / `decision` / `unknown`) and value lists for sweeping a function across a cross-product of inputs. They live alongside the functions they analyze and ship with the package zip, so importing a zip restores the analyses ready to run.
+
+### Authoring as files
+
+Drop a JSON file per scenario into `<workfolder>/scenarios/`. Single-file format — metadata and inputs together:
+
+```json
+// workfolders/my-retirement/scenarios/retire-age-sweep.json
+{
+  "name": "Retire-age × Healthcare-inflation sweep",
+  "functionName": "RETIREMENT_SENSITIVITY",
+  "inputs": {
+    "M_RETIRE_AGE":              { "category": "decision", "values": [54, 56, 58, 60, 62] },
+    "HEALTHCARE_INFLATION_DIFF": { "category": "unknown",  "values": [0.02, 0.025, 0.05] },
+    "SPENDING":                  { "category": "fixed",    "values": [110000] }
+  }
+}
+```
+
+Required fields: `name`, `functionName`, `inputs`. Optional: `folderId` (default `null`).
+
+The export script assigns the scenario UUID and `createdAt`/`updatedAt` timestamps, and resolves `functionName` → `functionId` from the workfolder registry. The referenced function must be a callable function being exported (not a display sheet, not omitted by an explicit function filter).
+
+Each input entry has:
+- `category` — one of `fixed` (single value), `decision` (sweep — values you control), `unknown` (sweep — values outside your control)
+- `values` — array of values to use. For `fixed`, exactly one value; for `decision`/`unknown`, the values to sweep over
+
+### Manifest v2.1 shape
+
+```json
+{
+  "version": "2.1",
+  "scenarios": {
+    "scenario-{uuid}": {
+      "name": "...",
+      "functionId": "{function-uuid}",
+      "functionName": "RETIREMENT_SENSITIVITY",
+      "createdAt": "...",
+      "updatedAt": "...",
+      "folderId": null
+    }
+  }
+}
+```
+
+The corresponding `scenarios/{scenario-uuid}.json` holds `{ inputs, results: null }` — the `inputs` object is copied verbatim from the source file, and `results` is always `null` at export time (analyses are run in the browser).
+
+The `scenarios` section is omitted entirely when the workfolder has no `scenarios/` directory (or it's empty); old (v2.0) importers that don't know about scenarios simply ignore the new section.
 
 ## XML Format (Schema 5)
 

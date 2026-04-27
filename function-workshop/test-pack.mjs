@@ -32,8 +32,8 @@ import './dom-polyfill.mjs';
 
 import { parseXML } from './xml-parser.mjs';
 import { loadRegistry, buildTranspilerCustomFunctions } from './function-loader.mjs';
-import { transpileToLang } from '../frontend/src/transpiler/index.js';
-import { reconstructSyntaxObject } from '../frontend/src/transpiler/codegenJavascript.js';
+import { transpileToLang } from '../src/transpiler/index.js';
+import { reconstructSyntaxObject } from '../src/transpiler/codegenJavascript.js';
 import { runTests as runJsTests } from './eval.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
