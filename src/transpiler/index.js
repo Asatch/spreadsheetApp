@@ -601,6 +601,7 @@ export function transpileToLang(xmlContent, customFunctions = {}, syntaxObject, 
 
     return { code, error: null };
   } catch (e) {
+    console.error('[transpileToLang]', e);
     return { code: null, error: e.message || String(e) };
   }
 }

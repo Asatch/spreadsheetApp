@@ -91,10 +91,12 @@ describe('xmlSerializer', () => {
   });
 
   describe('extractSignatureFromXml', () => {
-    function makeXml({ nodes = '', outputs = '', meta = '' } = {}) {
+    function makeXml({ nodes = '', outputs = '', meta = '', namedNodes = '', deps = '' } = {}) {
       return `<?xml version="1.0"?>
         <CodeCalculation>
           <Nodes>${nodes}</Nodes>
+          <NamedNodes>${namedNodes}</NamedNodes>
+          <NodeDependencies>${deps}</NodeDependencies>
           <Outputs>${outputs}</Outputs>
           <SpreadsheetMeta version="1.0">${meta}</SpreadsheetMeta>
         </CodeCalculation>`;
@@ -139,6 +141,46 @@ describe('xmlSerializer', () => {
       });
       const sig = extractSignatureFromXml(xml);
       expect(sig.outputs[0].format).toEqual(defaultFmt);
+    });
+
+    it('should resolve PROCEED pass-through outputs to source cell format', () => {
+      // Mirrors the BROKE_AGE pattern: a named PROCEED node whose canonical
+      // is =B63, with no NamedNode entry of its own.
+      const cellFmt = { subCategory: 'number', decimalPlaces: 0 };
+      const defaultFmt = { subCategory: 'currency', symbol: '$', decimalPlaces: 0 };
+      const xml = makeXml({
+        nodes: `
+          <Node node_id="100" node_type="function" data_type="Number" key="B63" function_name="SOMEFUNC"/>
+          <Node node_id="101" node_type="function" data_type="Number" key="BROKE_AGE" function_name="PROCEED"/>
+        `,
+        deps: `<NodeDependency child_node_id="101" parent_node_id="100" parent_position="0"/>`,
+        namedNodes: `<NamedNode node_name="B63" node_name_type="address" node_id="100"/>`,
+        outputs: `<Output key="BROKE_AGE" output_name="BROKE_AGE" node_id="101" data_type="Number" output_order="0"/>`,
+        meta: `
+          <FormatRule cellKey="B63" formats='${JSON.stringify({ NUMBER: cellFmt })}'/>
+          <Default type="NUMBER" settings='${JSON.stringify(defaultFmt)}'/>
+        `,
+      });
+      const sig = extractSignatureFromXml(xml);
+      expect(sig.outputs[0].format).toEqual(cellFmt);
+    });
+
+    it('should resolve named-range output to its cell address for format lookup', () => {
+      const cellFmt = { subCategory: 'number', decimalPlaces: 0 };
+      const defaultFmt = { subCategory: 'currency', symbol: '$', decimalPlaces: 2 };
+      const xml = makeXml({
+        outputs: `<Output key="MIN_BALANCE_AGE" output_name="MIN_BALANCE_AGE" data_type="Number" output_order="0"/>`,
+        namedNodes: `
+          <NamedNode node_name="B7" node_name_type="address" node_id="42"/>
+          <NamedNode node_name="MIN_BALANCE_AGE" node_name_type="alias" node_id="42"/>
+        `,
+        meta: `
+          <FormatRule cellKey="B7" formats='${JSON.stringify({ NUMBER: cellFmt })}'/>
+          <Default type="NUMBER" settings='${JSON.stringify(defaultFmt)}'/>
+        `,
+      });
+      const sig = extractSignatureFromXml(xml);
+      expect(sig.outputs[0].format).toEqual(cellFmt);
     });
 
     it('should prefer cell format over spreadsheet default', () => {

@@ -249,11 +249,13 @@ export function createIdenticalModuleConfigs({
       onOpen: { type: 'function', value: callbacks.onOpenSpreadsheet },
       onNewStandard: { type: 'function', value: (folderId) => {
         const url = new URL(appBasePath('standard'), window.location.origin);
+        url.searchParams.set('new', 'standard');
         if (folderId) url.searchParams.set('folder', folderId);
         window.location.href = url.toString();
       }},
       onNewLoop: { type: 'function', value: (folderId) => {
         const url = new URL(appBasePath('loop'), window.location.origin);
+        url.searchParams.set('new', 'loop');
         if (folderId) url.searchParams.set('folder', folderId);
         window.location.href = url.toString();
       }},

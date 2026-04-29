@@ -750,6 +750,13 @@ export function createStorageEngine() {
       const folderId = urlParams.get('folder') || null;
       currentSpreadsheetId = await createSpreadsheet(name, type, { folderId });
       await autoSave();
+      // Replace ?new=...&folder=... with ?id=<newId> so refresh reopens this
+      // sheet instead of falling back to a fresh blank or the seeded entry.
+      const url = new URL(window.location.href);
+      url.searchParams.delete('new');
+      url.searchParams.delete('folder');
+      url.searchParams.set('id', currentSpreadsheetId);
+      window.history.replaceState({}, '', url);
     } finally {
       isCreatingNew = false;
     }

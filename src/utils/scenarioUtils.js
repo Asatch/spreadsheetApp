@@ -142,3 +142,143 @@ export function formatOutputVal(val, outputName, outputSig) {
   if (outputEntry?.format) return formatNumber(val, outputEntry.format);
   return formatNumber(val, { subCategory: 'number', useAdaptiveDecimals: false, decimalPlaces: 2 });
 }
+
+/**
+ * Build a binary decision tree that explains which inputs separate runs that
+ * pass an output filter ("in") from those that don't ("out").
+ *
+ * Numeric inputs only. For each input we evaluate every midpoint between
+ * adjacent distinct values as a candidate split, then pick the split that
+ * minimizes weighted Gini impurity. Recurses up to maxDepth.
+ *
+ * @param {Array} runs - rows of { inputs, outputs }
+ * @param {(run) => boolean} isPositive - labels each run "in" (true) or "out"
+ * @param {string[]} inputNames - candidate input names (typically varying & not pinned)
+ * @param {{maxDepth?: number, minLeaf?: number}} opts
+ * @returns tree node: { total, positive, split?: {name, threshold, leftMax, rightMin}, left?, right? }
+ */
+export function buildDecisionTree(runs, isPositive, inputNames, opts = {}) {
+  const maxDepth = opts.maxDepth ?? 3;
+  const minLeaf = opts.minLeaf ?? 2;
+
+  // Pre-compute numeric value access per input; skip non-numeric inputs entirely.
+  const numericInputs = inputNames.filter(name =>
+    runs.some(r => typeof toNum(r.inputs[name]) === 'number')
+  );
+
+  function gini(rs) {
+    if (rs.length === 0) return 0;
+    let pos = 0;
+    for (const r of rs) if (isPositive(r)) pos++;
+    const p = pos / rs.length;
+    return 1 - p * p - (1 - p) * (1 - p);
+  }
+
+  function bestSplit(rs) {
+    let best = null;
+    const parentImpurity = gini(rs);
+    for (const name of numericInputs) {
+      const values = [];
+      for (const r of rs) {
+        const v = toNum(r.inputs[name]);
+        if (v !== null) values.push(v);
+      }
+      if (values.length < 2) continue;
+      const unique = [...new Set(values)].sort((a, b) => a - b);
+      if (unique.length < 2) continue;
+      for (let i = 0; i < unique.length - 1; i++) {
+        const leftMax = unique[i];
+        const rightMin = unique[i + 1];
+        const threshold = (leftMax + rightMin) / 2;
+        const left = [];
+        const right = [];
+        for (const r of rs) {
+          const v = toNum(r.inputs[name]);
+          if (v === null) continue;
+          if (v <= threshold) left.push(r);
+          else right.push(r);
+        }
+        if (left.length < minLeaf || right.length < minLeaf) continue;
+        const w = (left.length * gini(left) + right.length * gini(right)) / rs.length;
+        if (parentImpurity - w < 1e-9) continue; // no real improvement
+        if (!best || w < best.weightedGini) {
+          best = { name, threshold, leftMax, rightMin, left, right, weightedGini: w };
+        }
+      }
+    }
+    return best;
+  }
+
+  function nodeStats(rs) {
+    let pos = 0;
+    for (const r of rs) if (isPositive(r)) pos++;
+    return { total: rs.length, positive: pos };
+  }
+
+  function build(rs, depth) {
+    const stats = nodeStats(rs);
+    const base = { ...stats, _runs: rs };
+    if (depth >= maxDepth || stats.total < minLeaf * 2 || stats.positive === 0 || stats.positive === stats.total) {
+      return base;
+    }
+    const split = bestSplit(rs);
+    if (!split) return base;
+    return {
+      ...base,
+      split: {
+        name: split.name,
+        threshold: split.threshold,
+        leftMax: split.leftMax,
+        rightMin: split.rightMin,
+      },
+      left: build(split.left, depth + 1),
+      right: build(split.right, depth + 1),
+    };
+  }
+
+  return build(runs, 0);
+}
+
+/**
+ * Expand a single leaf one level deeper. Walks the tree to the given path
+ * (e.g. "LR" = left then right), and if that node is a leaf with retained
+ * runs, replaces it with a depth-1 subtree.  Stale paths are skipped silently.
+ *
+ * @param {object} tree - tree from buildDecisionTree
+ * @param {string} path - "L"/"R" sequence; "" means root
+ * @param {(run) => boolean} isPositive
+ * @param {string[]} inputNames
+ * @param {{minLeaf?: number}} opts
+ * @returns the (mutated) tree
+ */
+export function expandTreeNode(tree, path, isPositive, inputNames, opts = {}) {
+  let parent = null;
+  let lastKey = null;
+  let node = tree;
+  for (const c of path) {
+    const key = c === 'L' ? 'left' : c === 'R' ? 'right' : null;
+    if (!key || !node[key]) return tree;
+    parent = node;
+    lastKey = key;
+    node = node[key];
+  }
+  if (node.split || !node._runs) return tree; // already split or no runs to work with
+  const sub = buildDecisionTree(node._runs, isPositive, inputNames, { maxDepth: 1, minLeaf: opts.minLeaf ?? 2 });
+  if (!sub.split) return tree; // nothing useful to split on
+  if (parent === null) {
+    // expanding root — overwrite tree fields
+    Object.assign(tree, sub);
+  } else {
+    parent[lastKey] = sub;
+  }
+  return tree;
+}
+
+function toNum(v) {
+  if (typeof v === 'number' && !isNaN(v)) return v;
+  if (typeof v === 'string') {
+    const n = Number(v);
+    if (!isNaN(n)) return n;
+  }
+  return null;
+}

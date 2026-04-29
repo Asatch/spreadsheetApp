@@ -26,10 +26,7 @@ if command -v lsof &>/dev/null && lsof -i ":$PORT" &>/dev/null; then
   exit 0
 fi
 
-echo "Starting sc on $URL"
-echo "Data stored in $(pwd)/persist/"
-echo "Press Ctrl+C to stop."
-echo ""
+echo "Starting sc on $URL ..."
 
 python3 server.py &
 SERVER_PID=$!

@@ -60,6 +60,12 @@ const versionId = urlParams.get('versionId');
 const argsParam = urlParams.get('args');
 const spreadsheetId = urlParams.get('id');
 const importUrl = urlParams.get('import');
+// "+ New" sets ?new=standard|loop so we skip the entry-sheet auto-load and,
+// in single-bundle exports (where loop.html doesn't exist), pick the right type.
+const newSheetType = urlParams.get('new') === 'loop' ? 'loop'
+  : urlParams.get('new') === 'standard' ? 'standard'
+  : null;
+const isNewSheetFlow = newSheetType !== null;
 
 let drilldownConfig = null;
 if (functionId) {
@@ -135,12 +141,15 @@ if (appMode === 'viewer') {
     if (await needsReseed(preloadedOpfs, manifest)) {
       const overlay = showBootOverlay('Preparing spreadsheet\u2026');
       try {
-        viewerEntryConfig = await loadEmbeddedData(preloadedOpfs);
+        const seeded = await loadEmbeddedData(preloadedOpfs);
+        // First-time seed via "+ New": populate OPFS but stay on the blank sheet.
+        if (!isNewSheetFlow) viewerEntryConfig = seeded;
       } finally {
         overlay.remove();
       }
-    } else if (!spreadsheetId && manifest.entrySheetId) {
-      // OPFS already seeded and no explicit ?id= — recover entry from manifest
+    } else if (!spreadsheetId && !isNewSheetFlow && manifest.entrySheetId) {
+      // OPFS already seeded and no explicit ?id= — recover entry from manifest.
+      // Skip when ?new= is set: the user clicked "+ New" and expects a blank sheet.
       viewerEntryConfig = {
         entrySheetId: manifest.entrySheetId,
         entrySheetType: manifest.sheets[manifest.entrySheetId].type || 'standard',
@@ -242,6 +251,10 @@ await app.mountUI(container);
 
 if (drilldownConfig) {
   // Handled by orchestrator during mountUI — nothing else to load
+
+} else if (newSheetType === 'loop' && currentSheetType !== 'loop') {
+  // Single-bundle exports serve standard-grid HTML; swap orchestrator for + New Loop.
+  await switchToSheetType('loop');
 
 } else if (viewerEntryConfig?.entrySheetId) {
   // Viewer mode, or first-load seeded data in disk-persistence/local mode

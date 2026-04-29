@@ -1049,8 +1049,15 @@ export function createOrchestrationCore() {
       // Export current sheet as portable HTML (hosted builds only; the single-
       // bundle variant has no sibling export/index.html to fetch)
       onExportHtml: import.meta.env?.SC_SINGLE_BUNDLE ? undefined : async () => {
-        const currentId = deps.storageEngine.getCurrentSpreadsheetId();
-        if (!currentId) return;
+        // In preview mode the orchestrator runs against scratchpad memory and
+        // never calls setCurrentSpreadsheetId, so fall back to the source sheet
+        // the published function was built from — its OPFS files back the view.
+        const currentId = deps.storageEngine.getCurrentSpreadsheetId()
+          || (deps.header.isInPreviewMode() ? deps.header.getPreviewInfo()?.basedOnSpreadsheetId : null);
+        if (!currentId) {
+          alert('No spreadsheet loaded');
+          return;
+        }
 
         try {
           const metadata = await deps.storageEngine.getSheetMetadata(currentId);

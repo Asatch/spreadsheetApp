@@ -819,6 +819,61 @@ export function extractSignatureFromXml(xmlString) {
     }
   }
 
+  // Build alias → cell address map by joining NamedNode entries on node_id.
+  // Format rules are keyed by cell address, but a named output's key is the alias,
+  // so we need to resolve it before looking up the format.
+  const nodeIdToAddress = {};
+  const aliasToNodeId = {};
+  for (const nn of root.querySelectorAll('NamedNodes > NamedNode')) {
+    const nodeId = nn.getAttribute('node_id');
+    const nameType = nn.getAttribute('node_name_type');
+    const nodeName = nn.getAttribute('node_name');
+    if (!nodeId || !nodeName) continue;
+    if (nameType === 'address') nodeIdToAddress[nodeId] = nodeName;
+    else if (nameType === 'alias') aliasToNodeId[nodeName] = nodeId;
+  }
+
+  // Build node lookup for PROCEED pass-through resolution. Many outputs are
+  // named PROCEED nodes (e.g. BROKE_AGE = =B63) with no NamedNode entry of
+  // their own; the format rule lives on the underlying cell.
+  const nodeById = {};
+  for (const node of root.querySelectorAll('Nodes > Node')) {
+    const nid = node.getAttribute('node_id');
+    if (nid) nodeById[nid] = {
+      key: node.getAttribute('key'),
+      function_name: node.getAttribute('function_name'),
+      parents: [],
+    };
+  }
+  for (const dep of root.querySelectorAll('NodeDependencies > NodeDependency')) {
+    const child = dep.getAttribute('child_node_id');
+    const parent = dep.getAttribute('parent_node_id');
+    const pos = parseInt(dep.getAttribute('parent_position') || '0', 10);
+    if (nodeById[child] && parent) nodeById[child].parents[pos] = parent;
+  }
+  const isCellAddress = (k) => !!k && /^[A-Z]+\d+$/.test(k);
+  const resolveOutputAddress = (name, nodeId) => {
+    // Direct alias resolution (named-range output pointing at a cell).
+    const aliasNid = aliasToNodeId[name];
+    if (aliasNid && nodeIdToAddress[aliasNid]) return nodeIdToAddress[aliasNid];
+    // Walk PROCEED pass-throughs from the output node down to a cell address.
+    const visited = new Set();
+    let curId = nodeId;
+    while (curId && !visited.has(curId)) {
+      visited.add(curId);
+      const n = nodeById[curId];
+      if (!n) break;
+      if (isCellAddress(n.key)) return n.key;
+      if (nodeIdToAddress[curId]) return nodeIdToAddress[curId];
+      if (n.function_name === 'PROCEED' && n.parents[0]) {
+        curId = n.parents[0];
+        continue;
+      }
+      break;
+    }
+    return null;
+  };
+
   // Extract outputs from Output elements, attaching format when available
   const outputs = [];
   const outputEls = Array.from(root.querySelectorAll('Outputs > Output')).sort((a, b) => {
@@ -827,10 +882,12 @@ export function extractSignatureFromXml(xmlString) {
   });
   for (const output of outputEls) {
     const name = output.getAttribute('key') || output.getAttribute('output_name');
+    const nodeId = output.getAttribute('node_id');
     const type = output.getAttribute('data_type') || 'Number';
     if (name) {
       const entry = { name, type };
-      const format = formatRules[name] || numberDefault;
+      const address = resolveOutputAddress(name, nodeId);
+      const format = formatRules[name] || (address && formatRules[address]) || numberDefault;
       if (format) entry.format = format;
       outputs.push(entry);
     }

@@ -16,7 +16,7 @@
  * - Event delegation on the container (bound once, survives DOM replacements)
  */
 
-import { crossProduct, sampleCrossProduct, findTopDriver, formatNum, parseInputValue, formatOutputVal as formatOutputValUtil } from '../utils/scenarioUtils.js';
+import { crossProduct, sampleCrossProduct, findTopDriver, formatNum, parseInputValue, formatOutputVal as formatOutputValUtil, buildDecisionTree, expandTreeNode } from '../utils/scenarioUtils.js';
 import { sheetUrl as buildSheetUrl } from '../utils/appMode.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
 
@@ -46,6 +46,7 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
   let fullDataPage = 0;          // pagination for pin & explore
   let hiddenOutputs = new Set(); // output names to hide from results
   let outputFilters = {};    // { outputName: { min: number|null, max: number|null } }
+  let dtExpandedPaths = []; // ordered list of "L"/"R" paths the user expanded in the decision tree
   let setupCollapsed = false;
   let fullScreenMode = false;
   let isSwitching = false;  // re-entrancy guard for tab switching
@@ -499,12 +500,13 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
       { id: 'headline', label: 'Headline' },
       { id: 'one-at-a-time', label: 'One at a Time' },
       { id: 'pinned', label: 'Pin & Explore' },
+      { id: 'decision-tree', label: 'Decision Tree' },
     ];
     const tabsHtml = tabs.map(t =>
       `<button class="scenario-result-tab${resultsView === t.id ? ' active' : ''}" data-view="${t.id}">${t.label}</button>`
     ).join('')
       + '<button class="scenario-download-csv">Download CSV</button>'
-      + (resultsView === 'pinned' ? `<button class="scenario-fullscreen-btn">${fullScreenMode ? 'Exit Full Screen' : 'Full Screen'}</button>` : '');
+      + `<button class="scenario-fullscreen-btn">${fullScreenMode ? 'Exit Full Screen' : 'Full Screen'}</button>`;
 
     const allOutputs = getAllOutputNames(results.runs);
     const outputTogglesHtml = allOutputs.length > 1 ? `
@@ -553,6 +555,7 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
       case 'headline': return renderHeadlineView(filteredRuns);
       case 'one-at-a-time': return renderOneAtATimeView(filteredRuns);
       case 'pinned': return renderPinnedView(filteredRuns);
+      case 'decision-tree': return renderDecisionTreeView();
       default: return renderHeadlineView(filteredRuns);
     }
   }
@@ -856,6 +859,127 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
       ${pinHtml}
       ${tableHtml}
       ${selectionBar}
+    `;
+  }
+
+  function renderDecisionTreeView() {
+    const allRuns = scenarioData?.results?.runs || [];
+    const universe = applyPinFilter(allRuns);
+
+    if (universe.length === 0) {
+      return '<div class="scenario-empty">No runs in scope (pins exclude everything).</div>';
+    }
+    if (!hasActiveFilters()) {
+      return `
+        <div class="dt-explainer">
+          <p>The decision tree explains which inputs determine whether a run lands in your <em>filtered</em> set.</p>
+          <p>Set one or more output filters above to see what drives runs in vs out.</p>
+        </div>`;
+    }
+
+    const filteredSet = new Set(getFilteredRuns(universe));
+    const isPositive = (r) => filteredSet.has(r);
+    const positiveCount = filteredSet.size;
+
+    if (positiveCount === 0) {
+      return '<div class="scenario-empty">No runs match the filter — nothing to explain.</div>';
+    }
+    if (positiveCount === universe.length) {
+      return '<div class="scenario-empty">All runs match the filter — nothing to split on.</div>';
+    }
+
+    const varying = getVaryingInputs();
+    const candidateInputs = varying.filter(n => pinnedValues[n] === undefined);
+    if (candidateInputs.length === 0) {
+      return '<div class="scenario-empty">No varying inputs available to split on.</div>';
+    }
+
+    const tree = buildDecisionTree(universe, isPositive, candidateInputs, { maxDepth: 3, minLeaf: 2 });
+    for (const path of dtExpandedPaths) {
+      expandTreeNode(tree, path, isPositive, candidateInputs, { minLeaf: 2 });
+    }
+    const baseRate = positiveCount / universe.length;
+
+    if (!tree.split) {
+      return `
+        <div class="scenario-empty">
+          <div>${universe.length.toLocaleString()} runs in scope · ${positiveCount.toLocaleString()} match (${(baseRate*100).toFixed(0)}%).</div>
+          <div>No single input separates the matched runs cleanly enough to explain the filter.</div>
+        </div>`;
+    }
+
+    return `
+      <div class="dt-summary">
+        <strong>${universe.length.toLocaleString()}</strong> runs in scope ·
+        <strong>${positiveCount.toLocaleString()}</strong> match the filter
+        (<strong>${(baseRate*100).toFixed(0)}%</strong> base rate)
+      </div>
+      <div class="dt-legend">
+        <span class="dt-legend-item"><span class="dt-swatch dt-swatch-in"></span>match filter</span>
+        <span class="dt-legend-item"><span class="dt-swatch dt-swatch-out"></span>do not match</span>
+      </div>
+      <div class="dt-tree-wrapper">
+        ${renderTreeSubtree(tree, baseRate, '')}
+      </div>
+    `;
+  }
+
+  function renderTreeSubtree(node, baseRate, path) {
+    const matchPct = node.total > 0 ? (node.positive / node.total) : 0;
+    const matchPctStr = (matchPct * 100).toFixed(0);
+    const lift = matchPct - baseRate;
+    let liftBadge = '';
+    if (Math.abs(lift) >= 0.02) {
+      const cls = lift > 0 ? 'dt-lift-up' : 'dt-lift-down';
+      const sign = lift > 0 ? '+' : '';
+      liftBadge = `<span class="dt-lift ${cls}">${sign}${(lift*100).toFixed(0)} pts</span>`;
+    }
+
+    const inPct = (matchPct * 100).toFixed(2);
+    const isLeaf = !node.split;
+    const nodeClass = isLeaf ? 'dt-node dt-node-leaf' : 'dt-node';
+
+    const box = `
+      <div class="${nodeClass}">
+        <div class="dt-node-stats">
+          <span class="dt-node-match">${matchPctStr}%</span>
+          ${liftBadge}
+        </div>
+        <div class="dt-node-bar">
+          <div class="dt-node-bar-in" style="width: ${inPct}%"></div>
+        </div>
+        <div class="dt-node-counts">
+          ${node.positive.toLocaleString()} of ${node.total.toLocaleString()} runs
+        </div>
+      </div>
+    `;
+
+    if (isLeaf) {
+      const canExpand = node.positive > 0 && node.positive < node.total && node.total >= 4;
+      const expandBtn = canExpand
+        ? `<button class="dt-expand" data-dt-path="${path}" title="Split this node further">+</button>`
+        : '';
+      return `<div class="dt-subtree">${box}${expandBtn}</div>`;
+    }
+
+    const splitLabel = `${escapeHtml(node.split.name)} ≤ ${formatNum(node.split.leftMax)}`;
+
+    return `
+      <div class="dt-subtree">
+        ${box}
+        <div class="dt-split-label">${splitLabel}?</div>
+        <div class="dt-trunk"></div>
+        <div class="dt-children">
+          <div class="dt-child">
+            <div class="dt-branch-label dt-branch-yes">yes</div>
+            ${renderTreeSubtree(node.left, baseRate, path + 'L')}
+          </div>
+          <div class="dt-child">
+            <div class="dt-branch-label dt-branch-no">no</div>
+            ${renderTreeSubtree(node.right, baseRate, path + 'R')}
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -1421,6 +1545,7 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
     // Clear output filters
     if (e.target.closest('.scenario-clear-filters')) {
       outputFilters = {};
+      dtExpandedPaths = [];
       updateResultsPanel();
       return;
     }
@@ -1444,6 +1569,15 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
       resultsView = resultTab.dataset.view;
       fullDataPage = 0;
       updateResultsPanel();
+      return;
+    }
+
+    // Decision tree: expand a leaf one more level
+    const dtExpand = e.target.closest('.dt-expand');
+    if (dtExpand) {
+      const path = dtExpand.dataset.dtPath ?? '';
+      if (!dtExpandedPaths.includes(path)) dtExpandedPaths.push(path);
+      updateResultsContent();
       return;
     }
 
@@ -1639,6 +1773,7 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
       if (outputFilters[outputName].min == null && outputFilters[outputName].max == null) {
         delete outputFilters[outputName];
       }
+      dtExpandedPaths = [];
       updateFiltersAndContent();
       return;
     }
@@ -1652,6 +1787,7 @@ export function createScenarioAnalysis({ scenarioEngine, container, scenarioId, 
       } else {
         pinnedValues[inputName] = parseInputValue(val);
       }
+      dtExpandedPaths = [];
       updateResultsContent();
       return;
     }
