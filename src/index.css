@@ -1676,26 +1676,26 @@ tr[data-sticky-row] > td.grid-separator-col {
   }
 
   &[data-has-content] { z-index: 2; }
-  /* Overflow cells: extend ::before to cover adjacent borders behind overflowing text */
+  /* Overflow cells: extend ::before to cover adjacent borders behind overflowing text.
+     --overflow-width is snapped (in JS) to a column boundary so the background ends
+     on a column edge instead of stopping mid-cell where the glyphs end. */
   &[data-has-overflow]::before {
     right: auto;                /* release right edge from inset: 0 */
-    min-width: 100%;            /* at least fill the cell */
-    width: max-content;         /* grow to fit text */
-    max-width: calc(100% + var(--overflow-width, 0px));  /* don't exceed available space */
+    width: calc(100% + var(--overflow-width, 0px));
     background-color: inherit;
   }
   /* Extend ::after to match ::before so selection tint covers overflowing text */
   &[data-has-overflow]::after {
     content: var(--cell-value, '');
     right: auto;
-    min-width: 100%;
-    width: max-content;
-    max-width: calc(100% + var(--overflow-width, 0px));
+    width: calc(100% + var(--overflow-width, 0px));
     padding: 12px 6px;
     white-space: nowrap;
     color: transparent;
   }
-  &:hover { box-shadow: var(--shadow-inset-lighten); }
+  /* Hover lighten goes on ::before (not the cell), so it follows the snapped
+     extension on overflow/active cells — matching the area click states cover. */
+  &:hover::before { box-shadow: var(--shadow-inset-lighten); }
   &:focus { outline: none; }
   &.active-cell { z-index: 10; }
 }
@@ -1715,13 +1715,14 @@ tr[data-sticky-row] > td.grid-separator-col {
   mix-blend-mode: screen;
 }
 
-/* Active cell: show full content beyond cell boundaries.
+/* Active cell: show full content beyond cell boundaries, snapped to a
+   column boundary so the background ends on a column edge.
+   --active-overflow-width is set in JS and walks all neighbors (not just
+   empty ones), since the active cell can extend over cells with content.
    Needs [role="gridcell"] to beat [data-has-overflow] specificity (0-2-0) */
 [role="gridcell"].active-cell::before {
   right: auto;
-  min-width: 100%;
-  width: max-content;
-  max-width: none;
+  width: calc(100% + var(--active-overflow-width, 0px));
 
   /* Remove clipping — active cell always shows full content */
   overflow: visible;
@@ -1745,14 +1746,12 @@ tr[data-sticky-row] > td.grid-separator-col {
   mix-blend-mode: screen;
 }
 
-/* Active cell: extend ::after to match ::before's full content width
+/* Active cell: extend ::after to match ::before's snapped width
    Needs [role="gridcell"] to beat [data-has-overflow]::after specificity (0-2-0) */
 [role="gridcell"].active-cell::after {
   content: var(--cell-value, '');
   right: auto;
-  min-width: 100%;
-  width: max-content;
-  max-width: none;
+  width: calc(100% + var(--active-overflow-width, 0px));
   padding: 12px 6px;
   white-space: nowrap;
   color: transparent;
@@ -1782,7 +1781,8 @@ tr[data-sticky-row] > td.grid-separator-col {
 /* ============================================ */
 
 .named-range-overlays,
-.formula-ref-overlays {
+.formula-ref-overlays,
+.formula-dependent-overlays {
   position: relative;
   height: 0;
   overflow: visible;
@@ -1794,11 +1794,64 @@ tr[data-sticky-row] > td.grid-separator-col {
   z-index: 4;
 }
 
+.formula-dependent-overlays {
+  z-index: 4;
+}
+
 .formula-ref-overlay {
   position: absolute;
   border: 2px solid var(--formula-ref-color);
   border-radius: 2px;
   background: color-mix(in srgb, var(--formula-ref-color) 8%, transparent);
+}
+
+.formula-dependent-overlay {
+  position: absolute;
+  border: 3px dashed #ea580c;
+  border-radius: 2px;
+  background: color-mix(in srgb, #ea580c 12%, transparent);
+}
+
+/* ============================================ */
+/* Off-screen Reference Indicators              */
+/* ============================================ */
+
+.offscreen-indicators {
+  position: fixed;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 6;
+}
+
+/* Sharp triangle pointing UP. SVG-based so the dependent variant can render
+   hollow with a thick stroke, mirroring the dashed/solid distinction used by
+   the on-grid overlays. JS rotates each indicator around its top-center
+   (the triangle's apex) to point at the off-screen ref. */
+.offscreen-indicator {
+  position: absolute;
+  transform-origin: 50% 0;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.4));
+  line-height: 0;
+}
+
+.offscreen-indicator svg {
+  display: block;
+  overflow: visible;
+}
+
+.offscreen-indicator-precedent polygon {
+  fill: var(--indicator-color);
+}
+
+.offscreen-indicator-dependent polygon {
+  fill: none;
+  stroke: var(--indicator-color);
+  stroke-width: 2.5;
+  stroke-linejoin: miter;
+}
+
+.offscreen-indicator-dependent {
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.5));
 }
 
 .named-range-overlay {
@@ -4932,4 +4985,88 @@ dialog.lang-pack-editor {
   border-color: var(--accent-purple);
   border-style: solid;
   color: white;
+}
+
+/* ============================================ */
+/* Find Bar (browser-style floating overlay)    */
+/* ============================================ */
+.find-bar {
+  position: fixed;
+  top: 8px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-darkest);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: var(--text-md);
+  color: var(--text-dark);
+}
+.find-bar[hidden] {
+  display: none;
+}
+.find-bar-input {
+  width: 200px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background: var(--bg-primary);
+  color: var(--text-dark);
+  font-size: var(--text-md);
+  outline: none;
+}
+.find-bar-input:focus {
+  border-color: var(--accent-purple);
+}
+.find-bar-counter {
+  min-width: 56px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.find-bar-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  color: var(--text-dark);
+  font-size: var(--text-md);
+  line-height: 1;
+}
+.find-bar-btn:hover:not(:disabled) {
+  background: var(--bg-secondary);
+}
+.find-bar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Find match preview: outline a cell to show it as the current find result
+   without taking focus or affecting selection state.
+   Outline goes on ::before, NOT on the cell — same reason active-cell does:
+   on [data-has-overflow] cells, ::before has `background-color: inherit`
+   and expands beyond the cell, painting over any outline drawn on the cell
+   box. Putting the outline on ::before itself means it's part of ::before's
+   own decoration phase and survives. For overflow cells the outline frames
+   the expanded ::before, matching how active-cell behaves. */
+[role="gridcell"].find-match {
+  z-index: 100;
+}
+
+[role="gridcell"].find-match::before {
+  outline: 2px dashed var(--color-warning);
+  outline-offset: -2px;
+}
+
+/* Sticky variants: their own z-index rules have higher specificity, so
+   restate the bump here. */
+tr[data-sticky-row] > td[role="gridcell"].find-match,
+td[role="gridcell"].grid-sticky-right-cell.find-match,
+tr[data-sticky-row] > td[role="gridcell"].grid-sticky-right-cell.find-match {
+  z-index: 100;
 }

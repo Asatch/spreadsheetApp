@@ -44,6 +44,9 @@ const { getBuiltInFunctions } = await import(
 const { normalizeName, isValidNameSyntax } = await import(
   resolve(FRONTEND_PATH, 'utils/nameValidation.js')
 );
+const { TypeService } = await import(
+  resolve(FRONTEND_PATH, 'utils/typeService.js')
+);
 
 const MAX_ITERATIONS = 1000;
 
@@ -143,7 +146,10 @@ export function loadNodes(canonicalEngine, nodes, inputValues) {
 
     if (node.node_type === 'input') {
       const value = inputValues[key] ?? node.default ?? 0;
-      entries.push([key, String(value)]);
+      // Use serializeForInput so Text inputs get the leading-quote marker that
+      // round-trips through TypeService.detectType — without it, a Text input
+      // given the value 110 would be re-typed as Number 110 by the engine.
+      entries.push([key, TypeService.serializeForInput(value, node.data_type)]);
     } else if (node.node_type === 'constant') {
       if (node.data_type === 'Text') {
         entries.push([key, `'${node.value || ''}`]);

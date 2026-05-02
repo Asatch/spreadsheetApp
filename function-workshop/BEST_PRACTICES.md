@@ -100,7 +100,7 @@ write B37 =INDEX(B34, G4)
 test "0, 10000, 0" "0, 0, 10000, 0"
 ```
 
-**P16. Test coverage patterns** — Include:
+**P16. Test coverage patterns** — Minimum 5 test cases per function; more if complexity warrants. Cover:
 - Normal/baseline case
 - Zero values (zero balance, zero shortfall, zero return)
 - Boundary conditions (bracket crossings, age cutoffs, first/last year)
@@ -117,13 +117,18 @@ test "0, 10000, 0" "0, 0, 10000, 0"
 
 **P19. Keep loop bodies simple** — Push complex per-iteration logic into custom functions. The loop should be purely mechanical: one function call per row, INDEX extraction, counter increment.
 
-**P20. Display sheets are not functions** — Display sheets have no inputs and no outputs. Editable values are literal cell values in the grid (blue-highlighted), not function parameters. Users change cell values to try different scenarios. Use `highlight` for cell backgrounds (blue=editable inputs, yellow=key results, gray=headers), `style` for bold/font size. See RETIREMENT_SCENARIOS for the reference implementation.
+**P20. Display sheets are not functions** — Display sheets have no inputs and no outputs. Editable values are literal cell values in the grid (blue-highlighted per P22), not function parameters. Users change cell values to try different scenarios. See RETIREMENT_SCENARIOS for the reference implementation.
 
 ### Visual Styling
 
 **P21. Title styling on every sheet** — Row 1 title should use `style A1 bold` and `style A1 fontsize 24` (or appropriate large size). This applies to all sheets, not just display sheets. Follow the pattern established in RETIREMENT_SCENARIOS.
 
-**P22. Heading backgrounds extend across columns** — Major section headings (gray) should highlight from A through G (e.g., `highlight A5 gray` through `highlight G5 gray`). Sub-headings (e.g., scenario labels) should extend from A through D. This creates visual hierarchy — major sections span the full width, minor sections are narrower.
+**P22. Highlight color semantics** — Cell highlights have fixed meanings, used consistently across all sheets:
+- **Blue** — Editable input. On display sheets, the cells the user is meant to change. On function sheets, the named-input display rows.
+- **Yellow** — Key result. The conclusion the reader is meant to take away.
+- **Gray** — Section header. Major section headings extend from column A through G; sub-headings (e.g., scenario labels) extend from A through D, creating visual hierarchy.
+
+Don't use highlights decoratively or for any other purpose — the meanings are reserved. Other colors (`green`, `pink`, `orange`) are available but should only appear when a sheet has a documented reason for them — e.g., a scenario-comparison sheet using `green`/`pink` for pass/fail status, with the convention spelled out near the top of the sheet.
 
 **P23. Output callouts on all functions** — Mark output cells with `'← OUTPUT` (or `'← Amount you must withdraw this year`) in the description column. The pattern from WITHDRAW_TAXABLE should be used consistently across all functions, not just some. Makes it immediately clear which cells are the function's outputs.
 

@@ -45,6 +45,7 @@ export function createClipboardEngine() {
   let onCutStateChange = null;  // Callback to notify when cut state changes (for toolbar button)
   let getAllNamedRanges = null; // Get all named ranges with their notations
   let moveNamedRange = null;    // Move a named range to a new notation
+  let deleteNamedRange = null;  // Delete a named range by name
   let onRefreshNamedRangeDisplay = null; // Callback to refresh UI after named range moves
   let getDependentsOf = null;   // Get cells that depend on a given cell (from calculation engine)
 
@@ -179,25 +180,25 @@ export function createClipboardEngine() {
    * @param {boolean} shouldFill - Whether this is a fill mode paste
    * @returns {{updates: Array, namedRangeCount: number}} All cut-related updates and named range count
    */
-  function processCutOperationSideEffects(targetTopLeft, overwrittenCells, shouldFill) {
+  function processCutOperationSideEffects(sourceData, targetTopLeft, overwrittenCells, shouldFill, isInternalMove) {
     const updates = [];
     let namedRangeCount = 0;
 
     // 1. Handle named range moves (not in fill mode)
     if (!shouldFill) {
-      const namedRangeResult = prepareNamedRangeMoves(targetTopLeft);
+      const namedRangeResult = prepareNamedRangeMoves(sourceData, targetTopLeft);
       updates.push(...namedRangeResult.updates);
       namedRangeCount = namedRangeResult.count;
     }
 
     // 2. Update external formulas (not in fill mode)
     if (!shouldFill) {
-      const formulaUpdates = updateExternalFormulasForCut(targetTopLeft, overwrittenCells);
+      const formulaUpdates = updateExternalFormulasForCut(sourceData, targetTopLeft, overwrittenCells);
       updates.push(...formulaUpdates);
     }
 
     // 3. Clear source cells
-    const clearUpdates = clearCutSourceCells(overwrittenCells);
+    const clearUpdates = clearCutSourceCells(sourceData, overwrittenCells, isInternalMove);
     updates.push(...clearUpdates);
 
     return { updates, namedRangeCount };
@@ -209,7 +210,7 @@ export function createClipboardEngine() {
    * @param {Set<string>} overwrittenCells - Cells that will be overwritten
    * @returns {Array<[string, string]>} Array of [cellKey, formula] updates
    */
-  function updateExternalFormulasForCut(targetTopLeft, overwrittenCells) {
+  function updateExternalFormulasForCut(sourceData, targetTopLeft, overwrittenCells) {
 
     // Track formula updates as token arrays keyed by cellKey. Multiple passes
     // (Parts A and B) mutate the same token array rather than round-tripping
@@ -218,10 +219,10 @@ export function createClipboardEngine() {
     const formulaUpdates = new Map();
 
     // PART A: Update references to moved cells
-    updateReferencesToMovedCells(targetTopLeft, overwrittenCells, formulaUpdates);
+    updateReferencesToMovedCells(sourceData, targetTopLeft, overwrittenCells, formulaUpdates);
 
     // PART B: Convert references to overwritten cells to #REF!
-    convertOverwrittenReferencesToRef(overwrittenCells, formulaUpdates);
+    convertOverwrittenReferencesToRef(sourceData, overwrittenCells, formulaUpdates);
 
     // Shape for applyPasteUpdates: [key, null, tokens] → routed via setBatchClassified
     const updates = Array.from(formulaUpdates.entries(), ([key, tokens]) => [key, null, tokens]);
@@ -241,7 +242,7 @@ export function createClipboardEngine() {
    * @param {Set<string>} overwrittenCells - Cells that will be overwritten
    * @returns {Array<[string, any]>} Array of [cellKey, value] updates
    */
-  function prepareFillModePaste(targetTopLeft, targetBottomRight, clipRows, clipCols, clipTopLeft, selTopLeft, overwrittenCells, values) {
+  function prepareFillModePaste(sourceData, targetTopLeft, targetBottomRight, clipRows, clipCols, clipTopLeft, selTopLeft, overwrittenCells, values) {
     const updates = [];
 
     // FILL MODE: Tile clipboard contents across the entire selection
@@ -275,7 +276,7 @@ export function createClipboardEngine() {
         // Tokenize once and adjust on the token array directly — the adjusted
         // tokens flow through setBatchClassified without a re-tokenize.
         const tokens = tokenize(sourceValue);
-        const ok = adjustTokenReferences(tokens, clipboardData.sourceRange, effectiveTargetTopLeft, {
+        const ok = adjustTokenReferences(tokens, sourceData.sourceRange, effectiveTargetTopLeft, {
           isCutOperation: false,  // Fill mode is always like copy
           overwrittenCells,
           gridBounds: getGridBounds(),
@@ -299,7 +300,7 @@ export function createClipboardEngine() {
    * @param {Set<string>} overwrittenCells - Cells that will be overwritten
    * @returns {Array<[string, any]>} Array of [cellKey, value] updates
    */
-  function prepareSinglePaste(targetTopLeft, overwrittenCells, values) {
+  function prepareSinglePaste(sourceData, targetTopLeft, overwrittenCells, values) {
     const updates = [];
 
     // SINGLE PASTE MODE: Paste clipboard contents once at target location
@@ -307,7 +308,7 @@ export function createClipboardEngine() {
       // Calculate target cell position
       const targetCellKey = calculateTargetCell(
         sourceCellKey,
-        clipboardData.sourceRange,
+        sourceData.sourceRange,
         targetTopLeft
       );
 
@@ -316,8 +317,8 @@ export function createClipboardEngine() {
 
       if (sourceValue && typeof sourceValue === 'string' && sourceValue.startsWith('=')) {
         const tokens = tokenize(sourceValue);
-        const ok = adjustTokenReferences(tokens, clipboardData.sourceRange, targetTopLeft, {
-          isCutOperation: clipboardData.isCut,
+        const ok = adjustTokenReferences(tokens, sourceData.sourceRange, targetTopLeft, {
+          isCutOperation: sourceData.isCut,
           overwrittenCells,
           gridBounds: getGridBounds(),
         });
@@ -338,10 +339,10 @@ export function createClipboardEngine() {
    * @param {Set<string>} overwrittenCells
    * @param {Map<string, import('../utils/formulaTokenizer.js').Token[]>} formulaUpdates - Accumulates mutated token arrays
    */
-  function convertOverwrittenReferencesToRef(overwrittenCells, formulaUpdates) {
+  function convertOverwrittenReferencesToRef(sourceData, overwrittenCells, formulaUpdates) {
     for (const destCellKey of overwrittenCells) {
       // Only pure-overwrite cells (not in source range) trigger #REF! promotion
-      if (isCellInRange(destCellKey, clipboardData.sourceRange)) continue;
+      if (isCellInRange(destCellKey, sourceData.sourceRange)) continue;
 
       const dependents = getDependentsOf(destCellKey);
       for (const dependentKey of dependents) {
@@ -365,8 +366,8 @@ export function createClipboardEngine() {
    * fully-contained ranges are relocated separately by prepareNamedRangeMoves,
    * and partial-overlap ranges should not be touched here.
    */
-  function updateReferencesToMovedCells(targetTopLeft, overwrittenCells, formulaUpdates) {
-    const sourceCells = new Set(clipboardData.values.keys());
+  function updateReferencesToMovedCells(sourceData, targetTopLeft, overwrittenCells, formulaUpdates) {
+    const sourceCells = new Set(sourceData.values.keys());
 
     // Collect all dependents across all source cells so each formula is rewritten once.
     const allDependents = new Set();
@@ -385,7 +386,7 @@ export function createClipboardEngine() {
       rewriteCellRefs(tokens, (t) => {
         if (skip.has(t)) return null;
         if (!sourceCells.has(t.value)) return null;
-        return calculateTargetCell(t.value, clipboardData.sourceRange, targetTopLeft);
+        return calculateTargetCell(t.value, sourceData.sourceRange, targetTopLeft);
       });
     }
   }
@@ -433,7 +434,7 @@ export function createClipboardEngine() {
    * @param {string} targetTopLeft - Top-left cell of paste destination
    * @returns {{updates: Array, count: number}} Named range updates and count
    */
-  function prepareNamedRangeMoves(targetTopLeft) {
+  function prepareNamedRangeMoves(sourceData, targetTopLeft) {
 
     const updates = [];
     let count = 0;
@@ -443,14 +444,14 @@ export function createClipboardEngine() {
 
     // Filter to only those fully contained in the cut region
     const rangesToMove = allRanges.filter(range =>
-      isRangeFullyContained(range.notation, clipboardData.sourceRange)
+      isRangeFullyContained(range.notation, sourceData.sourceRange)
     );
 
     // Prepare each affected named range move and add to updates batch
     for (const range of rangesToMove) {
       const newNotation = adjustRangeNotation(
         range.notation,
-        clipboardData.sourceRange,
+        sourceData.sourceRange,
         targetTopLeft
       );
 
@@ -477,15 +478,19 @@ export function createClipboardEngine() {
    * @param {Set<string>} overwrittenCells - Cells that will be overwritten by paste
    * @returns {Array<[string, string]>} Array of [cellKey, ''] clear updates
    */
-  function clearCutSourceCells(overwrittenCells) {
+  function clearCutSourceCells(sourceData, overwrittenCells, isInternalMove) {
     const clearUpdates = [];
 
     // Clear source cells that aren't being pasted over themselves
-    for (const sourceCellKey of clipboardData.values.keys()) {
+    for (const sourceCellKey of sourceData.values.keys()) {
       if (!overwrittenCells.has(sourceCellKey)) {
         clearUpdates.push([sourceCellKey, '']);
       }
     }
+
+    // Internal moves (insert/delete row/col) must not touch the user's clipboard
+    // state or cut UI — those belong to the user's actual cut/paste session.
+    if (isInternalMove) return clearUpdates;
 
     // Clear cut state and visual marks
     onCutStateChange(false);
@@ -537,27 +542,46 @@ export function createClipboardEngine() {
       return;
     }
 
+    _executePaste(clipboardData, targetTopLeft, {
+      selectionRange: selection,
+      valuesOnly,
+    });
+  }
+
+  /**
+   * Core paste pipeline. Operates on `sourceData` (same shape as clipboardData)
+   * passed in by the caller — never reads `clipboardData` directly. Used by
+   * both `paste()` (passes the user's clipboard) and `moveRange()` (passes
+   * synthetic data for insert/delete row/col without disturbing the user's
+   * actual clipboard or cut state).
+   *
+   * @param {Object} sourceData - { sourceRange, values, displayValues, isCut, formatting }
+   * @param {string} targetTopLeft - Top-left cell of paste destination
+   * @param {Object} [options]
+   * @param {Object} [options.selectionRange] - User selection {start,end}; if omitted, treats target as 1x1 (always single paste mode)
+   * @param {boolean} [options.valuesOnly] - Paste computed values, skip formatting
+   * @param {boolean} [options.isInternalMove] - Suppress cut-cleanup UI/clipboard side effects (for moveRange)
+   */
+  function _executePaste(sourceData, targetTopLeft, { selectionRange = null, valuesOnly = false, isInternalMove = false } = {}) {
     // Choose which values to paste: display values (computed results) for
     // values-only, or the original values (which may contain formulas) for normal paste
-    const pasteValues = (valuesOnly && clipboardData.displayValues)
-      ? clipboardData.displayValues
-      : clipboardData.values;
+    const pasteValues = (valuesOnly && sourceData.displayValues)
+      ? sourceData.displayValues
+      : sourceData.values;
 
     // Calculate clipboard dimensions
     const { rows: clipRows, cols: clipCols, cells: sourceCells } = expandRange(
-      clipboardData.sourceRange.start,
-      clipboardData.sourceRange.end
+      sourceData.sourceRange.start,
+      sourceData.sourceRange.end
     );
-    const clipTopLeft = parseCellKey(clipboardData.sourceRange.start);
+    const clipTopLeft = parseCellKey(sourceData.sourceRange.start);
 
-    // Calculate selection dimensions
-    const { cells: selectionCells } = expandRange(
-      selection.start,
-      selection.end
-    );
+    // Determine paste mode: fill (tile) vs. single paste.
+    // Without an explicit selectionRange, treat the target as 1x1 — always single mode.
+    const selectionCells = selectionRange
+      ? expandRange(selectionRange.start, selectionRange.end).cells
+      : [targetTopLeft];
     const selTopLeft = parseCellKey(targetTopLeft);
-
-    // Determine paste mode: fill (tile) vs. single paste
     const shouldFill = selectionCells.length > sourceCells.length;
 
     // Calculate actual paste area for #REF! handling
@@ -565,7 +589,7 @@ export function createClipboardEngine() {
       ? selectionCells[selectionCells.length - 1]  // Fill entire selection
       : calculateTargetCell(                        // Single paste
           sourceCells[sourceCells.length - 1],
-          clipboardData.sourceRange,
+          sourceData.sourceRange,
           targetTopLeft
         );
 
@@ -575,25 +599,21 @@ export function createClipboardEngine() {
 
     // Prepare batch of updates
     const updates = shouldFill
-      ? prepareFillModePaste(targetTopLeft, targetBottomRight, clipRows, clipCols, clipTopLeft, selTopLeft, overwrittenCells, pasteValues)
-      : prepareSinglePaste(targetTopLeft, overwrittenCells, pasteValues);
+      ? prepareFillModePaste(sourceData, targetTopLeft, targetBottomRight, clipRows, clipCols, clipTopLeft, selTopLeft, overwrittenCells, pasteValues)
+      : prepareSinglePaste(sourceData, targetTopLeft, overwrittenCells, pasteValues);
 
-    // Save cut-related data BEFORE processCutOperationSideEffects (which nulls clipboardData)
-    const isCutOperation = clipboardData.isCut;
-    const savedFormatting = clipboardData.formatting;
-    const savedSourceRange = clipboardData.sourceRange;
-    const savedValues = clipboardData.values;
+    const isCutOperation = sourceData.isCut;
 
-    // Prepare formatting data before clipboardData gets nulled (cut nulls it)
+    // Prepare formatting data
     let formattingUpdates = [];
     let sourceCellsToClearFormatting = [];
 
     // Map source formatting to target cells (for both copy and cut) — skip for values-only paste
-    if (savedFormatting && savedFormatting.size > 0 && !shouldFill && !valuesOnly) {
-      for (const [sourceCellKey, formatting] of savedFormatting) {
+    if (sourceData.formatting && sourceData.formatting.size > 0 && !shouldFill && !valuesOnly) {
+      for (const [sourceCellKey, formatting] of sourceData.formatting) {
         const targetCellKey = calculateTargetCell(
           sourceCellKey,
-          savedSourceRange,
+          sourceData.sourceRange,
           targetTopLeft
         );
         formattingUpdates.push([targetCellKey, formatting]);
@@ -602,7 +622,7 @@ export function createClipboardEngine() {
 
     if (isCutOperation) {
       // Track source cells that need formatting cleared (cells not being overwritten)
-      for (const sourceCellKey of savedValues.keys()) {
+      for (const sourceCellKey of sourceData.values.keys()) {
         if (!overwrittenCells.has(sourceCellKey)) {
           sourceCellsToClearFormatting.push(sourceCellKey);
         }
@@ -610,10 +630,9 @@ export function createClipboardEngine() {
     }
 
     // Process cut operation side effects (named ranges, formulas, source clears)
-    // NOTE: This nulls clipboardData, so we saved what we needed above
     let namedRangeMoveCount = 0;
     if (isCutOperation) {
-      const cutResult = processCutOperationSideEffects(targetTopLeft, overwrittenCells, shouldFill);
+      const cutResult = processCutOperationSideEffects(sourceData, targetTopLeft, overwrittenCells, shouldFill, isInternalMove);
       updates.push(...cutResult.updates);
       namedRangeMoveCount = cutResult.namedRangeCount;
     }
@@ -645,6 +664,98 @@ export function createClipboardEngine() {
     // Refresh UI to show updated named range display (after batch is applied)
     if (namedRangeMoveCount > 0) {
       onRefreshNamedRangeDisplay();
+    }
+  }
+
+  /**
+   * Delete a rectangular range: clear its values and convert all external
+   * references to those cells into #REF!. Used by the delete-row/col ops at
+   * the trailing edge of the grid where there's nothing to shift up/left.
+   *
+   * @param {Object} range - {start, end} of the cells to delete
+   */
+  function deleteRange(range) {
+    const { cells } = expandRange(range.start, range.end);
+    const cellSet = new Set(cells);
+
+    // Rewrite external formulas: any reference to a cell in the deleted range becomes #REF!
+    const allDependents = new Set();
+    for (const cellKey of cells) {
+      for (const dep of getDependentsOf(cellKey)) allDependents.add(dep);
+    }
+
+    const formulaUpdates = new Map();
+    for (const dependentKey of allDependents) {
+      if (cellSet.has(dependentKey)) continue;  // the cell itself is being deleted
+      const tokens = loadOrGetTokens(dependentKey, formulaUpdates);
+      if (!tokens) continue;
+      rewriteCellRefs(tokens, (t) => cellSet.has(t.value) ? '#REF!' : null);
+    }
+
+    const updates = [
+      ...Array.from(formulaUpdates.entries(), ([key, tokens]) => [key, null, tokens]),
+      ...cells.map(k => [k, '']),
+    ];
+
+    // Named ranges fully contained in the deleted region have nowhere to go —
+    // mirror prepareNamedRangeMoves' "fully contained" filter, but delete
+    // instead of relocate. Partial-overlap ranges are left alone (consistent
+    // with cut/paste, which also doesn't touch them).
+    const rangesToDelete = getAllNamedRanges
+      ? getAllNamedRanges().filter(r => isRangeFullyContained(r.notation, range))
+      : [];
+
+    if (beginHistoryBatch) beginHistoryBatch();
+    try {
+      for (const r of rangesToDelete) {
+        const result = deleteNamedRange(r.name);
+        if (!result.success) {
+          console.error(`[ClipboardEngine] Failed to delete named range "${r.name}":`, result.error);
+        }
+      }
+      applyPasteUpdates(updates);
+    } finally {
+      if (endHistoryBatch) endHistoryBatch();
+    }
+
+    if (rangesToDelete.length > 0 && onRefreshNamedRangeDisplay) {
+      onRefreshNamedRangeDisplay();
+    }
+  }
+
+  /**
+   * Move a rectangular range of cells to a new location, with the same
+   * reference-shifting / named-range / #REF! semantics as cut+paste — but
+   * without disturbing the user's clipboard or cut state. Used as the engine
+   * primitive for insert/delete row/col.
+   *
+   * @param {Object} sourceRange - {start, end} of the cells to move
+   * @param {string} targetTopLeft - Top-left cell of the destination
+   */
+  function moveRange(sourceRange, targetTopLeft) {
+    const { cells } = expandRange(sourceRange.start, sourceRange.end);
+
+    // Snapshot current values + formatting from the source region
+    const values = new Map();
+    for (const cellKey of cells) {
+      values.set(cellKey, getValue(cellKey));
+    }
+    const formatting = getFormattingBatch ? getFormattingBatch(cells) : null;
+
+    const sourceData = {
+      sourceRange,
+      values,
+      displayValues: null,
+      isCut: true,
+      formatting,
+    };
+
+    // Wrap in a single history batch so insert/delete is one undo step
+    if (beginHistoryBatch) beginHistoryBatch();
+    try {
+      _executePaste(sourceData, targetTopLeft, { isInternalMove: true });
+    } finally {
+      if (endHistoryBatch) endHistoryBatch();
     }
   }
 
@@ -793,6 +904,7 @@ export function createClipboardEngine() {
         onCutStateChange,
         getAllNamedRanges,
         moveNamedRange,
+        deleteNamedRange,
         onRefreshNamedRangeDisplay,
         getDependentsOf,
         // Formatting dependencies
@@ -807,6 +919,8 @@ export function createClipboardEngine() {
 
     performCopyOrCut,
     paste,
+    moveRange,
+    deleteRange,
     cancelCut,
     hasClipboardData: () => !!clipboardData,
   };

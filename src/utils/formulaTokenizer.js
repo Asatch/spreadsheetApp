@@ -116,8 +116,9 @@ export function tokenize(formula) {
         i++;
       }
       if (i < len) i++; // skip closing quote
-      // Value includes the quotes (matches how the parser handles string literals)
-      tokens.push({ type: TokenType.STRING, start, end: i, value: formula.slice(start, i).toUpperCase(), depth });
+      // Value includes the quotes (matches how the parser handles string literals).
+      // Case is preserved — text content is not normalized like identifiers/cell refs.
+      tokens.push({ type: TokenType.STRING, start, end: i, value: formula.slice(start, i), depth });
       continue;
     }
 

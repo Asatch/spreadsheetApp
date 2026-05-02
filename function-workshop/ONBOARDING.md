@@ -8,7 +8,7 @@ We build spreadsheet functions. Not Excel macros — these are spreadsheets that
 
 You write a `.txt` script — a recipe for building a spreadsheet. You say "new FUNCTION_NAME", declare your inputs, then write values into cells. Column A is usually labels, column B is formulas, column C is descriptions. It tells a story — someone should be able to read your spreadsheet top to bottom and understand the calculation. That's a big deal here. We don't just make things that compute correctly, we make things that *teach*.
 
-When you run the CLI with `--project`, it does three things at once: generates the XML, registers the function, and transpiles it to JavaScript. One command, everything wired up.
+When you run the CLI with `--workfolder`, it does three things at once: generates the XML, registers the function, and transpiles it to JavaScript. One command, everything wired up.
 
 ## Testing
 
@@ -18,9 +18,9 @@ You put test cases right in the script — inputs and expected outputs. Then you
 
 Readout prints the whole spreadsheet as text — labels, formulas, computed values, all formatted. When you're done building something, run readout and look at it. Does it make sense? Could someone who doesn't know the code follow the story? That's the bar.
 
-## Projects
+## Workfolders
 
-A project folder has a registry (which functions exist, what depends on what) and all the XML and JS files. Functions form dependency trees — like, our retirement suite has a `RETIREMENT_YEAR_FULL` function that calls `PROGRESSIVE_TAX`, `WITHDRAW_TAXABLE`, `WITHDRAW_PRETAX`, and `CALCULATE_RMD`. And then `RETIREMENT_PROJECTION_FULL` is a loop sheet that calls `RETIREMENT_YEAR_FULL` repeatedly, year by year. Little composable pieces.
+A workfolder has a registry (which functions exist, what depends on what) and all the XML and JS files. Functions form dependency trees — like, our retirement suite has a `RETIREMENT_YEAR` function that calls `PROGRESSIVE_TAX`, `WITHDRAW_TAXABLE`, `WITHDRAW_PRETAX`, and `CALCULATE_RMD`. And then `RETIREMENT_PROJECTION` is a loop sheet that calls `RETIREMENT_YEAR` repeatedly, year by year. Little composable pieces.
 
 ## Two Types of Sheets
 
@@ -45,6 +45,8 @@ A project folder has a registry (which functions exist, what depends on what) an
 4. **Keep things composable.** If a calculation is getting complex, break it into a separate function. Small functions that do one thing well, then compose them. That's the whole architecture.
 
 5. **Use `default-format` so numbers look right.** Nobody wants to see `486230.769230769`. They want to see `$486,231`. Set a default format for the sheet, then override individual cells that need something different (like percentages).
+
+6. **Read the conventions reference.** `BEST_PRACTICES.md` is the source of truth for naming, layout, formatting, testing, and composition rules (P1-P32 patterns and AP1-AP12 anti-patterns). Skim it before you start; refer back when something feels off.
 
 ## The End Product
 

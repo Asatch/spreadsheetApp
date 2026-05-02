@@ -17,12 +17,12 @@ Fix issues at the pipeline/source level, not by manually editing generated outpu
 
 ## Philosophy: Ground Truth First
 
-Spreadsheet functions often replicate logic that exists somewhere else — a Python script, an Excel model, a tax form, a financial formula. The spreadsheet doesn't need to mirror the source's internal structure. It should tell its own story in a way that's readable and educational. But it must arrive at the same answer.
+Spreadsheet functions often replicate logic that exists somewhere else — a Python script, an Excel model, a tax form, a financial formula. In such cases, the spreadsheet doesn't need to mirror the source's internal structure. It should tell its own story in a way that's readable and educational. But it must arrive at the same answer.
 
 **Before writing spreadsheet code:**
 
 1. **Identify the source of truth** — What existing implementation or specification defines correct behavior?
-2. **Build end-to-end test cases from the source** — Run the reference implementation with specific inputs and capture its outputs. These become your expected values. Never hand-calculate expected values using your own formulas — that just validates your formula against itself.
+2. **Build end-to-end test cases from the source** — Run the reference implementation with specific inputs and capture its outputs. These become your expected values. When you have a reference ground truth implementation, never hand-calculate expected values using your own formulas — that just validates your formula against itself.
 3. **Test at the integration level** — You don't need to match every intermediate step. If the final outputs match across a good range of inputs, the internals are working. If they don't match, then dig into which sub-calculation diverges.
 4. **Cover the input space** — Include normal cases, edge cases, and boundary conditions. Think about what varies: zero values, large values, threshold crossings (e.g., tax bracket boundaries, age cutoffs).
 
@@ -46,10 +46,10 @@ The math must work for any valid inputs, but the *presentation* is optimized for
 
 - **Formatting communicates meaning** - Show 3.0% instead of 0.03 for a rate. Show $1,629 for a currency value. Use appropriate decimal precision for each context.
 - **But context matters** - A rate of 0.0000003 shown as 0.0% hides information. Very small or large values may need different formatting. Choose what makes the value comprehensible.
-- **Labels and descriptions guide understanding** - Each row tells part of the story. Column A labels what it is, Column B shows the value, Column C explains the calculation.
+- **Labels and descriptions guide understanding** - Each row tells part of the story. Often we follow a pattern where Column A labels what it is, Column B shows the value, Column C explains the calculation.
 - **Design for your audience** - Think about who will use this function and what inputs they'll typically provide. Format for that typical scenario.
 
-If someone uses edge-case inputs, they still get the mathematically correct answer - the presentation just wasn't optimized for that story.
+If someone uses edge-case inputs, they still get the mathematically correct answer, but the presentation may not be optimized for that story and that's okay.
 
 ## Philosophy: Package Story
 
@@ -63,9 +63,17 @@ If someone uses edge-case inputs, they still get the mathematically correct answ
 
 **Design the package from the front door backward.** Before building functions, think about the display sheet: what will a user see when they import this zip? What story does it tell? What can they interact with? Then build the functions that support that experience. The functions serve the story, not the other way around.
 
+## Philosophy: Specific vs General Framing in Descriptions
+
+Cell labels and descriptions read differently depending on whether the sheet is a display sheet or a function.
+
+**Display sheets (the front door) can be specific.** A display sheet shows one scenario. Even though the input cells have editable defaults, the whole sheet is *about* that situation. Labels and descriptions can talk in concrete terms — "In this example, the $500K balance grows to…", "Here we assume a 30-year horizon…". That framing helps tell the story.
+
+**Functions (standard and loop sheets) must stay general.** A function is reusable — anyone may call it with different inputs, and the descriptions render the same regardless. So column-C descriptions should describe what the formula *does*, not the specific default that happens to be wired into the input cell. Write "Annual interest on the balance", not "Annual interest on $1,000". You don't have to cover every edge case in the language, but nothing in the descriptions should lock onto the default value the function happened to be built with.
+
 ## Design Principles for Layouts
 
-See `BEST_PRACTICES.md` for the complete reference on layout, styling, formatting, naming, testing, composition, and package patterns (P1-P29) and anti-patterns (AP1-AP10). Key points:
+See `BEST_PRACTICES.md` for the complete reference on layout, styling, formatting, naming, testing, composition, and package patterns (P1-P32) and anti-patterns (AP1-AP12). Key points:
 
 - **Docstring** (P4), **section headers** (P5), **three-column layout** (P6), **result section** (P7)
 - **Naming**: UPPER_SNAKE_CASE everywhere (P8), every output gets a semantic name (P9)
@@ -73,7 +81,7 @@ See `BEST_PRACTICES.md` for the complete reference on layout, styling, formattin
 - **Styling**: title bold + large font (P21), gray highlights on section headers (P22), `← OUTPUT` markers (P23)
 - **Testing**: at least 5 cases with comments, independent verification (P15-P17)
 
-**Important correctness rule**: Descriptions in column C are TEXT constants, not formulas. `= INCOME × 10%` MUST use a `'` prefix (e.g., `'= INCOME × 10%`). Without `'`, the engine evaluates it as a formula and produces `#SYNTAX!` errors.
+**Important correctness rule**: Descriptions are TEXT constants, not formulas. `= INCOME × 10%` MUST use a `'` prefix (e.g., `'= INCOME × 10%`). Without `'`, the engine evaluates it as a formula and produces `#SYNTAX!` errors. These are often one cell to the right of the actual calculation.
 
 ## Workflow
 
@@ -125,7 +133,6 @@ Packaged zips live in `examples/`:
 | `reference.zip` | Educational implementations of built-in functions |
 | `foundational.zip` | Core custom functions (FACTORIAL, INT, LOG, etc.) |
 | `excel-functions.zip` | Excel-compatible functions (PMT, NPER, NORMSDIST, etc.) |
-| `tax.zip` | 2025 US tax functions (progressive tax, EITC, AMT, etc.) |
 | `retirement.zip` | Full retirement planning suite — accumulation, projection, withdrawals, RMD, tax integration, scenario comparison. The most complete example of a multi-function workfolder. |
 
 Import any of these into a workfolder to build on them.
@@ -149,7 +156,7 @@ node eval.mjs --workfolder workfolders/my-suite readout MY_FUNC.xml
 node eval.mjs readout path/to/standalone.xml '[75000, 1]'  # with specific inputs
 ```
 
-The `readout` command shows the full grid with formulas and computed values, formatted per format rules. Uses the first test case inputs by default. For loop sheets, it renders separate "Formulas" and "Schedule" sections, shows column headers (e.g., `A: age`), and propagates row 1 format overrides to generated rows.
+The `readout` command shows the full grid with formulas and computed values, formatted per format rules. Uses the first test case inputs by default. For loop sheets, it renders separate "Formulas" and "Schedule" sections, shows column headers (e.g., `A: age`), and propagates row 1 format overrides to generated rows. Use readout to validate your work.
 
 ## Spreadsheet CLI
 
@@ -178,7 +185,7 @@ node cli/spreadsheet-cli.js --workfolder workfolders/my-suite scripts/my-functio
 | `fill <range>` | `fill C5:C53` | Copy first cell's formula down |
 | `name <cell> <alias>` | `name B21 WITHDRAWAL` | Name a cell. For outputs: gives semantic name for INDEX access. For any cell: creates a named range usable in formulas. |
 | `output <name> [mode]` | `output WITHDRAWAL` | Mark output by named range (standard) or column letter (loops); mode: `last` or `all`. Always `name` the cell first, then `output` the name. |
-| `header <col> <name>` | `header B taxable_balance` | Name a loop column (loop sheets only) |
+| `header <col> <name>` | `header B TAXABLE_BALANCE` | Name a loop column (loop sheets only) |
 | `default-format <type> [decimals] [separator]` | `default-format currency 0` | Set default format for all cells |
 | `format <cell> <type> [decimals] [separator]` | `format B5 number 0 period-only` | Override default format for a cell. Separator options: `period-only` (no grouping, e.g. 2024), `comma-period` (default, e.g. 1,234.56), `comma-only`, `period-comma`, `space-period` |
 | `style <cell> <prop> [value]` | `style A1 bold` | Set cell style: `bold`, `italic`, `fontsize <N>`, `align <left\|center\|right>`, `color <val>`, `bg <val>` |
@@ -352,180 +359,39 @@ The corresponding `scenarios/{scenario-uuid}.json` holds `{ inputs, results: nul
 
 The `scenarios` section is omitted entirely when the workfolder has no `scenarios/` directory (or it's empty); old (v2.0) importers that don't know about scenarios simply ignore the new section.
 
-## XML Format (Schema 5)
+## XML Schema
 
-See `docs/xml-schema.md` for full reference. Quick template:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<CodeCalculation name="FUNCTION_NAME">
-  <LangSpecs/>
-  <TestCases>
-    <test_case>
-      <input_value Value="1000"/>
-      <input_value Value="0.03"/>
-      <output_value Value="30"/>
-    </test_case>
-  </TestCases>
-
-  <Nodes>
-    <!-- Row 1: First input display (label | PROCEED | description) -->
-    <Node node_id="1" node_type="constant" data_type="Text" key="A1" canonical="'Amount" value="Amount"/>
-    <Node node_id="2" node_type="function" data_type="Number" key="B1" canonical="=AMOUNT" function_name="PROCEED"/>
-    <Node node_id="3" node_type="constant" data_type="Text" key="C1" canonical="'Principal amount" value="Principal amount"/>
-
-    <!-- Row 2: Second input display -->
-    <Node node_id="4" node_type="constant" data_type="Text" key="A2" canonical="'Rate" value="Rate"/>
-    <Node node_id="5" node_type="function" data_type="Number" key="B2" canonical="=RATE" function_name="PROCEED"/>
-    <Node node_id="6" node_type="constant" data_type="Text" key="C2" canonical="'Interest rate" value="Interest rate"/>
-
-    <!-- Row 3: Result -->
-    <Node node_id="7" node_type="constant" data_type="Text" key="A3" canonical="'Interest" value="Interest"/>
-    <Node node_id="8" node_type="function" data_type="Number" key="B3" canonical="=B1*B2" function_name="MULTIPLY"/>
-    <Node node_id="9" node_type="constant" data_type="Text" key="C3" canonical="'Amount * Rate" value="Amount * Rate"/>
-
-    <!-- Named inputs (NOT on grid - these are the function parameters) -->
-    <Node node_id="10" node_type="input" data_type="Number" key="AMOUNT" canonical="1000" input_order="0" input_name="AMOUNT"/>
-    <Node node_id="11" node_type="input" data_type="Number" key="RATE" canonical="0.03" input_order="1" input_name="RATE"/>
-  </Nodes>
-
-  <NamedNodes>
-    <!-- Grid cell addresses -->
-    <NamedNode node_name="A1" node_name_type="address" node_id="1"/>
-    <NamedNode node_name="B1" node_name_type="address" node_id="2"/>
-    <NamedNode node_name="C1" node_name_type="address" node_id="3"/>
-    <NamedNode node_name="A2" node_name_type="address" node_id="4"/>
-    <NamedNode node_name="B2" node_name_type="address" node_id="5"/>
-    <NamedNode node_name="C2" node_name_type="address" node_id="6"/>
-    <NamedNode node_name="A3" node_name_type="address" node_id="7"/>
-    <NamedNode node_name="B3" node_name_type="address" node_id="8"/>
-    <NamedNode node_name="C3" node_name_type="address" node_id="9"/>
-    <!-- Input aliases (so formulas can reference by name) -->
-    <NamedNode node_name="AMOUNT" node_name_type="alias" node_id="10"/>
-    <NamedNode node_name="RATE" node_name_type="alias" node_id="11"/>
-  </NamedNodes>
-
-  <NodeComments/>
-
-  <Outputs>
-    <Output output_name="INTEREST" node_id="8" output_order="0" data_type="Number" key="B3" output_mode="last"/>
-  </Outputs>
-
-  <NodeDependencies>
-    <NodeDependency child_node_id="2" parent_node_id="10" parent_position="0"/>
-    <NodeDependency child_node_id="5" parent_node_id="11" parent_position="0"/>
-    <NodeDependency child_node_id="8" parent_node_id="2" parent_position="0"/>
-    <NodeDependency child_node_id="8" parent_node_id="5" parent_position="1"/>
-  </NodeDependencies>
-
-  <CustomFunctions/>
-
-  <SpreadsheetMeta version="1.0" gridRows="5" gridCols="D"/>
-</CodeCalculation>
-```
-
-## Key Rules
-
-1. **Node IDs must be unique** - Sequential integers starting from 1
-2. **Inputs are NAMED, not on grid** - Inputs have semantic keys like `AMOUNT`, `RATE` (not cell addresses)
-3. **Display cells use PROCEED** - Grid cells (B1, B2) display inputs via `=AMOUNT`, `=RATE`
-4. **Grid cells use cell addresses as keys** - A1, B1, C1, etc. for visual layout
-5. **Design a visual layout** - Think in rows/columns:
-   - Column A: Labels (text constants, prefix with `'`)
-   - Column B: Values (PROCEED for inputs, formulas for calculations)
-   - Column C: Descriptions (text constants, prefix with `'`)
-6. **Descriptions are TEXT constants** - Any human-readable description cell (like `'= INCOME × 10%`) MUST be `node_type="constant" data_type="Text"` with a `'` prefix on canonical. **Never** use `node_type="function"` for description text — the engine will try to evaluate it and produce errors.
-7. **Formulas reference cell addresses** - Use `=B1*B2` for the calculation (not input names)
-8. **Test cases use `<test_case>` format** - With `<input_value Value="X"/>` and `<output_value Value="Y"/>`
-9. **NamedNodes need both types**:
-   - `node_name_type="address"` for grid cells (A1, B1, etc.)
-   - `node_name_type="alias"` for named inputs (AMOUNT, RATE, etc.)
-10. **Output includes `node_id` and `output_mode="last"`**
-11. **Include SpreadsheetMeta** - Defines grid size for display
-12. **Anonymous constants** - For literal values in formulas (like `=1+B2`), create a constant node with NO `key` attribute:
-    ```xml
-    <Node node_id="22" node_type="constant" data_type="Number" value="1"/>
-    ```
-    The constant is still connected via NodeDependencies but doesn't appear on the grid.
-13. **Include FormatRules for storytelling** - Add formatting to make values comprehensible:
-    ```xml
-    <SpreadsheetMeta version="1.0" gridRows="9" gridCols="E">
-      <FormatRule cellKey="B2" formats="{&quot;NUMBER&quot;:{&quot;subCategory&quot;:&quot;percentage&quot;,&quot;decimalPlaces&quot;:1}}"/>
-      <FormatRule cellKey="B7" formats="{&quot;NUMBER&quot;:{&quot;subCategory&quot;:&quot;number&quot;,&quot;decimalPlaces&quot;:0}}"/>
-    </SpreadsheetMeta>
-    ```
-    Choose formats based on what the value represents and the likely use case.
-14. **Declare ALL custom function dependencies** - If your function uses ANY non-built-in function (like `INT`, `ABS`, `PROGRESSIVE_TAX`), it MUST be listed in `<CustomFunctions>` with its UUID. Missing dependencies cause `#NAME!` errors at evaluation time. When using the spreadsheet CLI with `--workfolder`, the `use` command handles this automatically.
+The CLI generates XML for you. For schema reference, see `docs/xml-schema.md`.
 
 ## Loop Sheets
 
-For iterative calculations, use `sheetType="loop"` on the root element:
+For iterative calculations, use a loop sheet (`new MY_LOOP loop` in CLI scripts).
 
-```xml
-<CodeCalculation name="MY_LOOP" sheetType="loop">
-```
+Loop structure:
+- **Row 0** — Initial values (e.g., `D0` = starting balance, `E0` = 0 for counter)
+- **Row 1** — Iteration formulas (e.g., `D1` = `=A1+B1+C1`, `E1` = `=E0+1`). Replayed each round.
+- **`_STOP1`** — Stop condition, do-while (checked after iteration). The common case.
+- **`_STOP0`** — Optional early-exit condition, while-do (checked before first iteration). Use when the loop should sometimes not execute at all.
+- **Output** — Declared by column letter (`output D last`), not cell address.
 
-Loop sheet structure:
-- **Row 0**: Initial values (e.g., `D0` = starting balance, `E0` = 0 for counter)
-- **Row 1**: Iteration formulas (e.g., `D1` = `=A1+B1+C1`, `E1` = `=E0+1`)
-- **`_STOP1`**: Stop condition (e.g., `=E1>=YEARS`)
-- **Output key**: Column letter (e.g., `key="D"`) with `output_mode="last"`
-
-**Understanding row references:**
-- **Row 1 → Row 0** (e.g., `A1 = D0`): "Get value from last round" - D0 holds the previous iteration's D1 value
-- **Row 1 → Row 1** (e.g., `D1 = A1 + B1`): "In this same round" - uses values computed in current iteration
+**Row references:**
+- **Row 1 → Row 0** (e.g., `A1 = D0`): "Get value from last round" — D0 holds the previous iteration's D1 value.
+- **Row 1 → Row 1** (e.g., `D1 = A1 + B1`): "In this same round" — uses values computed in the current iteration.
 
 The evaluator generates rows 2, 3, ... by adjusting Row 1 formulas until `_STOP` is true.
 
-**Best practice: Keep loop logic simple.** Push complex calculations into custom functions. For example, RETIREMENT_PROJECTION's loop body is just:
+**Keep loop logic simple** (P19). Push per-iteration math into custom functions so the loop body is one function call plus counter increment. RETIREMENT_PROJECTION's loop body is just:
 ```
-D1 = RETIREMENT_YEAR(A1, INCOME, SPENDING, TAX_RATE, RETURN_RATE)
+write D1 =RETIREMENT_YEAR(A1, INCOME, SPENDING, TAX_RATE, RETURN_RATE)
 ```
-All the retirement year math lives in the RETIREMENT_YEAR function, making the loop easy to understand and debug.
 
-### Loop Sheet Transpilation Requirements
-
-**Critical rules for loop sheets to transpile correctly to JavaScript:**
-
-1. **`output_name` must be the column letter** - For loop outputs, use the column letter (e.g., `"B"`, `"D"`), NOT a descriptive name. The transpiler uses `output_name` to find the Row 1 cell:
-   ```xml
-   <!-- CORRECT -->
-   <Output output_name="B" output_order="0" data_type="Number" key="B" output_mode="last"/>
-
-   <!-- WRONG - transpiler won't find the output -->
-   <Output output_name="SUM" output_order="0" data_type="Number" key="B" output_mode="last"/>
-   ```
-
-2. **`_STOP1` vs `_STOP0`** - Both are supported with different semantics:
-   - `_STOP1` = **do-while** (check after iteration) — the common case
-   - `_STOP0` = **while-do** (check before first iteration) — for early-exit when inputs already satisfy the stop condition
-
-   Most loops only need `_STOP1`. Use `_STOP0` when the loop should sometimes not execute at all.
-
-3. **HTML-encode special characters in formulas** - The `>` and `<` characters in `canonical` attributes must be encoded:
-   ```xml
-   <!-- CORRECT -->
-   <Node ... canonical="=A1&gt;=N" .../>
-
-   <!-- WRONG - breaks XML parsing -->
-   <Node ... canonical="=A1>=N" .../>
-   ```
-
-4. **No `node_id` needed on Output for loops** - Unlike regular sheets, loop outputs don't require `node_id` (the transpiler derives it from the column).
+See "Loop Scripts" below for full script syntax.
 
 ## Custom Functions
 
-To use a custom function in your spreadsheet, you must declare it in `<CustomFunctions>`:
+Every non-built-in function you call (e.g., `INT`, `ABS`, `FACTORIAL`, `PROGRESSIVE_TAX`) must be declared as a dependency. Missing declarations cause `#NAME!` errors at evaluation time.
 
-```xml
-<CustomFunctions>
-  <Function name="PROGRESSIVE_TAX" id="e5f6g7h8-..." version="1.0.0"/>
-</CustomFunctions>
-```
-
-**Every non-built-in function you call must be declared here.** This includes functions like `INT`, `ABS`, `FACTORIAL` — if they're defined as custom functions (in Foundational, Excel_Functions, etc.), they need a declaration. Missing declarations cause `#NAME!` errors.
-
-When using the spreadsheet CLI with `--workfolder`, the `use` command handles this automatically by looking up the UUID from the workfolder registry.
+In CLI scripts with `--workfolder`, the `use` command handles this for you — it looks up the UUID from the workfolder registry and writes the declaration into the XML automatically.
 
 ### Custom Function Combinations (All Tested Working)
 
@@ -554,6 +420,8 @@ See `docs/built-in-functions.md` for full list. Common ones:
 | LESS | `=A<B` | Comparison |
 | GREATER | `=A>B` | Comparison |
 | EQUAL | `=A=B` | Equality |
+
+**Missing a utility function?** If you find yourself wanting an Excel utility that isn't listed here check if it is in `excel-functions.zip` or just write your own — but in general don't be swayed by a history of people building terse but less readable syntax optimized for excel pros, which may be in a lot of training data. The primary goal now is readability / story-telling for the correct calculation. Don't use an Excel function which handles multiple variants that aren't applicable to your situation and that you don't actually need, even if an Excel pro might normally grab that. Instead, write your own function there that will help the user understand the scenario specific to the situation at hand. 
 
 ## Formula Syntax Notes
 
@@ -623,43 +491,11 @@ write C9 'Always work with positive value
 - Experimenting with formulas before committing to a structure
 - You want to see the spreadsheet render as you build
 
-**Write XML directly when:**
-- Making small edits to existing XMLs
-- Fixing specific node IDs or dependencies
-- You need full control that the CLI doesn't provide
-
-**Recommendation:** Default to the CLI with `--workfolder`. It produces consistent, well-structured output with proper formatting, test cases, and dependency management.
+**Recommendation:** Default to the CLI with `--workfolder`. It produces consistent, well-structured output with proper formatting, test cases, and dependency management. Direct XML editing should be avoided — per "Fix at the Source," fix the script and rebuild rather than patching generated XML.
 
 ### Multi-Output Functions
 
-Functions can return multiple values. How you access them depends on the function type.
-
-**Standard functions** — use numeric INDEX (1-based output order):
-```
-# WITHDRAW_TAXABLE returns: withdrawal, tax, remaining_shortfall, basis_reduction
-write B21 =INDEX(WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS), 1)
-write B22 =INDEX(WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS), 2)
-write B23 =INDEX(WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS), 3)
-```
-
-**Alternative: string keys via cell reference.** Put output names in cells and reference them — avoids magic numbers:
-```
-write E21 'WITHDRAWAL
-write E22 'TAX
-write E23 'REMAINING_SHORTFALL
-write B21 =INDEX(WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS), E21)
-write B22 =INDEX(WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS), E22)
-write B23 =INDEX(WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS), E23)
-```
-The string must match the output's `output_name` attribute in the callee's XML. Standard functions have names like `WITHDRAWAL`, `TAX`, etc.
-
-**Loop functions** — use string keys matching column headers:
-```
-# Loop with header B = "ending_balance", header C = "total_taxes"
-write B5 =INDEX(MY_LOOP(args), "ending_balance")
-write B6 =INDEX(MY_LOOP(args), "total_taxes")
-```
-Loop outputs use their column header names (set via `header` command). String literals work directly in formulas — no cell reference needed.
+Call once into a result cell, then `INDEX` with string-literal keys matching the callee's output names. See `docs/built-in-functions.md` (INDEX) for the full pattern and `BEST_PRACTICES.md` P11/P12 and AP1/AP2 for the rules.
 
 ### Loop Scripts
 
@@ -684,8 +520,8 @@ write E1 =E0+1
 # Stop condition
 write _STOP1 =E1>=YEARS
 
-# Column headers (for named output access via INDEX)
-header D ending_balance
+# Column headers (for named output access via INDEX) — UPPER_SNAKE_CASE per P8
+header D ENDING_BALANCE
 
 # Output: column letter, not cell address
 output D last
@@ -713,7 +549,7 @@ node import_zip.mjs --workfolder workfolders/retirement examples/retirement.zip
 
 # 2. Build new functions that depend on imported ones
 node cli/spreadsheet-cli.js --workfolder workfolders/retirement scripts/new-func.txt
-# (script uses: use RETIREMENT_YEAR_FULL, etc.)
+# (script uses: use RETIREMENT_YEAR, etc.)
 
 # 3. Test
 node eval.mjs --workfolder workfolders/retirement test NEW_FUNC.xml
@@ -739,7 +575,7 @@ The retirement suite (`examples/retirement.zip`) is the most complete example of
 
 | Script | Demonstrates |
 |--------|-------------|
-| `cli/scripts/retirement-year-full.txt` | Complex function calling other custom functions with INDEX for multi-output access |
+| `cli/scripts/retirement-year.txt` | Complex function calling other custom functions with INDEX for multi-output access |
 | `cli/scripts/accumulation-full.txt` | Loop script: multi-column loop with multiple outputs, formatting, and custom function dependencies |
 | `cli/scripts/retirement-projection-full.txt` | Loop script: calls a custom function per iteration, accumulates results across years |
 | `cli/scripts/full-retirement-scenario.txt` | Composition: standard sheet that calls two loop functions (accumulation → projection), chains their results, with drill-down hints |

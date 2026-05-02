@@ -22,8 +22,8 @@ write B1 =B0+1
 write _STOP1 =AND(B1>=2,(A1-A0)*(A1-A0)<0.000000000001)
 
 # Column headers
-header A estimate
-header B iteration
+header A ESTIMATE
+header B ITERATION
 
 # Output
 output A last

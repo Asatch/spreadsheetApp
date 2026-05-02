@@ -10,6 +10,7 @@ import { mountDialog, dialogHeaderHTML } from '../utils/dialogMount.js';
 import { isViewerMode } from '../utils/appMode.js';
 import { createPopover } from '../utils/popover.js';
 import { createPersistenceDialog } from './persistence-dialog.js';
+import { INDICATOR_KEYS, isIndicatorEnabled, setIndicatorEnabled } from './indicator-keys.js';
 
 /**
  * Header - Application branding and file operations
@@ -34,6 +35,7 @@ export function createHeader() {
   let onDeleteCurrent = null;          // Delete current sheet
   let onScenarioAnalysis = null;       // Open scenario analysis for current function
   let onManageLanguagePacks = null;    // Open language pack management
+  let onIndicatorPrefsChanged = null;  // Re-render reference indicators after a settings toggle
 
   // DOM references
   let container = null;
@@ -250,6 +252,15 @@ export function createHeader() {
           <p class="settings-section-desc">Ctrl+D loads drilled-down functions in the current tab with a breadcrumb trail, instead of opening a new tab.</p>
         </div>
         <div class="settings-section">
+          <h4 class="settings-section-title">Reference Indicators</h4>
+          ${INDICATOR_KEYS.map(({ key, label }) => `
+          <label class="settings-toggle-label">
+            <input type="checkbox" class="settings-indicator-toggle" data-indicator-key="${key}" ${isIndicatorEnabled(key) ? 'checked' : ''}>
+            <span>${label}</span>
+          </label>`).join('')}
+          <p class="settings-section-desc">Show the colored boxes and edge-of-viewport arrows that trace the active cell's references and the cells that reference it.</p>
+        </div>
+        <div class="settings-section">
           <h4 class="settings-section-title">Language Packs</h4>
           <p class="settings-section-desc">Manage language packs for exporting spreadsheet code.</p>
           <button type="button" class="btn-action settings-manage-packs">Manage Packs...</button>
@@ -280,6 +291,14 @@ export function createHeader() {
     });
     settingsDialog.querySelector('.settings-breadcrumb-toggle')?.addEventListener('change', (e) => {
       localStorage.setItem('sc-breadcrumb-drilldown', e.target.checked ? 'true' : 'false');
+    });
+    settingsDialog.querySelectorAll('.settings-indicator-toggle').forEach((toggle) => {
+      toggle.addEventListener('change', (e) => {
+        const key = e.target.dataset.indicatorKey;
+        if (!key) return;
+        setIndicatorEnabled(key, e.target.checked);
+        onIndicatorPrefsChanged?.();
+      });
     });
 
     saveStatusEl = container.querySelector('.save-status');
@@ -452,6 +471,7 @@ export function createHeader() {
         onDeleteCurrent,
         onScenarioAnalysis,
         onManageLanguagePacks,
+        onIndicatorPrefsChanged,
       } = deps);
     },
 
@@ -615,6 +635,7 @@ export function createToolbar() {
   let onTogglePanels = null;
   let onNamedRanges = null;
   let onHighlight = null;
+  let onFind = null;
 
   // DOM references
   let container = null;
@@ -664,6 +685,7 @@ export function createToolbar() {
     container.querySelector('.btn-clear-format')?.addEventListener('click', () => onClearFormatting());
     container.querySelector('.btn-custom-functions')?.addEventListener('click', () => onCustomFunctions());
     container.querySelector('.btn-named-ranges')?.addEventListener('click', () => onNamedRanges());
+    container.querySelector('.btn-find')?.addEventListener('click', () => onFind?.());
 
     // Buttons referenced by public API for state updates
     undoButton = container.querySelector('.btn-undo');
@@ -730,6 +752,7 @@ export function createToolbar() {
         onTogglePanels,
         onNamedRanges,
         onHighlight,
+        onFind,
       } = deps);
     },
 

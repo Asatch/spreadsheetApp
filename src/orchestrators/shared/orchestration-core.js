@@ -6,7 +6,7 @@
  */
 
 import { expandRange } from '../../utils/cellUtils.js';
-import { parseXml } from '../../utils/xmlSerializer.js';
+import { parseXml, stripUnusedInputsFromXml } from '../../utils/xmlSerializer.js';
 import { createExportPackage, downloadBlob, generateExportFilename } from '../../utils/exportPackager.js';
 import { isBreadcrumbMode, sheetUrl, appBasePath } from '../../utils/appMode.js';
 import { parseImportFolder, parseImportFolderFromEntries, extractZipFromHtml } from '../../utils/importPackager.js';
@@ -681,13 +681,10 @@ export function createOrchestrationCore() {
       const spreadsheetName = deps.hooks.getName();
       const { xml, versionId, functionId, functionName, spreadsheetId, isNew, previousVersionString } = await assembleVersionedXml(spreadsheetName);
 
-      // 1. Save published snapshot
-      await deps.storageEngine.savePublishedSnapshot(spreadsheetId, xml);
-
-      // 2. Collect dependency XMLs for transpilation
+      // 1. Collect dependency XMLs for transpilation
       const customFunctions = await deps.storageEngine.collectDependenciesFromXml(xml);
 
-      // 3. Transpile (server only - no storage)
+      // 2. Transpile (server only - no storage)
       const transpileResult = await deps.functionCompiler.transpile(xml, 'javascript', customFunctions);
 
       if (transpileResult.error) {
@@ -699,9 +696,42 @@ export function createOrchestrationCore() {
         throw new Error('Transpilation returned no JavaScript code');
       }
 
-      // 4. Verify transpiled JS against scenario outputs
+      // 3. Detect inputs the calculation graph never reads. The transpiler
+      // drops these from the JS signature; if we leave them in the published
+      // XML, drilldown would assign caller args to the wrong slots. Confirm
+      // with the user, then strip them so the signature matches end to end.
+      // The draft is untouched.
+      const declaredInputs = deps.canonicalValuesEngine.getAllNamedInputs();
+      const usedInputNames = new Set((transpileResult.signature?.inputs || []).map(i => i.name));
+      const unusedInputs = declaredInputs.filter(name => !usedInputNames.has(name));
+
+      let publishedXml = xml;
+      if (unusedInputs.length > 0) {
+        const list = unusedInputs.map(n => `  • ${n}`).join('\n');
+        const msg =
+          `These inputs aren't used by any output:\n\n${list}\n\n` +
+          `They'll be removed from the published version (your draft is unchanged) ` +
+          `so callers and drilldown stay in sync.\n\n` +
+          `OK to publish and remove them? (Cancel to keep editing.)`;
+        if (!confirm(msg)) {
+          deps.header.hideSaveStatus();
+          return { success: false, error: 'Publish cancelled' };
+        }
+        publishedXml = stripUnusedInputsFromXml(xml, unusedInputs);
+      }
+
+      // 3b. Save the published-XML snapshot. Done after the strip decision so
+      // a cancelled publish (or transpile failure above) doesn't leave the
+      // snapshot out of sync with the published JS — "discard to published"
+      // then reverts to the last successful publish.
+      await deps.storageEngine.savePublishedSnapshot(spreadsheetId, publishedXml);
+
+      // 4. Verify transpiled JS against scenario outputs.
+      // Use the transpiler's signature input order — that's the actual JS
+      // parameter list. Passing args in declared order would misalign whenever
+      // an unused input sits before a used one.
       const scenarios = deps.hooks.getScenarios();
-      const inputNames = deps.canonicalValuesEngine.getAllNamedInputs();
+      const inputNames = (transpileResult.signature?.inputs || []).map(i => i.name);
       if (scenarios.length > 0 && inputNames.length > 0) {
         deps.header.showSaveStatus('Verifying...', 0);
 
@@ -729,7 +759,7 @@ export function createOrchestrationCore() {
 
       // 5. Save published version with signature from transpiler
       const versionString = nextVersionString(previousVersionString);
-      await deps.storageEngine.publishSheet(spreadsheetId, xml, jsCode, versionString, versionId, functionId, { signature: transpileResult.signature });
+      await deps.storageEngine.publishSheet(spreadsheetId, publishedXml, jsCode, versionString, versionId, functionId, { signature: transpileResult.signature });
 
       deps.header.showSaveStatus('Published!', 3000);
 

@@ -22,9 +22,9 @@ write _STOP0 =LEN(VALUES)<=0
 write _STOP1 =B1>=LEN(VALUES)
 
 # Column headers
-header A running_sum
-header B index
-header C average
+header A RUNNING_SUM
+header B INDEX
+header C AVERAGE
 
 # Output
 output C last

@@ -28,6 +28,9 @@ const { createSpreadsheetOrchestrator } = await import(
 const { createLoopSheetOrchestrator } = await import(
   resolve(FRONTEND_PATH, 'orchestrators/loop-sheet-orchestrator.js')
 );
+const { TypeService } = await import(
+  resolve(FRONTEND_PATH, 'utils/typeService.js')
+);
 
 // =============================================================================
 // HELPERS
@@ -64,6 +67,27 @@ function normalizeInputs(inputDefs, overrides) {
   return overrides;
 }
 
+/**
+ * Set inputs on the orchestrator using the type-aware serialization helper.
+ *
+ * Plain `String(value)` loses type information: a Text input given the
+ * value 110 turns into the string "110", which the engine's TypeService
+ * then re-detects as Number. serializeForInput emits the leading-quote
+ * marker for Text (and the right form for Boolean/Date/etc.) so the
+ * engine recovers the declared type.
+ */
+function applyInputsToOrchestrator(orchestrator, inputDefs, namedInputs) {
+  const typeByName = new Map();
+  for (const def of inputDefs || []) {
+    if (def.name) typeByName.set(def.name, def.data_type);
+    if (def.key) typeByName.set(def.key, def.data_type);
+  }
+  for (const [name, value] of Object.entries(namedInputs)) {
+    const type = typeByName.get(name);
+    orchestrator.setValue(name, TypeService.serializeForInput(value, type));
+  }
+}
+
 // =============================================================================
 // EVALUATION FUNCTIONS (importable for programmatic use)
 // =============================================================================
@@ -78,9 +102,7 @@ export async function evaluate(xmlString, inputOverrides = {}, workfolderDir = n
     await orchestrator.loadFromXml(xmlString);
 
     const namedInputs = normalizeInputs(parsed.inputs, inputOverrides);
-    for (const [name, value] of Object.entries(namedInputs)) {
-      orchestrator.setValue(name, String(value));
-    }
+    applyInputsToOrchestrator(orchestrator, parsed.inputs, namedInputs);
 
     const iter = orchestrator.runIteration();
     const outputs = orchestrator.getOutputs();
@@ -172,9 +194,7 @@ export async function validate(xmlString, workfolderDir = null) {
   const inputs = parsed.testCases?.[0]?.inputs;
   if (inputs) {
     const namedInputs = normalizeInputs(parsed.inputs, inputs);
-    for (const [name, value] of Object.entries(namedInputs)) {
-      orchestrator.setValue(name, String(value));
-    }
+    applyInputsToOrchestrator(orchestrator, parsed.inputs, namedInputs);
     orchestrator.runIteration();
   }
 

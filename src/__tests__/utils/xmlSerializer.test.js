@@ -5,7 +5,7 @@
  * and extractSignatureFromXml used when serializing/deserializing XML.
  */
 
-import { isLiteral, getLiteralType, extractSignatureFromXml } from '../../utils/xmlSerializer';
+import { isLiteral, getLiteralType, extractSignatureFromXml, stripUnusedInputsFromXml } from '../../utils/xmlSerializer';
 
 describe('xmlSerializer', () => {
   describe('isLiteral', () => {
@@ -260,6 +260,122 @@ describe('xmlSerializer', () => {
       });
       const sig = extractSignatureFromXml(xml);
       expect(sig.inputs[0]).not.toHaveProperty('testValues');
+    });
+  });
+
+  describe('stripUnusedInputsFromXml', () => {
+    function makeXml({ nodes = '', namedNodes = '', testCases = '' } = {}) {
+      return `<?xml version="1.0"?>
+        <CodeCalculation>
+          <Nodes>${nodes}</Nodes>
+          <NamedNodes>${namedNodes}</NamedNodes>
+          <NodeDependencies></NodeDependencies>
+          <Outputs></Outputs>
+          <TestCases>${testCases}</TestCases>
+          <SpreadsheetMeta version="1.0"></SpreadsheetMeta>
+        </CodeCalculation>`;
+    }
+
+    it('returns the input unchanged when no names are passed', () => {
+      const xml = makeXml({
+        nodes: `<Node key="A" node_type="input" input_name="A" data_type="Number" input_order="0"/>`,
+      });
+      expect(stripUnusedInputsFromXml(xml, [])).toBe(xml);
+      expect(stripUnusedInputsFromXml(xml, null)).toBe(xml);
+    });
+
+    it('removes the input Node, alias NamedNode, and matching test_case input_value', () => {
+      const xml = makeXml({
+        nodes: `
+          <Node node_id="1" key="A" node_type="input" input_name="A" data_type="Number" input_order="0"/>
+          <Node node_id="2" key="B" node_type="input" input_name="B" data_type="Number" input_order="1"/>
+          <Node node_id="3" key="C" node_type="input" input_name="C" data_type="Number" input_order="2"/>
+        `,
+        namedNodes: `
+          <NamedNode node_name="A" node_name_type="alias" node_id="1"/>
+          <NamedNode node_name="B" node_name_type="alias" node_id="2"/>
+          <NamedNode node_name="C" node_name_type="alias" node_id="3"/>
+        `,
+        testCases: `
+          <test_case>
+            <input_value Value="1"/>
+            <input_value Value="2"/>
+            <input_value Value="3"/>
+          </test_case>
+          <test_case>
+            <input_value Value="10"/>
+            <input_value Value="20"/>
+            <input_value Value="30"/>
+          </test_case>
+        `,
+      });
+
+      const stripped = stripUnusedInputsFromXml(xml, ['B']);
+      const sig = extractSignatureFromXml(stripped);
+
+      expect(sig.inputs.map(i => i.name)).toEqual(['A', 'C']);
+      // Confirm test_case input_values are stripped positionally for B (index 1)
+      expect(sig.inputs[0].testValues.sort()).toEqual(['1', '10']);
+      expect(sig.inputs[1].testValues.sort()).toEqual(['3', '30']);
+
+      // The alias NamedNode for B should be gone
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(stripped, 'application/xml');
+      const aliases = [...doc.querySelectorAll('NamedNodes > NamedNode')]
+        .filter(n => n.getAttribute('node_name_type') === 'alias')
+        .map(n => n.getAttribute('node_name'));
+      expect(aliases.sort()).toEqual(['A', 'C']);
+    });
+
+    it('renumbers input_order on remaining inputs to be contiguous', () => {
+      const xml = makeXml({
+        nodes: `
+          <Node node_id="1" key="A" node_type="input" input_name="A" data_type="Number" input_order="0"/>
+          <Node node_id="2" key="B" node_type="input" input_name="B" data_type="Number" input_order="1"/>
+          <Node node_id="3" key="C" node_type="input" input_name="C" data_type="Number" input_order="2"/>
+        `,
+      });
+
+      const stripped = stripUnusedInputsFromXml(xml, ['A']);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(stripped, 'application/xml');
+      const orders = [...doc.querySelectorAll('Nodes > Node')]
+        .filter(n => n.getAttribute('node_type') === 'input')
+        .map(n => ({
+          name: n.getAttribute('input_name'),
+          order: parseInt(n.getAttribute('input_order'), 10),
+        }));
+
+      expect(orders).toEqual([
+        { name: 'B', order: 0 },
+        { name: 'C', order: 1 },
+      ]);
+    });
+
+    it('strips multiple inputs at once, preserving positional alignment', () => {
+      const xml = makeXml({
+        nodes: `
+          <Node node_id="1" key="A" node_type="input" input_name="A" data_type="Number" input_order="0"/>
+          <Node node_id="2" key="B" node_type="input" input_name="B" data_type="Number" input_order="1"/>
+          <Node node_id="3" key="C" node_type="input" input_name="C" data_type="Number" input_order="2"/>
+          <Node node_id="4" key="D" node_type="input" input_name="D" data_type="Number" input_order="3"/>
+        `,
+        testCases: `
+          <test_case>
+            <input_value Value="a"/>
+            <input_value Value="b"/>
+            <input_value Value="c"/>
+            <input_value Value="d"/>
+          </test_case>
+        `,
+      });
+
+      const stripped = stripUnusedInputsFromXml(xml, ['A', 'C']);
+      const sig = extractSignatureFromXml(stripped);
+
+      expect(sig.inputs.map(i => i.name)).toEqual(['B', 'D']);
+      expect(sig.inputs[0].testValues).toEqual(['b']);
+      expect(sig.inputs[1].testValues).toEqual(['d']);
     });
   });
 });

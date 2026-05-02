@@ -3,6 +3,8 @@
  * Extracts nodes and outputs from Schema 5 format XML.
  */
 
+import { coerceTestValue } from './test-value-parser.mjs';
+
 /**
  * Parse XML string and extract nodes and outputs.
  * @param {string} xmlString - The XML content
@@ -66,8 +68,9 @@ export function parseXML(xmlString) {
   // Sort outputs by order
   outputs.sort((a, b) => a.order - b.order);
 
-  // Extract TestCases if present
-  const testCases = parseTestCases(xmlString);
+  // Extract TestCases if present (type-aware so Text inputs/outputs aren't
+  // silently parseFloat'd into numbers, dropping leading zeros, etc.)
+  const testCases = parseTestCases(xmlString, inputs, outputs);
 
   // Extract CustomFunctions dependencies
   const customFunctions = parseCustomFunctions(xmlString);
@@ -176,19 +179,16 @@ function parseDefaultValue(canonical, dataType) {
  * Supports both formats:
  *   - <TestCase><Input order="0" value="X"/><ExpectedOutput value="Y"/></TestCase>
  *   - <test_case><input_value Value="X"/><output_value Value="Y"/></test_case>
+ *
  * @param {string} xmlString
- * @returns {Array<{inputs: number[], expected: number}>}
+ * @param {Array<{data_type: string}>} [inputDefs] - declared inputs in order; values are coerced per type
+ * @param {Array<{data_type: string}>} [outputDefs] - declared outputs in order
+ * @returns {Array<{inputs: Array, expected: *}>}
  */
-function parseTestValue(str) {
-  const trimmed = str.trim();
-  // Array literal — preserve as string (engine parses it via TypeService)
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    return trimmed;
-  }
-  return parseFloat(trimmed.replace(/\s/g, ''));
-}
+function parseTestCases(xmlString, inputDefs = [], outputDefs = []) {
+  const inputType = (i) => inputDefs[i]?.data_type;
+  const outputType = (i) => outputDefs[i]?.data_type;
 
-function parseTestCases(xmlString) {
   const testCases = [];
 
   // Try format 1: <TestCase>
@@ -202,11 +202,11 @@ function parseTestCases(xmlString) {
     const inputRegex = /<Input[^>]*value="([^"]*)"[^>]*\/>/gi;
     let inputMatch;
     while ((inputMatch = inputRegex.exec(testXml)) !== null) {
-      inputs.push(parseTestValue(inputMatch[1]));
+      inputs.push(coerceTestValue(inputMatch[1], inputType(inputs.length)));
     }
 
     const expectedMatch = testXml.match(/<ExpectedOutput[^>]*value="([^"]*)"[^>]*\/>/i);
-    const expected = expectedMatch ? parseTestValue(expectedMatch[1]) : null;
+    const expected = expectedMatch ? coerceTestValue(expectedMatch[1], outputType(0)) : null;
 
     if (inputs.length > 0 && expected !== null) {
       testCases.push({ inputs, expected });
@@ -223,14 +223,14 @@ function parseTestCases(xmlString) {
     const inputRegex = /<input_value[^>]*Value="([^"]*)"[^>]*\/>/gi;
     let inputMatch;
     while ((inputMatch = inputRegex.exec(testXml)) !== null) {
-      inputs.push(parseTestValue(inputMatch[1]));
+      inputs.push(coerceTestValue(inputMatch[1], inputType(inputs.length)));
     }
 
     const expected = [];
     const outputRegex = /<output_value[^>]*Value="([^"]*)"[^>]*\/>/gi;
     let outputMatch;
     while ((outputMatch = outputRegex.exec(testXml)) !== null) {
-      expected.push(parseTestValue(outputMatch[1]));
+      expected.push(coerceTestValue(outputMatch[1], outputType(expected.length)));
     }
 
     if (inputs.length > 0 && expected.length > 0) {

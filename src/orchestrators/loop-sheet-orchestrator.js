@@ -20,6 +20,7 @@ import {
   createBaseFormulaBarConfig,
   createBasePanelsConfig,
   createBaseGridConfig,
+  createRowColOps,
   createBaseFormattingEngineConfig,
   createBaseCanonicalValuesEngineConfig,
   createBaseStorageEngineConfig,
@@ -80,6 +81,7 @@ export function createLoopSheetOrchestrator(config = {}) {
   let codeExportDialog = null;
   let languagePackListDialog = null;
   let languagePackEditor = null;
+  let findBar = null;
   let functionCompiler = null;
   let core = null;
 
@@ -499,6 +501,7 @@ export function createLoopSheetOrchestrator(config = {}) {
     codeExportDialog = components.codeExportDialog;
     languagePackListDialog = components.languagePackListDialog;
     languagePackEditor = components.languagePackEditor;
+    findBar = components.findBar;
 
     // Create function compiler (needs storageEngine methods, or use injected one)
     functionCompiler = config.functionCompiler ?? createFunctionCompiler({
@@ -706,6 +709,9 @@ export function createLoopSheetOrchestrator(config = {}) {
         }
         formulaBar.focus(cursorMode);
       },
+
+      // toolbar callbacks
+      openFind: () => findBar.open(),
     };
 
     // ============================================================================
@@ -843,8 +849,8 @@ export function createLoopSheetOrchestrator(config = {}) {
         getColumnNames: { type: 'function', value: () => grid.getColumnNames() },
       },
 
-      grid: {
-        ...createBaseGridConfig({
+      grid: (() => {
+        const base = createBaseGridConfig({
           formattingEngine,
           formulaBar,
           clipboardEngine,
@@ -852,13 +858,21 @@ export function createLoopSheetOrchestrator(config = {}) {
           canonicalValuesEngine,
           toolbar,
           callbacks,
-        }),
-        onColumnNameChange: { type: 'function', value: callbacks.onColumnNameChange },
-      },
+        });
+        // Loop sheets only support column ops (rows are bound to the loop iteration)
+        const rowColOps = createRowColOps({ grid, clipboardEngine });
+        return {
+          ...base,
+          onColumnNameChange: { type: 'function', value: callbacks.onColumnNameChange },
+          onInsertCol: { type: 'function', value: rowColOps.insertCol },
+          onDeleteCol: { type: 'function', value: rowColOps.deleteCol },
+        };
+      })(),
 
       header: createBaseHeaderConfig({
         functionsDialog,
         storageEngine,
+        grid,
         callbacks,
       }),
 
@@ -901,6 +915,7 @@ export function createLoopSheetOrchestrator(config = {}) {
       codeExportDialog,
       languagePackListDialog,
       languagePackEditor,
+      findBar,
     };
 
     initializeModules(modules, moduleConfigs, '[LoopOrchestrator]');

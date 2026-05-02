@@ -11,7 +11,7 @@ import { parseFormula as parseFormulaUtil } from '../utils/formulaParser.js';
 import { tokenize, TokenType, recomputeTokenPositions, serializeTokens } from '../utils/formulaTokenizer.js';
 
 const isEmpty = (val) => val === undefined || val === '';
-import { isCellReference } from '../utils/cellUtils.js';
+import { isCellReference, parseCellKey } from '../utils/cellUtils.js';
 
 /**
  * @typedef {Object} InterpretedInput
@@ -606,6 +606,35 @@ export function createCanonicalValuesEngine() {
 
     getValue(key) {
       return storage.get(key);
+    },
+
+    /**
+     * Case-insensitive substring search over canonical values of cell-reference
+     * keys. Skips PREVIEW, anonymous expressions, and named entities.
+     * Results are sorted in grid order (row asc, then column asc).
+     *
+     * @param {string} query
+     * @returns {Array<{key: string, canonical: string}>}
+     */
+    findMatches(query) {
+      if (!query) return [];
+      const needle = query.toLowerCase();
+      const results = [];
+      for (const [key, canonical] of storage.entries()) {
+        if (key === PREVIEW_KEY) continue;
+        if (isAnonymous(key)) continue;
+        if (!isCellReference(key)) continue;
+        if (canonical.toLowerCase().includes(needle)) {
+          results.push({ key, canonical });
+        }
+      }
+      results.sort((a, b) => {
+        const pa = parseCellKey(a.key);
+        const pb = parseCellKey(b.key);
+        if (pa.row !== pb.row) return pa.row - pb.row;
+        return pa.colNum - pb.colNum;
+      });
+      return results;
     },
 
     getExpressionProvenance(key) {

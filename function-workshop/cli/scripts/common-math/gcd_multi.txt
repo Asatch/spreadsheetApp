@@ -25,9 +25,9 @@ write _STOP0 =C0<=1
 write _STOP1 =B1>=C1
 
 # Column headers
-header A running_gcd
-header B index
-header C count
+header A RUNNING_GCD
+header B INDEX
+header C COUNT
 
 # Output
 output A last

@@ -166,9 +166,9 @@ describe('formulaTokenizer', () => {
   });
 
   describe('String literals', () => {
-    it('should tokenize quoted string', () => {
+    it('should tokenize quoted string and preserve case', () => {
       const tokens = tokenize('="hello"');
-      expect(tokens[1]).toMatchObject({ type: 'STRING', start: 1, end: 8, value: '"HELLO"' });
+      expect(tokens[1]).toMatchObject({ type: 'STRING', start: 1, end: 8, value: '"hello"' });
     });
 
     it('should handle unclosed string gracefully', () => {

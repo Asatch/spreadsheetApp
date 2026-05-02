@@ -14,6 +14,7 @@ import {
   createBaseFormulaBarConfig,
   createBasePanelsConfig,
   createBaseGridConfig,
+  createRowColOps,
   createBaseFormattingEngineConfig,
   createBaseCanonicalValuesEngineConfig,
   createBaseStorageEngineConfig,
@@ -69,6 +70,7 @@ export function createSpreadsheetOrchestrator(config = {}) {
   let codeExportDialog = null;
   let languagePackListDialog = null;
   let languagePackEditor = null;
+  let findBar = null;
   let functionCompiler = null;
   let core = null;
 
@@ -121,6 +123,7 @@ export function createSpreadsheetOrchestrator(config = {}) {
     codeExportDialog = components.codeExportDialog;
     languagePackListDialog = components.languagePackListDialog;
     languagePackEditor = components.languagePackEditor;
+    findBar = components.findBar;
 
     // Create function compiler (needs storageEngine methods, or use injected one)
     functionCompiler = config.functionCompiler ?? createFunctionCompiler({
@@ -232,6 +235,9 @@ export function createSpreadsheetOrchestrator(config = {}) {
       // grid callbacks
       onInputDetected: (inputText) => formulaBar.handleInputFromGrid(inputText),
       focusFormulaBar: (cursorMode) => formulaBar.focus(cursorMode),
+
+      // toolbar callbacks
+      openFind: () => findBar.open(),
     };
 
     // ============================================================================
@@ -314,19 +320,30 @@ export function createSpreadsheetOrchestrator(config = {}) {
         callbacks,
       }),
 
-      grid: createBaseGridConfig({
-        formattingEngine,
-        formulaBar,
-        clipboardEngine,
-        calculationEngine,
-        canonicalValuesEngine,
-        toolbar,
-        callbacks,
-      }),
+      grid: (() => {
+        const base = createBaseGridConfig({
+          formattingEngine,
+          formulaBar,
+          clipboardEngine,
+          calculationEngine,
+          canonicalValuesEngine,
+          toolbar,
+          callbacks,
+        });
+        const rowColOps = createRowColOps({ grid, clipboardEngine });
+        return {
+          ...base,
+          onInsertRow: { type: 'function', value: rowColOps.insertRow },
+          onInsertCol: { type: 'function', value: rowColOps.insertCol },
+          onDeleteRow: { type: 'function', value: rowColOps.deleteRow },
+          onDeleteCol: { type: 'function', value: rowColOps.deleteCol },
+        };
+      })(),
 
       header: createBaseHeaderConfig({
         functionsDialog,
         storageEngine,
+        grid,
         callbacks,
       }),
 
@@ -369,6 +386,7 @@ export function createSpreadsheetOrchestrator(config = {}) {
       codeExportDialog,
       languagePackListDialog,
       languagePackEditor,
+      findBar,
     };
 
     initializeModules(modules, moduleConfigs, '[Orchestrator]');

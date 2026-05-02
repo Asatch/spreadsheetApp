@@ -22,8 +22,8 @@ write _STOP0 =NUM2=0
 write _STOP1 =B1<=0
 
 # Column headers
-header A x
-header B y
+header A X
+header B Y
 
 # Output: when b reaches 0, a is the GCD
 output A last

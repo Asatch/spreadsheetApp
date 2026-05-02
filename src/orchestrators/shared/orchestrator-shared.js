@@ -13,6 +13,7 @@ import { createClipboardEngine } from '../../Engines/clipboardEngine.js';
 import { getBuiltInFunctions } from '../../utils/functions.js';
 import { createScenarioEngine } from '../../Engines/scenarioEngine.js';
 import { appBasePath } from '../../utils/appMode.js';
+import { parseCellKey, isCellInRange, numberToColumn, columnToNumber } from '../../utils/cellUtils.js';
 import { createGrid } from '../../components/grid.js';
 import { createFormulaBar } from '../../components/formula-bar.js';
 import { createHeader, createToolbar } from '../../components/top-controls.js';
@@ -25,6 +26,7 @@ import { createNamedRangesDialog } from '../../components/named-ranges-dialog.js
 import { createCodeExportDialog } from '../../components/code-export-dialog.js';
 import { createLanguagePackListDialog } from '../../components/language-pack-list-dialog.js';
 import { createLanguagePackEditor } from '../../components/language-pack-editor.js';
+import { createFindBar } from '../../components/find-bar.js';
 import { createLanguagePackEngine } from '../../Engines/languagePackEngine.js';
 import { normalizeName, isValidNameSyntax } from '../../utils/nameValidation.js';
 import { isArrayType } from '../../utils/typeService.js';
@@ -91,6 +93,7 @@ export function createPersistentComponents() {
     codeExportDialog: createCodeExportDialog(),
     languagePackListDialog: createLanguagePackListDialog(),
     languagePackEditor: createLanguagePackEditor(),
+    findBar: createFindBar(),
   };
 }
 
@@ -225,6 +228,7 @@ export function createIdenticalModuleConfigs({
       onTogglePanels: { type: 'function', value: () => panels.toggle() },
       onNamedRanges: { type: 'function', value: () => namedRangesDialog.open() },
       onHighlight: { type: 'function', value: (name) => formattingEngine.applyHighlight(name) },
+      onFind: { type: 'function', value: callbacks.openFind },
     },
 
     formatDialog: {
@@ -346,6 +350,16 @@ export function createIdenticalModuleConfigs({
       onHtmlDrop: { type: 'function', value: callbacks.onHtmlDrop || (() => {}) },
     },
 
+    findBar: {
+      onFindMatches: { type: 'function', value: (query) => canonicalValuesEngine.findMatches(query) },
+      onRevealCell: { type: 'function', value: (key) => grid.revealCell(key) },
+      onClearReveal: { type: 'function', value: () => grid.clearFindMatch() },
+      onCommitMatch: { type: 'function', value: (key) => {
+        grid.clearFindMatch();
+        grid.setActiveCell(key);
+      } },
+    },
+
     namedRangesDialog: {
       getAllNamedRanges: { type: 'function', value: () => canonicalValuesEngine.getAllNamedRanges() },
       renameNamedRange: { type: 'function', value: (oldName, newName) => canonicalValuesEngine.renameNamedRange(oldName, newName) },
@@ -384,6 +398,7 @@ export function createBaseClipboardConfig({
     onCutStateChange: { type: 'function', value: (isCut) => toolbar.setCancelCutVisible(isCut) },
     getAllNamedRanges: { type: 'function', value: () => canonicalValuesEngine.getAllNamedRanges() },
     moveNamedRange: { type: 'function', value: (name, newNotation) => canonicalValuesEngine.moveNamedRange(name, newNotation) },
+    deleteNamedRange: { type: 'function', value: (name) => canonicalValuesEngine.deleteNamedRange(name) },
     onRefreshNamedRangeDisplay: { type: 'function', value: () => {
       const selection = grid.getSelection();
       const notation = selection.start === selection.end ? selection.start : `${selection.start}:${selection.end}`;
@@ -578,6 +593,20 @@ export function createBaseGridConfig({
     insertReference: { type: 'function', value: (notation) => formulaBar.insertReference(notation) },
     focusFormulaBar: { type: 'function', value: callbacks.focusFormulaBar },
     loadCellInFormulaBar: { type: 'function', value: (cellKey) => formulaBar.loadCell(cellKey) },
+    getDependentsOf: { type: 'function', value: (cellKey) => {
+      // Named ranges aren't expanded into per-cell entries in the dependency
+      // graph — `=SUM(MyRange)` registers `MyRange → owner` only. So for a cell
+      // inside a named range, fold in that range's cell-level dependents too.
+      const result = new Set(calculationEngine.getCellDependentsOf(cellKey));
+      for (const { name, notation } of canonicalValuesEngine.getAllNamedRanges()) {
+        const [start, end = start] = notation.split(':');
+        if (!isCellInRange(cellKey, { start, end })) continue;
+        for (const dep of calculationEngine.getCellDependentsOf(name)) {
+          result.add(dep);
+        }
+      }
+      return result;
+    }},
     updateCellNameDisplay: { type: 'function', value: (notation) => formulaBar.updateCellNameDisplay(notation) },
     commitFormulaBarCell: { type: 'function', value: () => formulaBar.commitCurrentCell() },
     applyBold: { type: 'function', value: () => formattingEngine.applyBold() },
@@ -605,6 +634,86 @@ export function createBaseGridConfig({
     }},
     canDrilldown: { type: 'function', value: (cellKey) => !!calculationEngine.getDrilldownInfo(cellKey) },
   };
+}
+
+/**
+ * Build insert/delete row/col operations for the grid. Each op uses the active
+ * cell's row/col, extends grid bounds when inserting, and shifts existing
+ * cells via clipboardEngine.moveRange (which handles formula refs, named
+ * ranges, and #REF! conversion). Loop sheets only wire the column variants.
+ */
+export function createRowColOps({ grid, clipboardEngine }) {
+  function insertRow() {
+    const active = grid.getActiveCell();
+    const parsed = parseCellKey(active);
+    if (!parsed) return;
+    const N = parsed.row;
+    const { maxRow, maxCol } = grid.getGridBounds();
+    grid.setGridBounds({ maxRow: maxRow + 1, maxCol });
+    if (N <= maxRow) {
+      clipboardEngine.moveRange(
+        { start: `A${N}`, end: `${maxCol}${maxRow}` },
+        `A${N + 1}`
+      );
+    }
+  }
+
+  function insertCol() {
+    const active = grid.getActiveCell();
+    const parsed = parseCellKey(active);
+    if (!parsed) return;
+    const C = parsed.colNum;
+    const { maxRow, maxCol } = grid.getGridBounds();
+    const maxColNum = columnToNumber(maxCol);
+    grid.setGridBounds({ maxRow, maxCol: numberToColumn(maxColNum + 1) });
+    if (C <= maxColNum) {
+      clipboardEngine.moveRange(
+        { start: `${numberToColumn(C)}1`, end: `${maxCol}${maxRow}` },
+        `${numberToColumn(C + 1)}1`
+      );
+    }
+  }
+
+  function deleteRow() {
+    const active = grid.getActiveCell();
+    const parsed = parseCellKey(active);
+    if (!parsed) return;
+    const N = parsed.row;
+    const { maxRow, maxCol } = grid.getGridBounds();
+    if (N > maxRow) return;
+    if (N < maxRow) {
+      clipboardEngine.moveRange(
+        { start: `A${N + 1}`, end: `${maxCol}${maxRow}` },
+        `A${N}`
+      );
+    } else {
+      // Trailing row: nothing to shift up — just nuke it
+      clipboardEngine.deleteRange({ start: `A${N}`, end: `${maxCol}${N}` });
+    }
+  }
+
+  function deleteCol() {
+    const active = grid.getActiveCell();
+    const parsed = parseCellKey(active);
+    if (!parsed) return;
+    const C = parsed.colNum;
+    const { maxRow, maxCol } = grid.getGridBounds();
+    const maxColNum = columnToNumber(maxCol);
+    if (C > maxColNum) return;
+    if (C < maxColNum) {
+      clipboardEngine.moveRange(
+        { start: `${numberToColumn(C + 1)}1`, end: `${maxCol}${maxRow}` },
+        `${numberToColumn(C)}1`
+      );
+    } else {
+      clipboardEngine.deleteRange({
+        start: `${numberToColumn(C)}1`,
+        end: `${numberToColumn(C)}${maxRow}`,
+      });
+    }
+  }
+
+  return { insertRow, insertCol, deleteRow, deleteCol };
 }
 
 /**
@@ -726,6 +835,7 @@ export function createBaseStorageEngineConfig({
 export function createBaseHeaderConfig({
   functionsDialog,
   storageEngine,
+  grid,
   callbacks,
 }) {
   return {
@@ -753,6 +863,7 @@ export function createBaseHeaderConfig({
     onExportHtml: { type: 'function', value: callbacks.onExportHtml || (() => {}) },
     onExportCode: { type: 'function', value: callbacks.onExportCode || (() => {}) },
     onManageLanguagePacks: { type: 'function', value: callbacks.onManageLanguagePacks || (() => {}) },
+    onIndicatorPrefsChanged: { type: 'function', value: () => grid.refreshOverlays() },
     onDeleteCurrent: { type: 'function', value: callbacks.onDeleteCurrent || (() => {}) },
     onScenarioAnalysis: { type: 'function', value: async () => {
       const sheetId = storageEngine.getCurrentSpreadsheetId();

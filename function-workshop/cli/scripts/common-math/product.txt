@@ -23,9 +23,9 @@ write _STOP0 =C0<=0
 write _STOP1 =B1>=C1
 
 # Column headers
-header A result
-header B index
-header C count
+header A RESULT
+header B INDEX
+header C COUNT
 
 # Output
 output A last

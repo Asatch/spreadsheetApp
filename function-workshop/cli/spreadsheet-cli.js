@@ -40,6 +40,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, relative, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { execFileSync } from 'child_process';
+import { coerceTestValue } from '../test-value-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -71,6 +72,7 @@ const {
 
 const frontendEngines = resolve(__dirname, '../../src/Engines');
 const { createCanonicalValuesEngine } = await import(pathToFileURL(resolve(frontendEngines, 'canonicalValuesEngine.js')).href);
+const { isLiteral, convertLiteral } = await import(pathToFileURL(resolve(frontendEngines, 'calculationEngine.js')).href);
 const { parseXML } = await import(pathToFileURL(resolve(__dirname, '..', 'xml-parser.mjs')).href);
 
 /**
@@ -109,6 +111,7 @@ function createEngineWithCalcData() {
           if (info.type === 'formula') {
             const precedents = info.parsed;
             const childTypes = precedents.slice(1).map(p => {
+              if (isLiteral(p)) return convertLiteral(p).type;
               return nodeCalcData.get(p)?.type || 'Number';
             });
             if (precedents?.[0] === 'ARRAY') {
@@ -281,7 +284,9 @@ function cmdWrite(cellKey, value) {
   // Determine canonical form
   let canonical;
   if (value.startsWith('=')) {
-    canonical = value.toUpperCase();
+    // Pass the formula through as-is; the tokenizer normalizes case for
+    // identifiers, cell refs, and booleans, while preserving string-literal case.
+    canonical = value;
   } else if (value.startsWith("'")) {
     canonical = value;  // Text literal, keep as-is
   } else if (inferType(value) === 'Text' && !isCellReference(value)) {
@@ -532,35 +537,28 @@ function splitTestValues(str) {
   return values;
 }
 
-/**
- * Parse a single test value token. Array literals like {1,2,3} are preserved
- * as strings for XML storage — the transpiler's buildTestCases handles typing.
- */
-function parseTestValue(token) {
-  if (token.startsWith('{') && token.endsWith('}')) {
-    return token;  // Array literal — store as string for XML
-  }
-  const num = parseFloat(token);
-  return isNaN(num) ? token : num;
-}
-
 function cmdTest(inputsStr, expectedStr) {
-  const inputValues = splitTestValues(inputsStr).map(parseTestValue);
-  const expectedValues = splitTestValues(expectedStr).map(parseTestValue);
+  const inputTokens = splitTestValues(inputsStr);
+  const expectedTokens = splitTestValues(expectedStr);
 
-  // Build inputs object keyed by input name
+  // Build inputs object keyed by input name, parsing each token in the
+  // context of its corresponding input's declared type (read from the
+  // engine, which has typed each input via its default value).
   const inputs = {};
   state.namedInputsOrdered.forEach((name, i) => {
-    if (i < inputValues.length) {
-      inputs[name] = inputValues[i];
+    if (i < inputTokens.length) {
+      const declaredType = engine.nodeCalcData.get(name)?.type;
+      inputs[name] = coerceTestValue(inputTokens[i], declaredType);
     }
   });
 
-  // Build outputs object keyed by output cell
+  // Build outputs object keyed by output cell, using each output's
+  // declared type so e.g. expected "110" for a Text output stays "110".
   const outputs = {};
   state.outputCells.forEach((cell, i) => {
-    if (i < expectedValues.length) {
-      outputs[cell] = expectedValues[i];
+    if (i < expectedTokens.length) {
+      const declaredType = engine.nodeCalcData.get(cell)?.type;
+      outputs[cell] = coerceTestValue(expectedTokens[i], declaredType);
     }
   });
 

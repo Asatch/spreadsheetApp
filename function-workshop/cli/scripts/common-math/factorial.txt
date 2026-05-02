@@ -17,8 +17,8 @@ write _STOP0 =NUM<=0
 write _STOP1 =A1<=1
 
 # Column headers
-header A counter
-header B result
+header A COUNTER
+header B RESULT
 
 # Output
 output B last

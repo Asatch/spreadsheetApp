@@ -268,6 +268,12 @@ function renderToolbar() {
 
         <!-- Panel Toggle & Named Ranges -->
         <div class="toolbar-group toolbar-group-bordered">
+          <button class="toolbar-btn btn-find" title="Find (Ctrl+F)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
           <button class="toolbar-btn btn-named-ranges" title="Named Ranges">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7" rx="1"/>

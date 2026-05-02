@@ -110,6 +110,24 @@ function serveExportBuild() {
   };
 }
 
+/**
+ * Strip a leading `#!...` shebang line so Vite/Rolldown can parse files that
+ * are also runnable directly from the shell (the function-workshop CLI tools).
+ * Node ignores the shebang on `import`, but Rolldown's parser treats `#` as a
+ * syntax error.
+ */
+function stripShebang() {
+  return {
+    name: 'strip-shebang',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!/\.(mjs|js)$/.test(id) || !code.startsWith('#!')) return null;
+      const nl = code.indexOf('\n');
+      return { code: nl === -1 ? '' : code.slice(nl + 1), map: null };
+    }
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isTest = mode === 'test' || process.env.VITEST;
@@ -135,7 +153,7 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.SC_SELF_HOST_START_SH': JSON.stringify(readSelfHost('start.sh')),
       'import.meta.env.SC_SELF_HOST_START_PS1': JSON.stringify(readSelfHost('start.ps1')),
     },
-    plugins: [...singleFile ? [viteSingleFile()] : [], serveExportBuild(), serveExamplePacks(), ...isTest || devCert ? [] : [basicSsl()]],
+    plugins: [...singleFile ? [viteSingleFile()] : [], stripShebang(), serveExportBuild(), serveExamplePacks(), ...isTest || devCert ? [] : [basicSsl()]],
     server: {
       port: isTest ? 3456 : 3001,
       strictPort: true,

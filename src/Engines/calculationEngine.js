@@ -112,6 +112,79 @@ function sourceMetaFromFuncDef(funcDef) {
 }
 
 /**
+ * Check if a string is a numeric literal.
+ *
+ * @example
+ * isNumber("42")    // true
+ * isNumber("-3.14") // true
+ * isNumber("A1")    // false
+ */
+export function isNumber(str) {
+  return /^-?\d+(\.\d+)?$/.test(str);
+}
+
+/**
+ * Check if a string is a quoted string literal.
+ *
+ * @example
+ * isQuotedString('"hello"')  // true
+ * isQuotedString('"B47"')    // true
+ * isQuotedString('hello')    // false
+ */
+export function isQuotedString(str) {
+  return str.length >= 2 && str.startsWith('"') && str.endsWith('"');
+}
+
+/**
+ * Check if a string is an inline literal (number, error, boolean, or quoted string).
+ *
+ * Literals don't need to be looked up in nodeCalcData — they're typed directly
+ * from their string form.
+ *
+ * @example
+ * isLiteral("#REF!")   // true
+ * isLiteral("42")      // true
+ * isLiteral("TRUE")    // true
+ * isLiteral('"hello"') // true
+ * isLiteral("A1")      // false
+ */
+export function isLiteral(str) {
+  return str.startsWith('#') || isNumber(str) || str === 'TRUE' || str === 'FALSE' || isQuotedString(str);
+}
+
+/**
+ * Convert a literal string to an evaluation result object.
+ *
+ * @param {string} str - Literal string (error like "#REF!", number like "42", or boolean like "TRUE")
+ * @returns {{refValue: *, type: string, errorMeta?: Array}}
+ * @throws {Error} If called on a non-literal
+ *
+ * @example
+ * convertLiteral("#REF!")   // { refValue: "#REF!", type: "Error", errorMeta: [...] }
+ * convertLiteral("42")      // { refValue: 42, type: "Number" }
+ * convertLiteral("TRUE")    // { refValue: true, type: "Boolean" }
+ * convertLiteral('"hello"') // { refValue: "hello", type: "Text" }
+ */
+export function convertLiteral(str) {
+  if (str.startsWith('#')) {
+    return {refValue: str, type: 'Error', errorMeta: [{ error: str }]};
+  }
+  if (str === 'TRUE') {
+    return {refValue: true, type: 'Boolean'};
+  }
+  if (str === 'FALSE') {
+    return {refValue: false, type: 'Boolean'};
+  }
+  if (isNumber(str)) {
+    return {refValue: parseFloat(str), type: 'Number'};
+  }
+  if (isQuotedString(str)) {
+    return {refValue: str.slice(1, -1), type: 'Text'};
+  }
+  throw new Error(`convertLiteral called on non-literal: ${str}`);
+}
+
+/**
  * Create a calculation engine instance.
  *
  * Factory function that creates a calculation engine with dependency injection pattern.
@@ -292,61 +365,6 @@ function clearNodePrecedents(nodeRef) {
 }
 
 /**
- * Check if a string is a numeric literal.
- *
- * @param {string} str - String to test
- * @returns {boolean} True if string represents a number (including negative)
- * @inner
- *
- * @example
- * isNumber("42")    // true
- * isNumber("-3.14") // true
- * isNumber("A1")    // false
- */
-function isNumber(str) {
-  return /^-?\d+(\.\d+)?$/.test(str);
-
-}
-
-/**
- * Check if a string is a literal value (number, error, or boolean).
- *
- * Literals don't need to be looked up in nodeCalcData.
- *
- * @param {string} str - String to test
- * @returns {boolean} True if string is a literal (error starting with #, number, or boolean)
- * @inner
- *
- * @example
- * isLiteral("#REF!")  // true
- * isLiteral("42")     // true
- * isLiteral("TRUE")   // true
- * isLiteral("FALSE")  // true
- * isLiteral('"hello"') // true (quoted string)
- * isLiteral("A1")     // false
- */
-function isLiteral(str) {
-  return str.startsWith('#') || isNumber(str) || str === 'TRUE' || str === 'FALSE' || isQuotedString(str);
-}
-
-/**
- * Check if a string is a quoted string literal.
- *
- * @param {string} str - String to test
- * @returns {boolean} True if string is quoted (starts and ends with double quotes)
- * @inner
- *
- * @example
- * isQuotedString('"hello"')  // true
- * isQuotedString('"B47"')    // true
- * isQuotedString('hello')    // false
- * isQuotedString('A1')       // false
- */
-function isQuotedString(str) {
-  return str.length >= 2 && str.startsWith('"') && str.endsWith('"');
-}
-
-/**
  * Add a dependency relationship to the reverse dependency graph.
  *
  * @param {string} precedentRef - The node being referenced (e.g., "A1", "ADD", "=A1+B1")
@@ -401,46 +419,6 @@ function removeDependency(precedentRef, dependentRef) {
       }
     }
   }
-}
-
-/**
- * Convert a literal string to an evaluation result object.
- *
- * @param {string} str - Literal string (error like "#REF!", number like "42", or boolean like "TRUE")
- * @returns {EvaluationResult} Result object with refValue, type, and errorMeta for errors
- * @throws {Error} If called on a non-literal
- * @inner
- *
- * @example
- * convertLiteral("#REF!")  // { refValue: "#REF!", type: "error", errorMeta: ["#REF!"] }
- * convertLiteral("42")     // { refValue: 42, type: "number" }
- * convertLiteral("-3.14")  // { refValue: -3.14, type: "number" }
- * convertLiteral("TRUE")   // { refValue: true, type: "boolean" }
- * convertLiteral("FALSE")  // { refValue: false, type: "boolean" }
- * convertLiteral('"hello"') // { refValue: "hello", type: "text" }
- */
-function convertLiteral(str) {
-  if (str.startsWith('#')) {
-    // Error literals - include errorMeta for tracking (unstamped, will be stamped in processPhase3)
-    return {refValue: str, type: 'Error', errorMeta: [{ error: str }]};
-  }
-  if (str === 'TRUE') {
-    // Boolean literal TRUE
-    return {refValue: true, type: 'Boolean'};
-  }
-  if (str === 'FALSE') {
-    // Boolean literal FALSE
-    return {refValue: false, type: 'Boolean'};
-  }
-  if (isNumber(str)) {
-    return {refValue: parseFloat(str), type: 'Number'};
-  }
-  if (isQuotedString(str)) {
-    // Quoted string literal - strip the surrounding quotes
-    return {refValue: str.slice(1, -1), type: 'Text'};
-  }
-  // Not a literal - shouldn't happen if called correctly
-  throw new Error(`convertLiteral called on non-literal: ${str}`);
 }
 
 /**
@@ -854,6 +832,38 @@ function queueDependents(nodeRef) {
      */
     getDependentsOf(cellKey) {
       return directDependentsGraph.get(cellKey) || new Set();
+    },
+
+    /**
+     * Get all cells whose formulas transitively reference the given key.
+     *
+     * Walks the dependents graph through anonymous expression nodes (keys
+     * starting with '=', e.g. extracted ranges like '=A1:A10') so the result
+     * contains only user-visible cell-keyed dependents — the cells that own
+     * the formulas referencing the target.
+     *
+     * @param {string} cellKey - Cell key to find owning-cell dependents for
+     * @returns {Set<string>} Set of cell keys whose formulas reference this cell
+     */
+    getCellDependentsOf(cellKey) {
+      const result = new Set();
+      const visited = new Set();
+      const queue = [cellKey];
+      while (queue.length > 0) {
+        const node = queue.shift();
+        const deps = directDependentsGraph.get(node);
+        if (!deps) continue;
+        for (const dep of deps) {
+          if (visited.has(dep)) continue;
+          visited.add(dep);
+          if (dep.startsWith('=')) {
+            queue.push(dep);
+          } else {
+            result.add(dep);
+          }
+        }
+      }
+      return result;
     },
 
     /**

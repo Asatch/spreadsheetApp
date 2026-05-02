@@ -20,8 +20,8 @@ write C1 =A1*2
 
 write _STOP1 =B1>=YEARS
 
-header A ending_balance
-header C doubled
+header A ENDING_BALANCE
+header C DOUBLED
 
 default-format number 2
 format B0 number 0

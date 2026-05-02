@@ -75,5 +75,8 @@ export function createHeadlessComponents() {
     codeExportDialog: stub(),
     languagePackListDialog: stub(),
     languagePackEditor: stub(),
+    findBar: stub({
+      isOpen: () => false,
+    }),
   };
 }

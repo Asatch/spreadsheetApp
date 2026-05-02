@@ -21,6 +21,7 @@
 import { expandRange, getAdjacentCell, normalizeRangeNotation, numberToColumn, columnToNumber, parseCellKey, getRangeBounds, rangesOverlap, isCellReference } from '../utils/cellUtils.js';
 import { escapeCSSString } from '../utils/cssUtils.js';
 import { REF_COLOR_COUNT } from './formula-bar-highlight.js';
+import { isIndicatorEnabled as showIndicator } from './indicator-keys.js';
 
 export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
   // ============================================================================
@@ -157,6 +158,27 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     }
   }
 
+  // Tracks the cell currently marked as a find match so we can remove the
+  // class without scanning the DOM. Distinct from active-cell selection so
+  // the find bar can preview results without stealing focus.
+  let lastFindMatchKey = null;
+
+  function clearFindMatch() {
+    if (!lastFindMatchKey) return;
+    const el = document.getElementById(lastFindMatchKey);
+    if (el) el.classList.remove('find-match');
+    lastFindMatchKey = null;
+  }
+
+  function revealCell(cellKey) {
+    clearFindMatch();
+    const cellElement = document.getElementById(cellKey);
+    if (!cellElement) return;
+    cellElement.classList.add('find-match');
+    lastFindMatchKey = cellKey;
+    scrollCellIntoView(cellElement);
+  }
+
 
   /**
    * Extract column name from cell key (e.g., "A1" -> "A", "_STOP5" -> "_STOP")
@@ -197,20 +219,107 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
   }
 
   /**
-   * Sum actual column widths for N columns to the right of cellKey.
-   * Used for overflow width calculations instead of fixed 120px per column.
+   * Measure rendered text width on the shared canvas, applying per-cell
+   * font overrides (size/weight/style) the same way fitColumnWidths does.
    */
-  function getOverflowWidth(cellKey, emptyCount) {
-    if (emptyCount === 0) return 0;
+  function measureCellTextWidth(text, styles) {
+    if (!measureCanvas || !text) return 0;
+    const hasOverride = styles && (styles.fontSize || styles.fontWeight || styles.fontStyle);
+    if (!hasOverride) return measureCanvas.measureText(text).width;
+
+    let font = cellFont;
+    if (styles.fontSize) font = font.replace(/^\S+/, styles.fontSize);
+    if (styles.fontWeight) font = `${styles.fontWeight} ${font}`;
+    if (styles.fontStyle) font = `${styles.fontStyle} ${font}`;
+    measureCanvas.font = font;
+    const w = measureCanvas.measureText(text).width;
+    measureCanvas.font = cellFont;
+    return w;
+  }
+
+  /**
+   * Compute how far the cell's background should extend past its own right
+   * edge so it lands on a column boundary (rather than ending mid-cell where
+   * the glyphs stop). Walks neighbors, accumulating column widths until the
+   * cumulative width covers the text overflow; that cumulative is the snapped
+   * extension.
+   *
+   * stopAtContent=true: overflow case — stop at the first non-empty neighbor.
+   * stopAtContent=false: active-cell case — extend over neighbors with content too.
+   *
+   * Returns 0 if the text fits in the cell's own width, or if the cell is in a
+   * sticky-right column (sticky columns don't participate in overflow).
+   */
+  function getSnappedExtensionWidth(cellKey, text, styles, stopAtContent) {
+    if (!text) return 0;
     const parsed = parseCellKey(cellKey);
     if (!parsed) return 0;
 
-    let total = 0;
-    for (let i = 1; i <= emptyCount; i++) {
-      const col = numberToColumn(parsed.colNum + i);
-      total += columnWidths[col] || COL_MIN_WIDTH;
+    const colName = getColumnFromCellKey(cellKey);
+    if (colName && stickyRightColumns.includes(colName)) return 0;
+
+    // Text glyphs start at cell.left + 6 (left padding) and run for T px, so
+    // they extend past cell.right when T + 6 > N. Don't count the right
+    // padding here — text living inside that padding still fits in the cell
+    // box and shouldn't trigger an extension.
+    const LEFT_PADDING = 6;
+    const ownWidth = columnWidths[colName] || COL_MIN_WIDTH;
+    const overflow = measureCellTextWidth(text, styles) + LEFT_PADDING - ownWidth;
+    if (overflow <= 0) return 0;
+
+    let cumulative = 0;
+    let colNum = parsed.colNum + 1;
+    const maxColNum = columnToNumber(gridBounds.maxCol);
+    while (colNum <= maxColNum) {
+      if (stopAtContent) {
+        const neighborKey = numberToColumn(colNum) + parsed.row;
+        const neighborDisplay = getCellDisplay(neighborKey);
+        if (neighborDisplay?.text?.trim()) break;
+      }
+      cumulative += columnWidths[numberToColumn(colNum)] || COL_MIN_WIDTH;
+      if (cumulative >= overflow) return cumulative;
+      colNum++;
     }
-    return total;
+    return cumulative;
+  }
+
+  /**
+   * Recompute and apply overflow snap variables on a cell. Used to refresh
+   * the snap when something it depends on changes after the cell was last
+   * touched — column widths (post fitColumnWidths) or a neighbor's emptiness.
+   */
+  function updateCellOverflowSnap(cellKey) {
+    const cellElement = document.getElementById(cellKey);
+    if (!cellElement) return;
+    const display = getCellDisplay(cellKey);
+    const text = display?.text || '';
+
+    const overflowWidth = getSnappedExtensionWidth(cellKey, text, display?.styles, true);
+    cellElement.style.setProperty('--overflow-width', `${overflowWidth}px`);
+    if (overflowWidth > 0) cellElement.setAttribute('data-has-overflow', '');
+    else cellElement.removeAttribute('data-has-overflow');
+
+    if (cellElement.classList.contains('active-cell')) {
+      const activeText = display?.expandedText || text;
+      const activeWidth = getSnappedExtensionWidth(cellKey, activeText, display?.styles, false);
+      cellElement.style.setProperty('--active-overflow-width', `${activeWidth}px`);
+    }
+  }
+
+  /**
+   * Find the nearest cell with content to the left of cellKey in the same row.
+   * That's the only leftward cell whose overflow could have extended through
+   * cellKey (cells further left would have stopped at this one).
+   */
+  function findOverflowSourceLeftOf(cellKey) {
+    const parsed = parseCellKey(cellKey);
+    if (!parsed) return null;
+    for (let c = parsed.colNum - 1; c >= 1; c--) {
+      const leftKey = numberToColumn(c) + parsed.row;
+      const display = getCellDisplay(leftKey);
+      if (display?.text?.trim()) return leftKey;
+    }
+    return null;
   }
 
   /**
@@ -223,6 +332,7 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     const maxColNum = columnToNumber(gridBounds.maxCol);
     const maxRow = gridBounds.maxRow;
     const CELL_PADDING = 12; // 6px each side
+    let widthsChanged = false;
 
     for (let c = 1; c <= maxColNum; c++) {
       const col = numberToColumn(c);
@@ -239,23 +349,8 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
         const emptyToRight = countEmptyCellsToRight(cellKey);
         if (emptyToRight > 0) continue;
 
-        // Account for per-cell style overrides that affect text width
-        const styles = display.styles;
-        const hasOverride = styles && (styles.fontSize || styles.fontWeight || styles.fontStyle);
-        if (hasOverride) {
-          let font = cellFont;
-          if (styles.fontSize) font = font.replace(/^\S+/, styles.fontSize);
-          if (styles.fontWeight) font = `${styles.fontWeight} ${font}`;
-          if (styles.fontStyle) font = `${styles.fontStyle} ${font}`;
-          measureCanvas.font = font;
-        }
-
-        const w = measureCanvas.measureText(text).width + CELL_PADDING;
+        const w = measureCellTextWidth(text, display.styles) + CELL_PADDING;
         if (w > widest) widest = w;
-
-        if (hasOverride) {
-          measureCanvas.font = cellFont;
-        }
       }
 
       // Also measure header text
@@ -268,7 +363,16 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
       if (columnWidths[col] !== clamped) {
         columnWidths[col] = clamped;
         applyColumnWidth(col, clamped);
+        widthsChanged = true;
       }
+    }
+
+    // Column widths feed into the snap calculation. If any width changed,
+    // re-snap every content cell so hover/active highlights match the new
+    // layout (avoids stale --overflow-width).
+    if (widthsChanged) {
+      const cells = gridContainer.querySelectorAll('td[data-has-content]');
+      cells.forEach((cell) => updateCellOverflowSnap(cell.id));
     }
   }
 
@@ -333,9 +437,9 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
       cellElement.setAttribute('data-has-content', '');
     }
 
-    // Set overflow width for clip-path (how far text can extend before hitting content)
-    const emptyToRight = countEmptyCellsToRight(cellKey);
-    const overflowWidth = getOverflowWidth(cellKey, emptyToRight);
+    // Set overflow width: snaps the background extension to the next column
+    // boundary instead of ending mid-cell where the glyphs stop.
+    const overflowWidth = getSnappedExtensionWidth(cellKey, displayData.text || '', displayData.styles, true);
     cellElement.style.setProperty('--overflow-width', `${overflowWidth}px`);
     if (overflowWidth > 0) cellElement.setAttribute('data-has-overflow', '');
 
@@ -356,8 +460,9 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
   let revertReferencePicking = null;
   let insertReference = null; 
   let focusFormulaBar = null;
-  let loadCellInFormulaBar = null; 
-  let updateCellNameDisplay = null; 
+  let loadCellInFormulaBar = null;
+  let getDependentsOf = null;
+  let updateCellNameDisplay = null;
   let commitFormulaBarCell = null;
   let onSelectionChange = null;
 
@@ -383,6 +488,13 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
   let onDrilldown = null;
   let canDrilldown = null;
 
+  // Row/column structure ops (each may be null if the orchestrator doesn't expose it —
+  // e.g. loop sheets don't wire row ops since rows are bound to loop iterations)
+  let onInsertRow = null;
+  let onInsertCol = null;
+  let onDeleteRow = null;
+  let onDeleteCol = null;
+
   // Named range overlay
   let getAllNamedRanges = null;
 
@@ -398,6 +510,10 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
   let lastRefColorMap = null;
   let lastResolveNamedRange = null;
   let lastRefOverlaySignature = null;
+  let formulaDependentOverlayContainer = null;
+  let lastDependentSet = null;
+  let lastDependentSignature = null;
+  let offscreenIndicatorContainer = null;
   let floatingToolbar = null;
 
   // ============================================================================
@@ -497,6 +613,11 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     highlightActiveCell(cellKey);
     focusCell(cellKey);
     loadCellInFormulaBar(cellKey);
+
+    if (getDependentsOf) {
+      updateDependentOverlays(getDependentsOf(cellKey));
+    }
+    updateOffscreenIndicators();
   }
 
   /**
@@ -696,6 +817,17 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     formulaRefOverlayContainer.className = 'formula-ref-overlays';
     gridParent.insertBefore(formulaRefOverlayContainer, gridContainer);
 
+    // Create dependent (reverse-reference) overlay container
+    formulaDependentOverlayContainer = document.createElement('div');
+    formulaDependentOverlayContainer.className = 'formula-dependent-overlays';
+    gridParent.insertBefore(formulaDependentOverlayContainer, gridContainer);
+
+    // Off-screen indicator container — fixed to viewport, doesn't scroll with grid.
+    // Body-attached so it stays anchored to the visible grid rect on scroll.
+    offscreenIndicatorContainer = document.createElement('div');
+    offscreenIndicatorContainer.className = 'offscreen-indicators';
+    document.body.appendChild(offscreenIndicatorContainer);
+
     // Event delegation: drag selection handlers (using pointer events for mouse/touch/pen)
     gridContainer.addEventListener('pointerdown', handlePointerDown);
     gridContainer.addEventListener('pointermove', handlePointerMove);
@@ -745,6 +877,9 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     // it horizontally so it's always at the horizontal center of the visible
     // viewport. The add-columns button is vice versa.
     container.addEventListener('scroll', updateFloatingExpansionButtons);
+    // Capture-phase window scroll catches any scroll on the page, including
+    // the grid container — covers cases where the indicators need to update.
+    window.addEventListener('scroll', handleScrollForIndicators, true);
     window.addEventListener('resize', updateFloatingExpansionButtons);
     // On Android the soft keyboard shrinks/grows the visual viewport without
     // firing window.resize; listen on visualViewport too so the buttons
@@ -837,7 +972,10 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     addRowBtn?.removeEventListener('click', handleAddRow);
 
     // Remove floating button position updates
-    if (container) container.removeEventListener('scroll', updateFloatingExpansionButtons);
+    if (container) {
+      container.removeEventListener('scroll', updateFloatingExpansionButtons);
+    }
+    window.removeEventListener('scroll', handleScrollForIndicators, true);
     window.removeEventListener('resize', updateFloatingExpansionButtons);
     window.visualViewport?.removeEventListener('resize', updateFloatingExpansionButtons);
 
@@ -855,6 +993,14 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     if (formulaRefOverlayContainer) {
       formulaRefOverlayContainer.remove();
       formulaRefOverlayContainer = null;
+    }
+    if (formulaDependentOverlayContainer) {
+      formulaDependentOverlayContainer.remove();
+      formulaDependentOverlayContainer = null;
+    }
+    if (offscreenIndicatorContainer) {
+      offscreenIndicatorContainer.remove();
+      offscreenIndicatorContainer = null;
     }
 
     // Remove floating toolbar
@@ -1239,6 +1385,18 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
         case 'clear':
           onClearCells();
           break;
+        case 'insert-row':
+          onInsertRow();
+          break;
+        case 'insert-col':
+          onInsertCol();
+          break;
+        case 'delete-row':
+          onDeleteRow();
+          break;
+        case 'delete-col':
+          onDeleteCol();
+          break;
       }
 
       hideFloatingToolbar();
@@ -1266,6 +1424,11 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     addToolbarButton('Paste values', 'paste-values', !hasClipboard);
 
     addToolbarButton('Clear', 'clear');
+
+    if (onInsertRow) addToolbarButton('Insert row', 'insert-row');
+    if (onInsertCol) addToolbarButton('Insert col', 'insert-col');
+    if (onDeleteRow) addToolbarButton('Delete row', 'delete-row');
+    if (onDeleteCol) addToolbarButton('Delete col', 'delete-col');
   }
 
   function addToolbarButton(label, action, disabled = false) {
@@ -1567,6 +1730,11 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
       if (display.expandedText) {
         cellElement.style.setProperty('--cell-value', `"${escapeCSSString(display.expandedText)}"`);
       }
+      // Snap active-cell extension to the next column boundary. Active cell
+      // can extend over neighbors with content, so don't stop at content.
+      const activeText = display.expandedText || display.text || '';
+      const activeWidth = getSnappedExtensionWidth(cellKey, activeText, display.styles, false);
+      cellElement.style.setProperty('--active-overflow-width', `${activeWidth}px`);
     }
   }
 
@@ -1704,6 +1872,7 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     formulaRefOverlayContainer.innerHTML = '';
 
     if (!refColorMap || refColorMap.size === 0) return;
+    if (!showIndicator('precedent-boxes')) return;
 
     // Collect all geometry reads first, then build DOM in one batch
     // to avoid interleaving reads (getBoundingClientRect) with writes (appendChild).
@@ -1758,6 +1927,7 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
       fragment.appendChild(overlay);
     }
     formulaRefOverlayContainer.appendChild(fragment);
+    updateOffscreenIndicators();
   }
 
   let overlayResizeRAF = null;
@@ -1770,7 +1940,36 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
         lastRefOverlaySignature = null;
         updateFormulaRefOverlays(lastRefColorMap, lastResolveNamedRange);
       }
+      if (lastDependentSet) {
+        lastDependentSignature = null;
+        updateDependentOverlays(lastDependentSet);
+      }
+      updateOffscreenIndicators();
     });
+  }
+
+  let offscreenScrollRAF = null;
+  function handleScrollForIndicators() {
+    if (offscreenScrollRAF !== null) return;
+    offscreenScrollRAF = requestAnimationFrame(() => {
+      offscreenScrollRAF = null;
+      updateOffscreenIndicators();
+    });
+  }
+
+  /**
+   * Force a re-render of all reference indicators (boxes + arrows) using the
+   * cached refColorMap and dependent set. Called when the visibility prefs
+   * change in the Settings dialog so toggles take effect immediately.
+   */
+  function refreshOverlays() {
+    // Invalidate signature caches so the early-return short-circuit in
+    // updateFormulaRefOverlays / updateDependentOverlays doesn't skip work.
+    lastRefOverlaySignature = null;
+    lastDependentSignature = null;
+    updateFormulaRefOverlays(lastRefColorMap, lastResolveNamedRange);
+    updateDependentOverlays(lastDependentSet);
+    updateOffscreenIndicators();
   }
 
   function clearFormulaRefOverlays() {
@@ -1780,6 +1979,327 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     if (formulaRefOverlayContainer) {
       formulaRefOverlayContainer.innerHTML = '';
     }
+  }
+
+  /**
+   * Update dependent-cell overlays on the grid.
+   * Renders a uniform dashed border around each cell that has a formula
+   * referencing the active cell (reverse of formula-ref overlays).
+   * @param {Set<string>|null} dependentSet - cellKeys depending on active cell, or null to clear
+   */
+  function updateDependentOverlays(dependentSet) {
+    lastDependentSet = dependentSet;
+
+    if (!formulaDependentOverlayContainer) return;
+
+    const signature = dependentSet
+      ? Array.from(dependentSet).sort().join('|')
+      : '';
+    if (signature === lastDependentSignature) return;
+    lastDependentSignature = signature;
+
+    formulaDependentOverlayContainer.innerHTML = '';
+
+    if (!dependentSet || dependentSet.size === 0) return;
+    if (!showIndicator('dependent-boxes')) return;
+
+    const containerRect = formulaDependentOverlayContainer.getBoundingClientRect();
+    const overlayData = [];
+
+    for (const cellKey of dependentSet) {
+      if (!isCellReference(cellKey)) continue;
+      const cellEl = document.getElementById(cellKey);
+      if (!cellEl) continue;
+      const rect = cellEl.getBoundingClientRect();
+      overlayData.push(rect);
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const rect of overlayData) {
+      const overlay = document.createElement('div');
+      overlay.className = 'formula-dependent-overlay';
+      overlay.style.top = `${rect.top - containerRect.top}px`;
+      overlay.style.left = `${rect.left - containerRect.left}px`;
+      overlay.style.width = `${rect.width}px`;
+      overlay.style.height = `${rect.height}px`;
+      fragment.appendChild(overlay);
+    }
+    formulaDependentOverlayContainer.appendChild(fragment);
+    updateOffscreenIndicators();
+  }
+
+  /**
+   * Resolve a ref string (cell key, range, or named range) to a viewport rect
+   * spanning all of its cells. Returns null if it can't be resolved.
+   */
+  function resolveRefToRect(ref, resolveNamedRange) {
+    let rangeStart, rangeEnd;
+    if (ref.includes(':')) {
+      const parts = ref.split(':');
+      rangeStart = parts[0];
+      rangeEnd = parts[1];
+    } else if (isCellReference(ref)) {
+      rangeStart = ref;
+      rangeEnd = ref;
+    } else if (resolveNamedRange) {
+      const notation = resolveNamedRange(ref);
+      if (!notation) return null;
+      const parts = notation.split(':');
+      rangeStart = parts[0];
+      rangeEnd = parts[1] || parts[0];
+    } else {
+      return null;
+    }
+    const bounds = getRangeBounds(rangeStart, rangeEnd);
+    if (!bounds) return null;
+    const tl = document.getElementById(`${numberToColumn(bounds.minCol)}${bounds.minRow}`);
+    const br = document.getElementById(`${numberToColumn(bounds.maxCol)}${bounds.maxRow}`);
+    if (!tl || !br) return null;
+    const tlRect = tl.getBoundingClientRect();
+    const brRect = br.getBoundingClientRect();
+    return {
+      left: tlRect.left,
+      top: tlRect.top,
+      right: brRect.right,
+      bottom: brRect.bottom,
+    };
+  }
+
+  /**
+   * Closest pair of points between segment P (p0→p1) and segment Q (q0→q1).
+   * Returns the point on Q closest to P along with the squared distance.
+   * Standard parametric form with end-clamping; continuous in all inputs.
+   */
+  function closestPointOnSegmentToSegment(p0x, p0y, p1x, p1y, q0x, q0y, q1x, q1y) {
+    const dpx = p1x - p0x, dpy = p1y - p0y;
+    const dqx = q1x - q0x, dqy = q1y - q0y;
+    const rx = p0x - q0x, ry = p0y - q0y;
+    const a = dpx * dpx + dpy * dpy;   // |P|²
+    const e = dqx * dqx + dqy * dqy;   // |Q|²
+    const f = dqx * rx + dqy * ry;
+    const EPS = 1e-12;
+
+    let s, t;
+    if (a <= EPS && e <= EPS) {
+      s = 0; t = 0;
+    } else if (a <= EPS) {
+      s = 0;
+      t = clamp01(f / e);
+    } else {
+      const c = dpx * rx + dpy * ry;
+      if (e <= EPS) {
+        t = 0;
+        s = clamp01(-c / a);
+      } else {
+        const b = dpx * dqx + dpy * dqy;
+        const denom = a * e - b * b;
+        s = denom !== 0 ? clamp01((b * f - c * e) / denom) : 0;
+        t = (b * s + f) / e;
+        if (t < 0) {
+          t = 0;
+          s = clamp01(-c / a);
+        } else if (t > 1) {
+          t = 1;
+          s = clamp01((b - c) / a);
+        }
+      }
+    }
+
+    const px = p0x + s * dpx, py = p0y + s * dpy;
+    const qx = q0x + t * dqx, qy = q0y + t * dqy;
+    const ddx = px - qx, ddy = py - qy;
+    return { qx, qy, distSq: ddx * ddx + ddy * ddy };
+  }
+
+  function clamp01(v) {
+    return v < 0 ? 0 : v > 1 ? 1 : v;
+  }
+
+  /**
+   * Decide where to place an off-screen indicator triangle and what direction
+   * to rotate it to.
+   *
+   * Two cases, picked so the result is continuous in A and R:
+   *  1. The segment A→R crosses the viewport perimeter. We pick the crossing
+   *     with the largest segment parameter s — i.e., the exit on the side
+   *     toward R, not the entry near A. Linear in A/R, so smooth.
+   *  2. The segment misses the perimeter. We use the closest point on the
+   *     perimeter to the segment, which varies continuously with A and R.
+   *
+   * At the transition (segment tangent to a corner), both cases land on the
+   * same corner, so there's no jump at the boundary either.
+   */
+  function placeIndicator(vp, ax, ay, tx, ty) {
+    const dx = tx - ax;
+    const dy = ty - ay;
+
+    // Case 1: explicit segment/perimeter intersections, pick max s (exit).
+    let px = vp.left, py = vp.top;
+    let bestS = -Infinity;
+    const consider = (s, x, y) => {
+      if (s >= 0 && s <= 1 && s > bestS) { bestS = s; px = x; py = y; }
+    };
+    if (dy !== 0) {
+      const sTop = (vp.top - ay) / dy;
+      const xTop = ax + sTop * dx;
+      if (xTop >= vp.left && xTop <= vp.right) consider(sTop, xTop, vp.top);
+      const sBot = (vp.bottom - ay) / dy;
+      const xBot = ax + sBot * dx;
+      if (xBot >= vp.left && xBot <= vp.right) consider(sBot, xBot, vp.bottom);
+    }
+    if (dx !== 0) {
+      const sLeft = (vp.left - ax) / dx;
+      const yLeft = ay + sLeft * dy;
+      if (yLeft >= vp.top && yLeft <= vp.bottom) consider(sLeft, vp.left, yLeft);
+      const sRight = (vp.right - ax) / dx;
+      const yRight = ay + sRight * dy;
+      if (yRight >= vp.top && yRight <= vp.bottom) consider(sRight, vp.right, yRight);
+    }
+
+    // Case 2: no crossing. Closest point on perimeter to segment A→R.
+    if (bestS === -Infinity) {
+      const edges = [
+        [vp.left,  vp.top,    vp.right, vp.top   ],
+        [vp.right, vp.top,    vp.right, vp.bottom],
+        [vp.right, vp.bottom, vp.left,  vp.bottom],
+        [vp.left,  vp.bottom, vp.left,  vp.top   ],
+      ];
+      let bestDistSq = Infinity;
+      for (const [ex0, ey0, ex1, ey1] of edges) {
+        const { qx, qy, distSq } = closestPointOnSegmentToSegment(
+          ax, ay, tx, ty, ex0, ey0, ex1, ey1
+        );
+        if (distSq < bestDistSq) {
+          bestDistSq = distSq;
+          px = qx; py = qy;
+        }
+      }
+    }
+
+    // Rotation: point from chosen perimeter position toward the ref. If the
+    // chosen point coincides with the ref (e.g., ref on perimeter), fall back
+    // to the active-cell direction so the triangle still has a sensible angle.
+    let rdx = tx - px, rdy = ty - py;
+    if (rdx === 0 && rdy === 0) { rdx = tx - ax; rdy = ty - ay; }
+    return {
+      x: px,
+      y: py,
+      rotation: Math.atan2(rdy, rdx) * 180 / Math.PI + 90,
+    };
+  }
+
+  /**
+   * Render edge-of-viewport triangles for any precedent or dependent that's
+   * fully outside the visible grid. Each triangle sits on the edge that the
+   * line from the active cell center to the off-screen ref center crosses,
+   * and points outward toward the ref.
+   */
+  function updateOffscreenIndicators() {
+    if (!offscreenIndicatorContainer || !container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const insets = getInsets() || { top: 0, left: 0, right: 0, bottom: 0 };
+
+    // Restrict the indicator surface to the data area — exclude column header,
+    // row-header column, sticky rows/cols, and scrollbar gutter — so triangles
+    // never sit under headers where they'd be invisible.
+    const vp = {
+      left: containerRect.left + insets.left,
+      top: containerRect.top + insets.top,
+      right: containerRect.left + container.clientWidth - insets.right,
+      bottom: containerRect.top + container.clientHeight - insets.bottom,
+    };
+    vp.width = vp.right - vp.left;
+    vp.height = vp.bottom - vp.top;
+
+    offscreenIndicatorContainer.style.top = `${vp.top}px`;
+    offscreenIndicatorContainer.style.left = `${vp.left}px`;
+    offscreenIndicatorContainer.style.width = `${vp.width}px`;
+    offscreenIndicatorContainer.style.height = `${vp.height}px`;
+
+    offscreenIndicatorContainer.innerHTML = '';
+
+    const showPrecArrows = showIndicator('precedent-arrows');
+    const showDepArrows = showIndicator('dependent-arrows');
+    const hasPrecedents = showPrecArrows && lastRefColorMap && lastRefColorMap.size > 0;
+    const hasDependents = showDepArrows && lastDependentSet && lastDependentSet.size > 0;
+    if (!hasPrecedents && !hasDependents) return;
+
+    // Active cell center is always the conceptual anchor — placeIndicator
+    // handles the on-screen, between, and other-side cases internally.
+    let ax = (vp.left + vp.right) / 2;
+    let ay = (vp.top + vp.bottom) / 2;
+    const activeEl = activeCell ? document.getElementById(activeCell) : null;
+    if (activeEl) {
+      const r = activeEl.getBoundingClientRect();
+      ax = (r.left + r.right) / 2;
+      ay = (r.top + r.bottom) / 2;
+    }
+
+    const items = [];
+    if (hasPrecedents) {
+      for (const [ref, colorIndex] of lastRefColorMap) {
+        const rect = resolveRefToRect(ref, lastResolveNamedRange);
+        if (!rect) continue;
+        items.push({ rect, kind: 'precedent', colorIndex });
+      }
+    }
+    if (hasDependents) {
+      for (const cellKey of lastDependentSet) {
+        if (!isCellReference(cellKey)) continue;
+        const el = document.getElementById(cellKey);
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        items.push({
+          rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
+          kind: 'dependent',
+        });
+      }
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const item of items) {
+      // Skip if any part of the ref is visible — overlay already shows it.
+      const visible = item.rect.right > vp.left && item.rect.left < vp.right
+                   && item.rect.bottom > vp.top && item.rect.top < vp.bottom;
+      if (visible) continue;
+
+      const tx = (item.rect.left + item.rect.right) / 2;
+      const ty = (item.rect.top + item.rect.bottom) / 2;
+      const hit = placeIndicator(vp, ax, ay, tx, ty);
+      if (!hit) continue;
+
+      const tri = document.createElement('div');
+      tri.className = `offscreen-indicator offscreen-indicator-${item.kind}`;
+      const color = item.kind === 'precedent'
+        ? getRefColors()[item.colorIndex % getRefColors().length]
+        : '#ea580c';
+      tri.style.setProperty('--indicator-color', color);
+
+      // SVG triangle. Precedent = filled (10×16); dependent = hollow stroked
+      // (14×22) so it reads as distinct from precedents, mirroring the
+      // dashed-vs-solid distinction used by the on-grid overlays.
+      tri.innerHTML = item.kind === 'precedent'
+        ? '<svg viewBox="0 0 10 16" width="10" height="16"><polygon points="5,0 10,16 0,16"/></svg>'
+        : '<svg viewBox="0 0 14 22" width="14" height="22" overflow="visible"><polygon points="7,0 14,22 0,22"/></svg>';
+
+      // Position relative to indicator container's top-left corner.
+      const localX = hit.x - vp.left;
+      const localY = hit.y - vp.top;
+      // Clamp so the tip stays inside the container away from the corners.
+      const margin = 14;
+      const clampedX = Math.max(margin, Math.min(vp.width - margin, localX));
+      const clampedY = Math.max(margin, Math.min(vp.height - margin, localY));
+
+      // Position so the triangle's apex (top-center of element) lands on the
+      // placement point. CSS uses translate(-50%,0) + transform-origin top-center.
+      tri.style.left = `${clampedX}px`;
+      tri.style.top = `${clampedY}px`;
+      tri.style.transform = `translate(-50%, 0) rotate(${hit.rotation}deg)`;
+
+      fragment.appendChild(tri);
+    }
+    offscreenIndicatorContainer.appendChild(fragment);
   }
 
   function refreshCell(cellKey) {
@@ -1805,12 +2325,14 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
       cellElement.removeAttribute('data-has-content');
     }
 
-    // Update overflow width for clip-path (how far text can extend before hitting content)
-    const emptyToRight = countEmptyCellsToRight(cellKey);
-    const overflowWidth = getOverflowWidth(cellKey, emptyToRight);
-    cellElement.style.setProperty('--overflow-width', `${overflowWidth}px`);
-    if (overflowWidth > 0) cellElement.setAttribute('data-has-overflow', '');
-    else cellElement.removeAttribute('data-has-overflow');
+    // Update overflow snap (snaps background extension to next column boundary).
+    updateCellOverflowSnap(cellKey);
+
+    // This cell becoming empty or non-empty can shift the snap boundary of the
+    // nearest leftward cell with content (its overflow may have extended into
+    // or stopped at this one). Re-snap that cell so its hover area stays accurate.
+    const leftSource = findOverflowSourceLeftOf(cellKey);
+    if (leftSource) updateCellOverflowSnap(leftSource);
 
     scheduleFitColumnWidths();
   }
@@ -2357,6 +2879,7 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
         insertReference,
         focusFormulaBar,
         loadCellInFormulaBar,
+        getDependentsOf,
         updateCellNameDisplay,
         commitFormulaBarCell,
         applyBold,
@@ -2374,6 +2897,11 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
         onDrilldown,
         canDrilldown,
       } = deps);
+      // Optional row/col structure ops
+      if (deps.onInsertRow) onInsertRow = deps.onInsertRow;
+      if (deps.onInsertCol) onInsertCol = deps.onInsertCol;
+      if (deps.onDeleteRow) onDeleteRow = deps.onDeleteRow;
+      if (deps.onDeleteCol) onDeleteCol = deps.onDeleteCol;
       // Optional dependencies
       if (deps.onColumnNameChange) {
         onColumnNameChange = deps.onColumnNameChange;
@@ -2474,5 +3002,11 @@ export function createGrid(initialBounds = { maxCol: 'O', maxRow: 30 }) {
     // Formula reference overlays
     updateFormulaRefOverlays,
     clearFormulaRefOverlays,
+    refreshOverlays,
+
+    // Find-bar preview: highlight + scroll without taking focus or
+    // mutating selection state.
+    revealCell,
+    clearFindMatch,
   };
 }

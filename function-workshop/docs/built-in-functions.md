@@ -167,6 +167,29 @@ Pass through a value unchanged. Used internally.
 ### ARRAY
 Collect values into an array. Used for ranges internally.
 
+## Multi-Output Access
+
+### INDEX
+Extract a named output from a multi-output function call.
+```
+=INDEX(result_cell, "OUTPUT_NAME")
+```
+- Types: `(record, text) → T`
+
+The canonical pattern (BEST_PRACTICES.md P11, P12) is to call a multi-output function once into a result cell, then read each output by name:
+```
+write B29 =WITHDRAW_TAXABLE(BALANCE, SHORTFALL, BASIS)
+write B31 =INDEX(B29, "WITHDRAWAL")
+write B32 =INDEX(B29, "TAX")
+write B33 =INDEX(B29, "REMAINING_SHORTFALL")
+```
+
+The string key matches the callee's output name:
+- **Standard functions** — name from `name <cell> <NAME>` followed by `output <NAME>` (e.g., `WITHDRAWAL`).
+- **Loop functions** — column header from `header <col> <NAME>` (e.g., `TOTAL_TAXES`). UPPER_SNAKE_CASE per P8.
+
+Anti-patterns: don't call the function multiple times to extract different outputs (AP1); don't put the key string in a cell and reference that cell (AP2). String literals work directly in formulas.
+
 ## Formula Syntax
 
 ### Operators (Infix)

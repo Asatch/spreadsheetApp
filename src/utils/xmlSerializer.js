@@ -895,3 +895,77 @@ export function extractSignatureFromXml(xmlString) {
 
   return { inputs, outputs };
 }
+
+// ============================================================================
+// STRIP UNUSED INPUTS FROM PUBLISHED XML
+// ============================================================================
+
+/**
+ * Remove specified input declarations from a published XML string. Removes the
+ * matching input <Node>, its <NamedNode> alias, the corresponding positional
+ * <input_value> in every <test_case>, and renumbers remaining input_order
+ * attributes to stay contiguous.
+ *
+ * Used at publish time to align the published XML's declared inputs with the
+ * transpiled JS signature (the transpiler drops inputs that don't reach any
+ * output, so the JS function only takes the reachable ones — keeping unused
+ * inputs in the XML causes positional mismatches when drilldown rehydrates
+ * caller args by name).
+ *
+ * @param {string} xmlString - Published XML
+ * @param {string[]} unusedNames - Input names to remove
+ * @returns {string} XML with the named inputs stripped
+ */
+export function stripUnusedInputsFromXml(xmlString, unusedNames) {
+  if (!unusedNames || unusedNames.length === 0) return xmlString;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlString, 'application/xml');
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) throw new Error('XML parse error: ' + parseError.textContent);
+
+  const root = doc.documentElement;
+  const unusedSet = new Set(unusedNames);
+
+  // Remove input <Node> elements; record their input_order for test_case stripping
+  const removedOrders = [];
+  for (const node of [...root.querySelectorAll('Nodes > Node')]) {
+    if (node.getAttribute('node_type') !== 'input') continue;
+    const name = node.getAttribute('input_name');
+    if (unusedSet.has(name)) {
+      removedOrders.push(parseInt(node.getAttribute('input_order') || '0', 10));
+      node.parentNode.removeChild(node);
+    }
+  }
+
+  // Remove the alias NamedNode for each stripped input
+  for (const nn of [...root.querySelectorAll('NamedNodes > NamedNode')]) {
+    if (nn.getAttribute('node_name_type') !== 'alias') continue;
+    if (unusedSet.has(nn.getAttribute('node_name'))) {
+      nn.parentNode.removeChild(nn);
+    }
+  }
+
+  // Strip positional <input_value> from each test case (descending so earlier
+  // indices stay valid after later removals)
+  if (removedOrders.length > 0) {
+    const orderedDesc = [...removedOrders].sort((a, b) => b - a);
+    for (const tc of root.querySelectorAll('TestCases > test_case')) {
+      const ivs = [...tc.querySelectorAll('input_value')];
+      for (const idx of orderedDesc) {
+        if (ivs[idx]) ivs[idx].parentNode.removeChild(ivs[idx]);
+      }
+    }
+  }
+
+  // Renumber surviving input_order attributes to 0..N-1 (preserving relative order)
+  const remaining = [...root.querySelectorAll('Nodes > Node')]
+    .filter(n => n.getAttribute('node_type') === 'input')
+    .sort((a, b) =>
+      parseInt(a.getAttribute('input_order') || '0', 10) -
+      parseInt(b.getAttribute('input_order') || '0', 10)
+    );
+  remaining.forEach((node, i) => node.setAttribute('input_order', String(i)));
+
+  return new XMLSerializer().serializeToString(doc);
+}

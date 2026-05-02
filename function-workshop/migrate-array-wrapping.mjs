@@ -26,6 +26,7 @@ const {
   inferReturnType
 } = await import(pathToFileURL(resolve(frontendUtils, 'functions.js')).href);
 const { createCanonicalValuesEngine } = await import(pathToFileURL(resolve(frontendEngines, 'canonicalValuesEngine.js')).href);
+const { isLiteral, convertLiteral } = await import(pathToFileURL(resolve(frontendEngines, 'calculationEngine.js')).href);
 const { parseXML } = await import(pathToFileURL(resolve(__dirname, 'xml-parser.mjs')).href);
 
 /**
@@ -162,7 +163,7 @@ function buildStateFromXml(xmlString) {
     canonicalValues.set(node.key, canonical);
 
     if (canonical.startsWith('=')) {
-      const result = parseFormula(canonical.toUpperCase());
+      const result = parseFormula(canonical);
       const funcName = result.precedents[0];
       const childTypes = result.precedents.slice(1).map(() => 'Number');
       const type = inferReturnType(funcName, childTypes) || node.data_type || 'Number';
@@ -234,6 +235,7 @@ function normalizeState(canonicalValues, nodeCalcData) {
         if (info.type === 'formula') {
           const precedents = info.parsed;
           const childTypes = precedents.slice(1).map(p => {
+            if (isLiteral(p)) return convertLiteral(p).type;
             const childData = nodeCalcData.get(p) || normalizedCalcData.get(p);
             return childData?.type || 'Number';
           });

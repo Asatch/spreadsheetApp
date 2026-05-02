@@ -189,6 +189,7 @@ function mountPersistentComponents() {
   persistentComponents.codeExportDialog.mount();
   persistentComponents.languagePackListDialog.mount();
   persistentComponents.languagePackEditor.mount();
+  persistentComponents.findBar.mount(container);
 }
 
 function createOrchestrator(type, extraConfig = {}) {
@@ -321,7 +322,7 @@ if (drilldownConfig) {
 }
 
 window.spreadsheetApp = app;
-setupKeyboardShortcuts(breadcrumbNav);
+setupKeyboardShortcuts(breadcrumbNav, persistentComponents.findBar);
 
 // ============================================================================
 // HELPERS
@@ -377,14 +378,20 @@ function insertViewerBanner(container) {
 /**
  * Set up keyboard shortcuts that live outside the orchestrator lifecycle.
  * @param {Object} breadcrumbNav - Breadcrumb navigation instance
+ * @param {Object} findBar - Find bar component (persistent across swaps)
  */
-function setupKeyboardShortcuts(breadcrumbNav) {
+function setupKeyboardShortcuts(breadcrumbNav, findBar) {
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
       e.preventDefault();
       if (breadcrumbNav.hasTree()) {
         breadcrumbNav.navigateBack();
       }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      findBar.open();
     }
   });
 }
